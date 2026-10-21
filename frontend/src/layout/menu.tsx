@@ -2,7 +2,11 @@ import type { ReactNode } from 'react'
 import {
   ApartmentOutlined,
   BankOutlined,
+  BgColorsOutlined,
   BorderOutlined,
+  PictureOutlined,
+  TagsOutlined,
+  TrophyOutlined,
   DashboardOutlined,
   SafetyCertificateOutlined,
   TeamOutlined,
@@ -31,7 +35,13 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
   { path: '/', labelKey: 'menu.dashboard', icon: <DashboardOutlined /> },
   {
     labelKey: 'menu.masters',
-    items: [{ path: '/masters/sizes', labelKey: 'menu.sizes', icon: <BorderOutlined />, permission: 'MASTER_VIEW' }],
+    items: [
+      { path: '/masters/designs', labelKey: 'menu.designs', icon: <PictureOutlined />, permission: 'MASTER_VIEW' },
+      { path: '/masters/sizes', labelKey: 'menu.sizes', icon: <BorderOutlined />, permission: 'MASTER_VIEW' },
+      { path: '/masters/finishes', labelKey: 'menu.finishes', icon: <BgColorsOutlined />, permission: 'MASTER_VIEW' },
+      { path: '/masters/categories', labelKey: 'menu.categories', icon: <TagsOutlined />, permission: 'MASTER_VIEW' },
+      { path: '/masters/grades', labelKey: 'menu.grades', icon: <TrophyOutlined />, permission: 'MASTER_VIEW' },
+    ],
   },
   {
     labelKey: 'menu.setup',

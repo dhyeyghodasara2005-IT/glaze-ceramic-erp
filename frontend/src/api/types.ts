@@ -179,3 +179,71 @@ export interface TileSize {
 }
 
 export type TileSizeRequest = Omit<TileSize, 'id' | 'version' | 'sqmPerBox'>
+
+export interface Finish {
+  id: number
+  code: string
+  name: string
+  active: boolean
+  version: number
+}
+
+export type FinishRequest = Omit<Finish, 'id' | 'version'>
+
+export interface ProductCategory {
+  id: number
+  code: string
+  name: string
+  hsnCode?: string
+  gstRate: number
+  active: boolean
+  version: number
+}
+
+export type ProductCategoryRequest = Omit<ProductCategory, 'id' | 'version'>
+
+export interface Grade {
+  id: number
+  code: string
+  name: string
+  sortOrder: number
+  sellable: boolean
+  active: boolean
+  version: number
+}
+
+export type GradeRequest = Omit<Grade, 'id' | 'version'>
+
+export interface Design {
+  id: number
+  code: string
+  name: string
+  categoryId: number
+  categoryCode: string
+  categoryName: string
+  sizeId: number
+  sizeCode: string
+  sizeName: string
+  sqmPerBox: number
+  finishId: number
+  finishCode: string
+  finishName: string
+  faces: number
+  /** "2026-10-22" */
+  launchDate?: string
+  description?: string
+  active: boolean
+  version: number
+}
+
+export interface DesignRequest {
+  code: string
+  name: string
+  categoryId: number
+  sizeId: number
+  finishId: number
+  faces: number
+  launchDate?: string
+  description?: string
+  active?: boolean
+}
