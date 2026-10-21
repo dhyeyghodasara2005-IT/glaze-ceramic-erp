@@ -17,7 +17,10 @@ public enum Permission {
     USER_VIEW("Users & Access", "View users"),
     USER_MANAGE("Users & Access", "Create, edit, deactivate users and reset passwords"),
     ROLE_VIEW("Users & Access", "View roles and permissions"),
-    ROLE_MANAGE("Users & Access", "Create, edit and delete roles");
+    ROLE_MANAGE("Users & Access", "Create, edit and delete roles"),
+
+    MASTER_VIEW("Masters", "View product masters (sizes, finishes, categories, grades, designs)"),
+    MASTER_MANAGE("Masters", "Create and edit product masters");
 
     private final String group;
     private final String description;
