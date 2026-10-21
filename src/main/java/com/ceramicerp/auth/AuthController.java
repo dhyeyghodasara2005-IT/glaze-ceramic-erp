@@ -4,11 +4,13 @@ import com.ceramicerp.auth.dto.ChangePasswordRequest;
 import com.ceramicerp.auth.dto.CurrentUserResponse;
 import com.ceramicerp.auth.dto.LoginRequest;
 import com.ceramicerp.auth.dto.LoginResponse;
+import com.ceramicerp.auth.dto.PreferencesRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +35,11 @@ public class AuthController {
     @GetMapping("/me")
     public CurrentUserResponse me() {
         return authService.me();
+    }
+
+    @PatchMapping("/me/preferences")
+    public CurrentUserResponse updatePreferences(@Valid @RequestBody PreferencesRequest req) {
+        return authService.updatePreferences(req);
     }
 
     @PostMapping("/change-password")

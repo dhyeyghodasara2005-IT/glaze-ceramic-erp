@@ -8,6 +8,7 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,6 +67,23 @@ class AuthIntegrationTest extends IntegrationTestBase {
 
         String newToken = login("ramesh", "new-pass-123");
         getAs(newToken, "/api/auth/me").andExpect(jsonPath("$.mustChangePassword").value(false));
+    }
+
+    @Test
+    void anyUserCanSaveTheirLanguage() throws Exception {
+        String admin = adminToken();
+        long roleId = createRole(admin, "Viewer", "PLANT_VIEW");
+        createUser(admin, "kiran", "password-1", roleId);
+        String token = login("kiran", "password-1");
+
+        mvc.perform(patch("/api/auth/me/preferences").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(json(Map.of("preferredLanguage", "gu"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.preferredLanguage").value("gu"));
+
+        mvc.perform(patch("/api/auth/me/preferences").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content(json(Map.of("preferredLanguage", "fr"))))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

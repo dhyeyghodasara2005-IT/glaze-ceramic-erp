@@ -4,6 +4,7 @@ import com.ceramicerp.auth.dto.ChangePasswordRequest;
 import com.ceramicerp.auth.dto.CurrentUserResponse;
 import com.ceramicerp.auth.dto.LoginRequest;
 import com.ceramicerp.auth.dto.LoginResponse;
+import com.ceramicerp.auth.dto.PreferencesRequest;
 import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
 import com.ceramicerp.organization.Plant;
@@ -57,6 +58,13 @@ public class AuthService {
     @Transactional(readOnly = true)
     public CurrentUserResponse me() {
         return currentUser(findUser(CurrentUser.get().getUserId()));
+    }
+
+    @Transactional
+    public CurrentUserResponse updatePreferences(PreferencesRequest req) {
+        User user = findUser(CurrentUser.get().getUserId());
+        user.setPreferredLanguage(req.preferredLanguage());
+        return currentUser(user);
     }
 
     @Transactional
