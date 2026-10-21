@@ -1,0 +1,47 @@
+# Settings shared by every environment (dev, test, prod).
+# Secrets (passwords, keys) are NOT here - they live in config/application-local.yml (git-ignored).
+spring:
+  application:
+    name: ceramic-erp
+  profiles:
+    default: dev
+  config:
+    import: optional:file:./config/application-local.yml
+
+  jpa:
+    # Never let Hibernate change tables. Flyway owns the schema; Hibernate only checks it matches.
+    hibernate:
+      ddl-auto: validate
+    # Keep database work inside service methods (prevents slow, hidden queries in controllers).
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  jackson:
+    time-zone: Asia/Kolkata
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  jwt:
+    issuer: ceramic-erp
+    # How long a login stays valid. 12h covers a full shift.
+    expiration: 12h
+  cors:
+    allowed-origins: http://localhost:5173
+  bootstrap:
+    admin-full-name: System Administrator

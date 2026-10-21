@@ -1,0 +1,16 @@
+# TEMPLATE for local secrets.
+# Copy this file to config/application-local.yml and fill in real values.
+# application-local.yml is git-ignored so passwords never end up in Git.
+spring:
+  datasource:
+    username: ceramic_erp
+    password: CHANGE_ME
+
+app:
+  jwt:
+    # Generate with:  openssl rand -base64 48
+    secret: CHANGE_ME
+  bootstrap:
+    # Only used once: to create the first admin when the users table is empty.
+    admin-username: admin
+    admin-password: CHANGE_ME
