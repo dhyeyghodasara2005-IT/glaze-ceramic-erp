@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useOpenFromUrl } from '../../components/useOpenFromUrl'
+import { api } from '../../api/client'
 import { App, Button, Card, Dropdown, Flex, Input, Segmented, Space, Table, Tag, Typography, type MenuProps, type TableColumnsType } from 'antd'
 import { EditOutlined, KeyOutlined, MoreOutlined, PlusOutlined, StopOutlined, CheckCircleOutlined, TeamOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +17,9 @@ import UserFormDrawer from './UserFormDrawer'
 import ResetPasswordModal from './ResetPasswordModal'
 
 type ActiveFilter = 'all' | 'active' | 'inactive'
+
+/** Loads one record for ?open=<id> links (the list is paged, so it may not be on screen). */
+const fetchOne = async (id: number) => (await api.get<User>(`/users/${id}`)).data
 
 export default function UsersPage() {
   const { t } = useTranslation()
@@ -36,6 +41,9 @@ export default function UsersPage() {
   const setActive = useSetUserActive()
 
   const [editing, setEditing] = useState<{ user?: User } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: User) => setEditing(item ? { user: item } : {}), [])
+  useOpenFromUrl({ fetchOne, onOpen: openFromUrl, enabled: canManage })
   const [resetting, setResetting] = useState<User>()
 
   const toggleActive = (user: User) => {

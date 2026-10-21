@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useOpenFromUrl } from '../../components/useOpenFromUrl'
 import { Button, Card, Flex, Select, Table, type TableColumnsType } from 'antd'
 import { ApartmentOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +21,9 @@ export default function PlantsPage() {
   const { data, isLoading } = usePlants(companyId)
   const companies = useCompanies(can('COMPANY_VIEW'))
   const [editing, setEditing] = useState<{ plant?: Plant } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: Plant) => setEditing(item ? { plant: item } : {}), [])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: canManage })
 
   const newButton = canManage && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({})}>

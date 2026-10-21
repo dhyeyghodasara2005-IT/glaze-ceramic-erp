@@ -14,6 +14,10 @@ import DesignsPage from './features/masters/designs/DesignsPage'
 import FinishesPage from './features/masters/finishes/FinishesPage'
 import CategoriesPage from './features/masters/categories/CategoriesPage'
 import GradesPage from './features/masters/grades/GradesPage'
+import MaterialsPage from './features/masters/materials/MaterialsPage'
+import MachinesPage from './features/masters/machines/MachinesPage'
+import MaterialGroupsPage from './features/masters/material-groups/MaterialGroupsPage'
+import UnitsPage from './features/masters/units/UnitsPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -48,6 +52,10 @@ export default function App() {
         <Route path="masters/finishes" element={<RequirePermission permission="MASTER_VIEW"><FinishesPage /></RequirePermission>} />
         <Route path="masters/categories" element={<RequirePermission permission="MASTER_VIEW"><CategoriesPage /></RequirePermission>} />
         <Route path="masters/grades" element={<RequirePermission permission="MASTER_VIEW"><GradesPage /></RequirePermission>} />
+        <Route path="masters/materials" element={<RequirePermission permission="MASTER_VIEW"><MaterialsPage /></RequirePermission>} />
+        <Route path="masters/machines" element={<RequirePermission permission="MASTER_VIEW"><MachinesPage /></RequirePermission>} />
+        <Route path="masters/material-groups" element={<RequirePermission permission="MASTER_VIEW"><MaterialGroupsPage /></RequirePermission>} />
+        <Route path="masters/units" element={<RequirePermission permission="MASTER_VIEW"><UnitsPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

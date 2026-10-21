@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useOpenFromUrl } from '../../../components/useOpenFromUrl'
+import { api } from '../../../api/client'
 import { Button, Card, Input, Segmented, Select, Table, Tag, type TableColumnsType } from 'antd'
 import { EditOutlined, PictureOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +16,9 @@ import { useDesigns, type DesignSearch } from './api'
 import DesignFormDrawer from './DesignFormDrawer'
 
 type ActiveFilter = 'all' | 'active' | 'inactive'
+
+/** Loads one record for ?open=<id> links (the list is paged, so it may not be on screen). */
+const fetchOne = async (id: number) => (await api.get<Design>(`/masters/designs/${id}`)).data
 
 export default function DesignsPage() {
   const { t } = useTranslation()
@@ -47,6 +52,9 @@ export default function DesignsPage() {
   const sizes = useMasterList<TileSize>('sizes')
   const finishes = useMasterList<Finish>('finishes')
   const [editing, setEditing] = useState<{ design?: Design } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: Design) => setEditing(item ? { design: item } : {}), [])
+  useOpenFromUrl({ fetchOne, onOpen: openFromUrl, enabled: canManage })
 
   const newButton = canManage && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({})}>

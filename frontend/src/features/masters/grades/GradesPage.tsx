@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useOpenFromUrl } from '../../../components/useOpenFromUrl'
 import { App, Button, Card, Col, Drawer, Form, Input, InputNumber, Row, Space, Switch, Table, Tag, type TableColumnsType } from 'antd'
 import { EditOutlined, PlusOutlined, TrophyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -98,6 +99,9 @@ export default function GradesPage() {
   const canManage = can('MASTER_MANAGE')
   const { data, isLoading } = useMasterList<Grade>('grades')
   const [editing, setEditing] = useState<{ grade?: Grade } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: Grade) => setEditing(item ? { grade: item } : {}), [])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: canManage })
   const nextOrder = (data ?? []).filter((g) => g.sellable).reduce((max, g) => Math.max(max, g.sortOrder), 0) + 1
 
   const newButton = canManage && (

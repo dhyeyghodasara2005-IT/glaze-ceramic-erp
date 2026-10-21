@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useOpenFromUrl } from '../../../components/useOpenFromUrl'
 import { App, Button, Card, Drawer, Form, Input, Space, Switch, Table, type TableColumnsType } from 'antd'
 import { BgColorsOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -81,6 +82,9 @@ export default function FinishesPage() {
   const canManage = can('MASTER_MANAGE')
   const { data, isLoading } = useMasterList<Finish>('finishes')
   const [editing, setEditing] = useState<{ finish?: Finish } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: Finish) => setEditing(item ? { finish: item } : {}), [])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: canManage })
 
   const newButton = canManage && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({})}>

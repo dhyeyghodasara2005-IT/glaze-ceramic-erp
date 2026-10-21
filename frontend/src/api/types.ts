@@ -247,3 +247,105 @@ export interface DesignRequest {
   description?: string
   active?: boolean
 }
+
+// ---- store & plant masters ----
+
+export interface UnitOfMeasure {
+  id: number
+  code: string
+  name: string
+  /** decimal places allowed: BOX 0, KG 3 */
+  decimals: number
+  active: boolean
+  version: number
+}
+
+export type UnitOfMeasureRequest = Omit<UnitOfMeasure, 'id' | 'version'>
+
+export interface MaterialGroup {
+  id: number
+  code: string
+  name: string
+  active: boolean
+  version: number
+}
+
+export type MaterialGroupRequest = Omit<MaterialGroup, 'id' | 'version'>
+
+export interface Material {
+  id: number
+  code: string
+  name: string
+  groupId: number
+  groupCode: string
+  groupName: string
+  unitId: number
+  unitCode: string
+  unitDecimals: number
+  hsnCode?: string
+  gstRate?: number
+  reorderLevel?: number
+  description?: string
+  active: boolean
+  version: number
+}
+
+export interface MaterialRequest {
+  code: string
+  name: string
+  groupId: number
+  unitId: number
+  hsnCode?: string
+  gstRate?: number
+  reorderLevel?: number
+  description?: string
+  active?: boolean
+}
+
+/** Must match MachineType.java (process order). */
+export const MACHINE_TYPES = [
+  'BALL_MILL',
+  'SPRAY_DRYER',
+  'PRESS',
+  'DRYER',
+  'GLAZE_LINE',
+  'DIGITAL_PRINTER',
+  'KILN',
+  'POLISHING_LINE',
+  'SORTING_LINE',
+  'PACKING_LINE',
+  'UTILITY',
+  'OTHER',
+] as const
+export type MachineType = (typeof MACHINE_TYPES)[number]
+
+export interface Machine {
+  id: number
+  plantId: number
+  plantCode: string
+  plantName: string
+  code: string
+  name: string
+  type: MachineType
+  capacity?: number
+  capacityUnit?: string
+  make?: string
+  model?: string
+  /** "2026-10-22" */
+  installedOn?: string
+  active: boolean
+  version: number
+}
+
+export interface MachineRequest {
+  plantId: number
+  code: string
+  name: string
+  type: MachineType
+  capacity?: number
+  capacityUnit?: string
+  make?: string
+  model?: string
+  installedOn?: string
+  active?: boolean
+}

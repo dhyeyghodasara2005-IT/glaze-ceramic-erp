@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useOpenFromUrl } from '../../../components/useOpenFromUrl'
 import { Button, Card, Table, type TableColumnsType } from 'antd'
 import { BorderOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -20,6 +21,9 @@ export default function SizesPage() {
   const canManage = can('MASTER_MANAGE')
   const { data, isLoading } = useSizes()
   const [editing, setEditing] = useState<{ size?: TileSize } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: TileSize) => setEditing(item ? { size: item } : {}), [])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: canManage })
 
   const newButton = canManage && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({})}>

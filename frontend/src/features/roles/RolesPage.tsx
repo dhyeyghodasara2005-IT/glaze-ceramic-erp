@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useOpenFromUrl } from '../../components/useOpenFromUrl'
 import { App, Button, Card, Popconfirm, Space, Table, Tag, Tooltip, type TableColumnsType } from 'antd'
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SafetyCertificateOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,9 @@ export default function RolesPage() {
   const { data, isLoading } = useRoles()
   const deleteRole = useDeleteRole()
   const [editing, setEditing] = useState<{ role?: Role } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: Role) => (item ? setEditing({ role: item }) : canManage && setEditing({})), [canManage])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: true })
 
   const onDelete = async (role: Role) => {
     try {

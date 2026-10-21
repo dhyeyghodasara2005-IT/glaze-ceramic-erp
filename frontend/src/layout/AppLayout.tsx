@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button, Drawer, Dropdown, Grid, type MenuProps } from 'antd'
-import { DownOutlined, KeyOutlined, LogoutOutlined } from '@ant-design/icons'
+import { DownOutlined, KeyOutlined, LogoutOutlined, SearchOutlined } from '@ant-design/icons'
 import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
@@ -13,9 +13,11 @@ import SideNav from './SideNav'
 import BottomNav from './BottomNav'
 import PlantSwitcher from './PlantSwitcher'
 import LanguageSwitch from './LanguageSwitch'
+import CommandPalette from '../search/CommandPalette'
 
 const SIDER_OPEN = 256
 const SIDER_COLLAPSED = 80
+const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent)
 
 /**
  * The frame around every page.
@@ -31,6 +33,27 @@ export default function AppLayout() {
   const isMobile = !screens.lg
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => sidenavStore.get() === 'collapsed')
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  // Keyboard shortcuts that work on every page:
+  //   Ctrl+K / ⌘K  open/close search      Alt+G  "Go To" (like Tally)      /  search (when not typing)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = (e.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]')
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen((o) => !o)
+      } else if (e.altKey && e.code === 'KeyG') {
+        e.preventDefault()
+        setPaletteOpen(true)
+      } else if (e.key === '/' && !typing) {
+        e.preventDefault()
+        setPaletteOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const toggleCollapsed = () => {
     setCollapsed((c) => {
@@ -76,8 +99,18 @@ export default function AppLayout() {
           <div className="header-left">
             {isMobile && <LogoMark size={32} />}
             <PlantSwitcher />
+            {!isMobile && (
+              <button type="button" className="search-trigger" onClick={() => setPaletteOpen(true)}>
+                <SearchOutlined />
+                <span>{t('search.button')}</span>
+                <kbd className="kbd">{IS_MAC ? '⌘ K' : 'Ctrl K'}</kbd>
+              </button>
+            )}
           </div>
           <div className="header-right">
+            {isMobile && (
+              <Button type="text" icon={<SearchOutlined />} onClick={() => setPaletteOpen(true)} aria-label={t('search.button')} />
+            )}
             {!isMobile && <LanguageSwitch />}
             <Dropdown menu={{ items: userMenu }} trigger={['click']} placement="bottomRight">
               <Button type="text" className="user-chip" aria-label={user?.fullName}>
@@ -103,6 +136,7 @@ export default function AppLayout() {
       </div>
 
       {isMobile && <BottomNav onMore={() => setDrawerOpen(true)} />}
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
 }

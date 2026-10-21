@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useOpenFromUrl } from '../../../components/useOpenFromUrl'
 import { App, Button, Card, Col, Drawer, Form, Input, InputNumber, Row, Space, Switch, Table, type TableColumnsType } from 'antd'
 import { EditOutlined, PlusOutlined, TagsOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -95,6 +96,9 @@ export default function CategoriesPage() {
   const canManage = can('MASTER_MANAGE')
   const { data, isLoading } = useMasterList<ProductCategory>('categories')
   const [editing, setEditing] = useState<{ category?: ProductCategory } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: ProductCategory) => setEditing(item ? { category: item } : {}), [])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: canManage })
 
   const newButton = canManage && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({})}>

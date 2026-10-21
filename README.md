@@ -82,8 +82,9 @@ Every feature module has the same layers:
 | 1b | Frontend: login, layout (PC + phone), EN/ગુ, company/plant/role/user screens | ✅ Done |
 | 1c | Design: Glaze name + logo, theme, animations, phone bottom bar | ✅ Done |
 | 2a | Product masters: sizes, finishes, categories, grades, designs | ✅ Done |
-| 2b | Masters: raw materials, units, machines/lines | ⏭ Next |
-| 2c | Masters: dealers, suppliers, transporters | |
+| 2b | Masters: units, material groups, materials, machines/lines | ✅ Done |
+| ★ | Global search / Go To (Ctrl+K, Alt+G, /) across all modules | ✅ Done |
+| 2c | Masters: dealers, suppliers, transporters | ⏭ Next |
 | 3 | Raw material & store (GRN, stock, issue) | |
 | 4 | Production stage entries (mobile) + batch tracking | |
 | 5 | Finished goods stock by grade/shade/caliber | |

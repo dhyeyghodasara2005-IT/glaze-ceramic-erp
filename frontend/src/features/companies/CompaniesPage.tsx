@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
+import { useOpenFromUrl } from '../../components/useOpenFromUrl'
 import { Button, Card, Table, type TableColumnsType } from 'antd'
 import { BankOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,9 @@ export default function CompaniesPage() {
   const { data, isLoading } = useCompanies()
   // drawer state: closed / new / editing a company
   const [editing, setEditing] = useState<{ company?: Company } | null>(null)
+  // Search palette / links: ?open=<id> edits a record, ?new=1 opens the empty form.
+  const openFromUrl = useCallback((item?: Company) => setEditing(item ? { company: item } : {}), [])
+  useOpenFromUrl({ items: data, onOpen: openFromUrl, enabled: canManage })
 
   const newButton = canManage && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => setEditing({})}>

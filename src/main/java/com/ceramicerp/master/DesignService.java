@@ -1,6 +1,5 @@
 package com.ceramicerp.master;
 
-import com.ceramicerp.common.BaseEntity;
 import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.common.Text;
 import com.ceramicerp.common.exception.BusinessException;
@@ -75,9 +74,9 @@ public class DesignService {
         TileSize tileSize = tileSizeService.find(req.sizeId());
         Finish finish = finishService.find(req.finishId());
 
-        requireActiveIfChanged(category.isActive(), d.getCategory(), category, "Category", category.getCode());
-        requireActiveIfChanged(tileSize.isActive(), d.getTileSize(), tileSize, "Size", tileSize.getCode());
-        requireActiveIfChanged(finish.isActive(), d.getFinish(), finish, "Finish", finish.getCode());
+        MasterRules.requireActiveIfChanged(category.isActive(), d.getCategory(), category, "Category", category.getCode());
+        MasterRules.requireActiveIfChanged(tileSize.isActive(), d.getTileSize(), tileSize, "Size", tileSize.getCode());
+        MasterRules.requireActiveIfChanged(finish.isActive(), d.getFinish(), finish, "Finish", finish.getCode());
 
         d.setCode(code);
         d.setName(req.name().trim());
@@ -89,18 +88,6 @@ public class DesignService {
         d.setDescription(Text.trimToNull(req.description()));
         if (req.active() != null) {
             d.setActive(req.active());
-        }
-    }
-
-    /**
-     * Picking an inactive master is refused - unless the design already uses it
-     * (editing an old design whose size was retired must still be possible).
-     */
-    private static void requireActiveIfChanged(boolean active, BaseEntity current, BaseEntity chosen,
-                                               String what, String code) {
-        boolean unchanged = current != null && current.getId().equals(chosen.getId());
-        if (!active && !unchanged) {
-            throw new BusinessException(what + " " + code + " is inactive. Choose an active one.");
         }
     }
 }
