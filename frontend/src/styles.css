@@ -1269,6 +1269,265 @@ body {
 /* ---------------------------------------------------------------------
    Respect "reduce motion" in phone / OS settings
    --------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------
+   Store: stock, document lists, GRN / issue / adjustment editor
+   --------------------------------------------------------------------- */
+.center-block {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+}
+.unit {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+.clickable-row {
+  cursor: pointer;
+}
+.row-cancelled td {
+  color: var(--ink-soft);
+}
+.row-cancelled .code-badge {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+.row-reversal td {
+  background: #fdf7f6;
+}
+/* A material at or below its reorder level gets an amber edge. */
+.row-low td:first-child {
+  box-shadow: inset 3px 0 0 #f59e0b;
+}
+.low-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #b45309;
+  background: #fdf1e4;
+}
+.qty-in,
+.qty-out {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.qty-in {
+  color: #166534;
+}
+.qty-out {
+  color: #9b2c2c;
+}
+
+.status-pill.doc-draft {
+  color: #8a5a00;
+  background: #fdf3dc;
+}
+.status-pill.doc-posted {
+  color: #166534;
+  background: #eaf6ee;
+}
+.status-pill.doc-posted .status-dot {
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.15);
+}
+.status-pill.doc-cancelled {
+  color: #9b2c2c;
+  background: #fbeaea;
+}
+
+/* Stat cards that work as filter buttons on the stock page. */
+.stat-button {
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.stat-button.selected {
+  border-color: var(--brand-400);
+  box-shadow: 0 0 0 3px var(--brand-100), var(--shadow-card);
+}
+
+.ledger-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.ledger-head small {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.doc-alert {
+  margin-bottom: 16px;
+}
+.doc-panel {
+  margin-bottom: 16px;
+}
+.doc-lines {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+/* The lines panel measures its own width (container query below), so the layout adapts
+   to the sidebar being open or collapsed, not just to the screen size. */
+.doc-panel {
+  container-type: inline-size;
+}
+/* Wide: the lines look like a table. Each type has its own columns. */
+.doc-lines-head,
+.doc-line {
+  display: grid;
+  grid-template-columns: var(--line-cols);
+  gap: 8px;
+  align-items: start;
+}
+.cols-grn {
+  --line-cols: 24px minmax(150px, 2fr) minmax(110px, 1.2fr) repeat(2, minmax(84px, 1fr)) minmax(70px, 0.7fr)
+    minmax(96px, 1fr) minmax(96px, 1fr) minmax(64px, 0.6fr) 28px;
+}
+.cols-issue,
+.cols-adjustment {
+  --line-cols: 24px minmax(180px, 2.4fr) minmax(120px, 1.3fr) minmax(120px, 1.1fr) minmax(100px, 1fr) minmax(100px, 1fr) 28px;
+}
+.doc-lines-head {
+  padding: 0 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.doc-lines-head > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.doc-lines-head .num {
+  text-align: right;
+}
+.doc-line {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fcfaf8;
+  border: 1px solid var(--line);
+  animation: row-in 0.35s var(--ease) both;
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+/* The line you are typing in lifts a little. */
+.doc-line:focus-within {
+  background: #fff;
+  border-color: var(--brand-200);
+  box-shadow: 0 8px 20px -14px rgba(110, 42, 18, 0.4);
+}
+.doc-line .ant-form-item {
+  margin-bottom: 0;
+}
+.line-no {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand-700);
+  background: var(--brand-50);
+}
+.line-label {
+  display: none;
+}
+.line-static {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 32px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.line-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.line-hint.short {
+  color: #b42318;
+  font-weight: 600;
+}
+.line-remove {
+  align-self: center;
+}
+.doc-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+.doc-total-value {
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+/* A posted / cancelled document is read-only: keep its text dark enough to read. */
+.doc-readonly input:disabled,
+.doc-readonly textarea:disabled {
+  color: var(--ink);
+  -webkit-text-fill-color: var(--ink);
+}
+.doc-readonly .ant-select-disabled,
+.doc-readonly .ant-select-disabled * {
+  color: var(--ink);
+}
+/* Narrow panel (phones, tablets, small laptops): every line becomes a small card, two fields per row. */
+@container (max-width: 880px) {
+  .doc-lines-head {
+    display: none;
+  }
+  .doc-line {
+    position: relative;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-top: 42px;
+  }
+  .doc-line .span-2 {
+    grid-column: 1 / -1;
+  }
+  .line-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .line-no {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+  }
+  .line-remove {
+    position: absolute;
+    top: 5px;
+    right: 6px;
+  }
+  .line-static {
+    justify-content: flex-start;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

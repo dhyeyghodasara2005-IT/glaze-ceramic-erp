@@ -41,4 +41,7 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
                        @Param("stateCode") String stateCode,
                        @Param("active") Boolean active,
                        Pageable pageable);
+
+    /** Active parties of one type, for dropdowns (e.g. suppliers on a GRN). */
+    List<Party> findByPartyTypeAndActiveTrueOrderByNameAsc(PartyType type);
 }

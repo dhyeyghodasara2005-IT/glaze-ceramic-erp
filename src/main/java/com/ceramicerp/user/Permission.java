@@ -23,7 +23,11 @@ public enum Permission {
     MASTER_MANAGE("Masters", "Create and edit product masters"),
 
     PARTY_VIEW("Parties", "View dealers, suppliers and transporters"),
-    PARTY_MANAGE("Parties", "Create and edit dealers, suppliers and transporters");
+    PARTY_MANAGE("Parties", "Create and edit dealers, suppliers and transporters"),
+
+    STORE_VIEW("Store", "View stock, godowns and store documents"),
+    STORE_ENTRY("Store", "Create and post GRNs, issues and stock adjustments; manage godowns"),
+    STORE_CANCEL("Store", "Cancel posted store documents (reverses stock)");
 
     private final String group;
     private final String description;

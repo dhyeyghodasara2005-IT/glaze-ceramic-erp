@@ -66,6 +66,9 @@ export type Permission =
   | 'MASTER_MANAGE'
   | 'PARTY_VIEW'
   | 'PARTY_MANAGE'
+  | 'STORE_VIEW'
+  | 'STORE_ENTRY'
+  | 'STORE_CANCEL'
 
 export interface PermissionInfo {
   code: Permission
@@ -393,4 +396,175 @@ export type PartyRequest = Omit<Party, 'id' | 'version' | 'state' | 'code' | 'co
   code?: string
   country?: string
   active?: boolean
+}
+
+// ---- store (step 3) ----
+
+export type StoreDocType = 'GRN' | 'ISSUE' | 'ADJUSTMENT'
+export type DocStatus = 'DRAFT' | 'POSTED' | 'CANCELLED'
+export const ADJUSTMENT_REASONS = ['OPENING', 'PHYSICAL_COUNT', 'DAMAGE', 'OTHER'] as const
+export type AdjustmentReason = (typeof ADJUSTMENT_REASONS)[number]
+
+/** A godown (store location) of a plant. */
+export interface StoreLocation {
+  id: number
+  plantId: number
+  plantCode: string
+  code: string
+  name: string
+  active: boolean
+  version: number
+}
+
+export interface StoreLocationRequest {
+  plantId: number
+  code: string
+  name: string
+  active?: boolean
+}
+
+/** Dropdown item from /api/store/lookups. For materials: extra = unit code, decimals = its decimals. */
+export interface StoreOption {
+  id: number
+  code: string
+  name: string
+  extra?: string
+  decimals: number
+}
+
+export interface StoreDocumentLine {
+  id: number
+  lineNo: number
+  materialId: number
+  materialCode: string
+  materialName: string
+  unitCode: string
+  unitDecimals: number
+  locationId: number
+  locationCode: string
+  locationName: string
+  quantity: number
+  receivedQty?: number
+  rejectedQty?: number
+  rate?: number
+  value?: number
+  moisturePct?: number
+  remarks?: string
+}
+
+export interface StoreDocument {
+  id: number
+  plantId: number
+  plantCode: string
+  docType: StoreDocType
+  /** missing while DRAFT */
+  docNo?: string
+  docDate: string
+  status: DocStatus
+  supplierId?: number
+  supplierCode?: string
+  supplierName?: string
+  supplierInvoiceNo?: string
+  supplierInvoiceDate?: string
+  vehicleNo?: string
+  weighbridgeSlipNo?: string
+  machineId?: number
+  machineCode?: string
+  machineName?: string
+  issuedTo?: string
+  reason?: AdjustmentReason
+  remarks?: string
+  totalValue: number
+  postedAt?: string
+  postedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+  lines: StoreDocumentLine[]
+}
+
+/** One row of a document list (no lines). */
+export interface StoreDocumentSummary {
+  id: number
+  docType: StoreDocType
+  docNo?: string
+  docDate: string
+  status: DocStatus
+  supplierName?: string
+  supplierInvoiceNo?: string
+  machineName?: string
+  issuedTo?: string
+  reason?: AdjustmentReason
+  totalValue: number
+  createdBy: string
+}
+
+export interface StoreDocumentLineRequest {
+  materialId: number
+  locationId: number
+  quantity?: number
+  receivedQty?: number
+  rejectedQty?: number
+  rate?: number
+  moisturePct?: number
+  remarks?: string
+}
+
+export interface StoreDocumentRequest {
+  plantId: number
+  docType: StoreDocType
+  docDate: string
+  supplierId?: number
+  supplierInvoiceNo?: string
+  supplierInvoiceDate?: string
+  vehicleNo?: string
+  weighbridgeSlipNo?: string
+  machineId?: number
+  issuedTo?: string
+  reason?: AdjustmentReason
+  remarks?: string
+  lines: StoreDocumentLineRequest[]
+}
+
+export interface LocationStock {
+  locationId: number
+  locationCode: string
+  locationName: string
+  quantity: number
+  value: number
+}
+
+/** Stock of one material in a plant (GET /api/store/stock). */
+export interface StockRow {
+  materialId: number
+  materialCode: string
+  materialName: string
+  groupName: string
+  unitCode: string
+  unitDecimals: number
+  quantity: number
+  value: number
+  averageRate?: number
+  reorderLevel?: number
+  low: boolean
+  active: boolean
+  locations: LocationStock[]
+}
+
+/** One movement in a material's stock ledger. quantity: + in, - out. */
+export interface LedgerRow {
+  id: number
+  txnDate: string
+  docType: StoreDocType
+  docNo: string
+  documentId: number
+  locationCode: string
+  quantity: number
+  rate: number
+  value: number
+  balanceQty: number
+  reversal: boolean
 }

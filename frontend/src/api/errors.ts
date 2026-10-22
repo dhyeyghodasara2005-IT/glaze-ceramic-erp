@@ -15,6 +15,11 @@ export function errorMessage(err: unknown, fallback: string): string {
   return getApiError(err)?.message ?? fallback
 }
 
+/** "lines[0].rate" -> ['lines', 0, 'rate'] - the path antd uses for fields inside a Form.List. */
+function toPath(name: string): (string | number)[] {
+  return name.split(/[.[\]]+/).filter(Boolean).map((part) => (/^\d+$/.test(part) ? Number(part) : part))
+}
+
 /**
  * Shows backend validation errors (400 fieldErrors) under the matching form inputs.
  * Works because form field names match the Java request record field names.
@@ -23,6 +28,6 @@ export function errorMessage(err: unknown, fallback: string): string {
 export function applyFieldErrors(form: FormInstance, err: unknown): boolean {
   const fieldErrors = getApiError(err)?.fieldErrors
   if (!fieldErrors) return false
-  form.setFields(Object.entries(fieldErrors).map(([name, message]) => ({ name, errors: [message] })))
+  form.setFields(Object.entries(fieldErrors).map(([name, message]) => ({ name: toPath(name), errors: [message] })))
   return true
 }

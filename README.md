@@ -51,7 +51,11 @@ src/main/java/com/ceramicerp/
 ├── security/        JWT tokens, login filter, who-can-call-what
 ├── auth/            login, "who am I", change password
 ├── organization/    companies and plants
-└── user/            users, roles, permissions, first-admin bootstrap
+├── user/            users, roles, permissions, first-admin bootstrap
+├── master/          sizes, designs, materials, machines …
+├── party/           dealers, suppliers, transporters
+├── search/          global search (each module plugs in a SearchProvider)
+└── store/           godowns, GRN / issue / adjustment, stock engine and ledger
 
 src/main/resources/
 ├── application.yml          settings for every environment
@@ -63,7 +67,7 @@ frontend/src/
 ├── auth/            login state, login/change-password pages, route guards
 ├── layout/          sidebar, top bar, plant switcher, language switch
 ├── i18n/            English + Gujarati texts
-└── features/        one folder per module (companies, plants, roles, users)
+└── features/        one folder per module (companies, plants, masters, parties, store …)
 
 config/application-local.yml   YOUR secrets - git-ignored, never commit
 docs/learning/                 explanations of how each step works
@@ -85,8 +89,8 @@ Every feature module has the same layers:
 | 2b | Masters: units, material groups, materials, machines/lines | ✅ Done |
 | ★ | Global search / Go To (Ctrl+K, Alt+G, /) across all modules | ✅ Done |
 | 2c | Parties: dealers, suppliers, transporters (GST-aware, auto codes) | ✅ Done |
-| 3 | Raw material & store (GRN, stock, issue) | ⏭ Next |
-| 4 | Production stage entries (mobile) + batch tracking | |
+| 3 | Raw material store: godowns, GRN, issues, adjustments, stock + ledger (weighted average) | ✅ Done |
+| 4 | Production stage entries (mobile) + batch tracking | ⏭ Next |
 | 5 | Finished goods stock by grade/shade/caliber | |
 | 6 | Sales orders, dispatch, Tally Prime sync | |
 | 7 | Owner dashboard | |

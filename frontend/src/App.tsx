@@ -19,6 +19,10 @@ import MachinesPage from './features/masters/machines/MachinesPage'
 import MaterialGroupsPage from './features/masters/material-groups/MaterialGroupsPage'
 import UnitsPage from './features/masters/units/UnitsPage'
 import PartiesPage from './features/parties/PartiesPage'
+import StockPage from './features/store/StockPage'
+import StoreDocumentsPage from './features/store/StoreDocumentsPage'
+import StoreDocumentPage from './features/store/StoreDocumentPage'
+import GodownsPage from './features/store/GodownsPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -61,6 +65,15 @@ export default function App() {
         <Route path="parties/dealers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="DEALER" type="DEALER" /></RequirePermission>} />
         <Route path="parties/suppliers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="SUPPLIER" type="SUPPLIER" /></RequirePermission>} />
         <Route path="parties/transporters" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="TRANSPORTER" type="TRANSPORTER" /></RequirePermission>} />
+        <Route path="store/stock" element={<RequirePermission permission="STORE_VIEW"><StockPage /></RequirePermission>} />
+        <Route path="store/godowns" element={<RequirePermission permission="STORE_VIEW"><GodownsPage /></RequirePermission>} />
+        {/* list + document page for each type: /store/grn, /store/grn/new, /store/grn/12 */}
+        <Route path="store/grn" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentsPage key="GRN" type="GRN" /></RequirePermission>} />
+        <Route path="store/grn/:id" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentPage key="GRN" type="GRN" /></RequirePermission>} />
+        <Route path="store/issues" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentsPage key="ISSUE" type="ISSUE" /></RequirePermission>} />
+        <Route path="store/issues/:id" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentPage key="ISSUE" type="ISSUE" /></RequirePermission>} />
+        <Route path="store/adjustments" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentsPage key="ADJUSTMENT" type="ADJUSTMENT" /></RequirePermission>} />
+        <Route path="store/adjustments/:id" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentPage key="ADJUSTMENT" type="ADJUSTMENT" /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -11,6 +11,11 @@ import {
   TagsOutlined,
   TrophyOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
+  DiffOutlined,
+  ExportOutlined,
+  HomeOutlined,
+  ImportOutlined,
   FolderOutlined,
   InboxOutlined,
   NumberOutlined,
@@ -83,6 +88,28 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/parties/transporters', labelKey: 'menu.transporters', icon: <CarOutlined />, permission: 'PARTY_VIEW',
         searchType: 'transporter', create: { labelKey: 'party.new.TRANSPORTER', permission: 'PARTY_MANAGE' },
+      },
+    ],
+  },
+  {
+    labelKey: 'menu.store',
+    items: [
+      { path: '/store/stock', labelKey: 'menu.stock', icon: <DatabaseOutlined />, permission: 'STORE_VIEW', mobile: true },
+      {
+        path: '/store/grn', labelKey: 'menu.grn', icon: <ImportOutlined />, permission: 'STORE_VIEW',
+        searchType: 'grn', create: { labelKey: 'store.newDoc.GRN', permission: 'STORE_ENTRY' },
+      },
+      {
+        path: '/store/issues', labelKey: 'menu.issues', icon: <ExportOutlined />, permission: 'STORE_VIEW',
+        searchType: 'issue', create: { labelKey: 'store.newDoc.ISSUE', permission: 'STORE_ENTRY' },
+      },
+      {
+        path: '/store/adjustments', labelKey: 'menu.adjustments', icon: <DiffOutlined />, permission: 'STORE_VIEW',
+        searchType: 'adjustment', create: { labelKey: 'store.newDoc.ADJUSTMENT', permission: 'STORE_ENTRY' },
+      },
+      {
+        path: '/store/godowns', labelKey: 'menu.godowns', icon: <HomeOutlined />, permission: 'STORE_VIEW',
+        create: { labelKey: 'store.newGodown', permission: 'STORE_ENTRY' },
       },
     ],
   },

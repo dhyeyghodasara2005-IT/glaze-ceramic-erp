@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -67,6 +68,10 @@ public abstract class IntegrationTestBase {
     protected ResultActions putAs(String token, String url, Object body) throws Exception {
         return mvc.perform(put(url).header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON).content(json(body)));
+    }
+
+    protected ResultActions deleteAs(String token, String url) throws Exception {
+        return mvc.perform(delete(url).header(HttpHeaders.AUTHORIZATION, "Bearer " + token));
     }
 
     protected JsonNode read(ResultActions result) throws Exception {
