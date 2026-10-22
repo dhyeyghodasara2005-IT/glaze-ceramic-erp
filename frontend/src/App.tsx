@@ -36,6 +36,9 @@ import LotsPage from './features/production/LotsPage'
 import LotPage from './features/production/LotPage'
 import PressEntriesPage from './features/production/PressEntriesPage'
 import PressEntryPage from './features/production/PressEntryPage'
+import LinePage from './features/production/LinePage'
+import LineEntriesPage from './features/production/LineEntriesPage'
+import LineEntryPage from './features/production/LineEntryPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -100,6 +103,12 @@ export default function App() {
         <Route path="production/lots/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LotPage /></RequirePermission>} />
         <Route path="production/press-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><PressEntriesPage /></RequirePermission>} />
         <Route path="production/press-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><PressEntryPage /></RequirePermission>} />
+        <Route path="production/line" element={<RequirePermission permission="PRODUCTION_VIEW"><LinePage /></RequirePermission>} />
+        {/* one list + one editor for both stages; key makes React start fresh when the stage changes */}
+        <Route path="production/glaze-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntriesPage key="GLAZE" stage="GLAZE" /></RequirePermission>} />
+        <Route path="production/glaze-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntryPage key="GLAZE" stage="GLAZE" /></RequirePermission>} />
+        <Route path="production/kiln-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntriesPage key="KILN" stage="KILN" /></RequirePermission>} />
+        <Route path="production/kiln-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntryPage key="KILN" stage="KILN" /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

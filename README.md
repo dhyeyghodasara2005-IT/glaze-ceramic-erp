@@ -94,8 +94,8 @@ Every feature module has the same layers:
 | 3 | Raw material store: godowns, GRN, issues, adjustments, stock + ledger (weighted average) | ✅ Done |
 | 4a | Production: shifts, body recipes, ball mill charges (auto store issue), slip tests, spray dryer runs | ✅ Done |
 | 4b | Design lots, press & dryer shift entries, silo powder tracked oldest-first (lot → spray runs → body batches) | ✅ Done |
-| 4c | Glaze line, digital printing, kiln | ⏭ Next |
-| 4d | Polishing, sorting by grade / shade / caliber, packing | |
+| 4c | Glaze & print and kiln shift entries; lot funnel (pressed → glazed → fired, yield); gas per m² | ✅ Done |
+| 4d | Polishing, sorting by grade / shade / caliber, packing | ⏭ Next |
 | 5 | Finished goods stock by grade/shade/caliber | |
 | 6 | Sales orders, dispatch, Tally Prime sync | |
 | 7 | Owner dashboard | |

@@ -11,7 +11,11 @@ public enum ProductionDocType implements DocumentKind {
     /** One run of one design on a press line (design lot). */
     LOT("LOT"),
     /** One shift of one lot at the press and dryer. */
-    PRESS_ENTRY("PR");
+    PRESS_ENTRY("PR"),
+    /** One shift of one lot on the glaze line and digital printer. */
+    GLAZE_ENTRY("GL"),
+    /** One shift of one lot through the kiln. */
+    KILN_ENTRY("KL");
 
     private final String prefix;
 

@@ -8,9 +8,11 @@ import EmptyState from '../../components/EmptyState'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import { errorMessage } from '../../api/errors'
-import type { PressEntrySummary } from '../../api/types'
+import type { LineEntrySummary, PressEntrySummary } from '../../api/types'
 import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
+import { LINE_PATHS } from './lineApi'
+import LotFunnel from './LotFunnel'
 import LotStatusTag from './LotStatusTag'
 import ReasonModal from './ReasonModal'
 import { useCancelLot, useCloseLot, useLot } from './pressApi'
@@ -79,6 +81,18 @@ export default function LotPage() {
     { title: t('common.status'), dataIndex: 'status', width: 120, render: (s) => <DocStatusTag status={s} /> },
   ]
 
+  const lineColumns: TableColumnsType<LineEntrySummary> = [
+    {
+      title: t('press.entryNo'),
+      dataIndex: 'entryNo',
+      render: (no?: string) => (no ? <span className="code-badge">{no}</span> : <span className="cell-sub">{t('store.status.DRAFT')}</span>),
+    },
+    { title: t('prod.prodDate'), dataIndex: 'prodDate', width: 140, render: (d: string, e) => `${shortDate(d)} · ${e.shiftCode}` },
+    { title: t('line.tilesIn'), dataIndex: 'tilesIn', width: 100, align: 'right', responsive: ['sm'], render: (v: number) => v.toLocaleString('en-IN') },
+    { title: t('line.tilesOut'), dataIndex: 'tilesOut', width: 100, align: 'right', render: (v: number) => <b>{v.toLocaleString('en-IN')}</b> },
+    { title: t('common.status'), dataIndex: 'status', width: 120, render: (s) => <DocStatusTag status={s} /> },
+  ]
+
   return (
     <>
       <PageHeader
@@ -123,6 +137,11 @@ export default function LotPage() {
         {tot.untracedTon > 0 && <Alert className="doc-alert" type="warning" showIcon title={t('press.untracedHint')} />}
       </FadeIn>
 
+      <FadeIn delay={0.05} className="panel doc-panel">
+        <div className="form-section">{t('line.funnel')}</div>
+        <LotFunnel flow={lot.flow} />
+      </FadeIn>
+
       <FadeIn delay={0.06} className="panel doc-panel">
         <div className="form-section">{t('press.totals')}</div>
         <div className="fact-grid">
@@ -150,6 +169,26 @@ export default function LotPage() {
           />
         </Card>
       </FadeIn>
+
+      {(['GLAZE', 'KILN'] as const).map((stage) => {
+        const rows = stage === 'GLAZE' ? lot.glazeEntries : lot.kilnEntries
+        return rows.length > 0 && (
+          <FadeIn key={stage} delay={0.12}>
+            <h2 className="section-title">{t(`line.listTitle.${stage}`)}</h2>
+            <Card className="data-card" styles={{ body: { padding: 0 } }} style={{ marginBottom: 24 }}>
+              <Table<LineEntrySummary>
+                rowKey="id"
+                size="small"
+                columns={lineColumns}
+                dataSource={rows}
+                pagination={false}
+                rowClassName={(e) => `clickable-row${e.status === 'CANCELLED' ? ' row-cancelled' : ''}`}
+                onRow={(e) => ({ onClick: () => navigate(`${LINE_PATHS[stage]}/${e.id}`) })}
+              />
+            </Card>
+          </FadeIn>
+        )
+      })}
 
       <FadeIn delay={0.14} className="panel doc-panel">
         <div className="form-section"><NodeIndexOutlined /> {t('press.trace')}</div>

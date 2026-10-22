@@ -76,6 +76,18 @@ class ProductionSearchProvider implements SearchProvider {
                 "press-entry", e.getId(), e.getEntryNo(), "Press entry · " + e.getLot().getDesign().getName(),
                 e.getProdDate().format(DATE) + " · " + e.goodCount() + " good tiles",
                 e.getStatus() != DocStatus.CANCELLED)));
+
+        List<LineEntry> lineEntries = SearchQueries.find(em, """
+                select e from LineEntry e join fetch e.lot l join fetch l.design
+                where lower(e.entryNo) like :q
+                order by e.id desc""", LineEntry.class, term, limit).stream()
+                .filter(e -> user.canAccessPlant(e.getPlant().getId()))
+                .toList();
+        term.best(lineEntries, limit, LineEntry::getEntryNo, LineEntry::getEntryNo).forEach(e -> hits.add(new SearchHit(
+                e.getStage() == LineStage.GLAZE ? "glaze-entry" : "kiln-entry", e.getId(), e.getEntryNo(),
+                (e.getStage() == LineStage.GLAZE ? "Glaze entry · " : "Kiln entry · ") + e.getLot().getDesign().getName(),
+                e.getProdDate().format(DATE) + " · " + e.tilesOut() + " tiles out",
+                e.getStatus() != DocStatus.CANCELLED)));
         return hits;
     }
 }

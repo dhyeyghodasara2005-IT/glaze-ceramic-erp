@@ -2,6 +2,9 @@ import type { ReactNode } from 'react'
 import {
   ApartmentOutlined,
   BankOutlined,
+  FireOutlined,
+  FormatPainterOutlined,
+  NodeExpandOutlined,
   BuildOutlined,
   ContainerOutlined,
   OrderedListOutlined,
@@ -123,11 +126,29 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     ],
   },
   {
+    // The supervisors' home screens, in process order.
     labelKey: 'menu.production',
     items: [
       {
         path: '/production/body', labelKey: 'menu.bodyPrep', icon: <ControlOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
       },
+      { path: '/production/silos', labelKey: 'menu.silos', icon: <ContainerOutlined />, permission: 'PRODUCTION_VIEW' },
+      {
+        path: '/production/press', labelKey: 'menu.press', icon: <BuildOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+      },
+      {
+        path: '/production/line', labelKey: 'menu.line', icon: <NodeExpandOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+      },
+      {
+        path: '/production/lots', labelKey: 'menu.lots', icon: <TagOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'lot', create: { labelKey: 'press.startDesign', permission: 'PRESS_ENTRY' },
+      },
+    ],
+  },
+  {
+    // Every production document, for looking things up.
+    labelKey: 'menu.productionRecords',
+    items: [
       {
         path: '/production/body-batches', labelKey: 'menu.bodyBatches', icon: <SyncOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'body-batch', create: { labelKey: 'prod.newBatch', permission: 'BODY_PREP_ENTRY' },
@@ -136,17 +157,17 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         path: '/production/spray-runs', labelKey: 'menu.sprayRuns', icon: <CloudOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'spray-run', create: { labelKey: 'prod.newRunFull', permission: 'BODY_PREP_ENTRY' },
       },
-      { path: '/production/silos', labelKey: 'menu.silos', icon: <ContainerOutlined />, permission: 'PRODUCTION_VIEW' },
-      {
-        path: '/production/press', labelKey: 'menu.press', icon: <BuildOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
-      },
-      {
-        path: '/production/lots', labelKey: 'menu.lots', icon: <TagOutlined />, permission: 'PRODUCTION_VIEW',
-        searchType: 'lot', create: { labelKey: 'press.startDesign', permission: 'PRESS_ENTRY' },
-      },
       {
         path: '/production/press-entries', labelKey: 'menu.pressEntries', icon: <OrderedListOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'press-entry', create: { labelKey: 'press.newEntry', permission: 'PRESS_ENTRY' },
+      },
+      {
+        path: '/production/glaze-entries', labelKey: 'menu.glazeEntries', icon: <FormatPainterOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'glaze-entry', create: { labelKey: 'line.newEntry.GLAZE', permission: 'GLAZE_ENTRY' },
+      },
+      {
+        path: '/production/kiln-entries', labelKey: 'menu.kilnEntries', icon: <FireOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'kiln-entry', create: { labelKey: 'line.newEntry.KILN', permission: 'KILN_ENTRY' },
       },
     ],
   },

@@ -38,7 +38,11 @@ public record LotResponse(
         String cancelReason,
         Long version,
         Totals totals,
+        /** pressed -> glazed -> fired, with tiles waiting between stages */
+        LotFlow flow,
         List<PressEntrySummary> entries,
+        List<LineEntrySummary> glazeEntries,
+        List<LineEntrySummary> kilnEntries,
         List<TraceRun> trace
 ) {
     /**

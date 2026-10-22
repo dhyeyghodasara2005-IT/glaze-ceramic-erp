@@ -33,6 +33,8 @@ public enum Permission {
     PRODUCTION_VIEW("Production", "View production entries, batches and runs"),
     BODY_PREP_ENTRY("Production", "Body preparation supervisor: ball mill charges, slip tests, spray dryer runs"),
     PRESS_ENTRY("Production", "Press & dryer supervisor: design lots, press and dryer shift entries"),
+    GLAZE_ENTRY("Production", "Glaze & print supervisor: glaze line and digital printer shift entries"),
+    KILN_ENTRY("Production", "Kiln supervisor: kiln shift entries"),
     PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)");
 
     private final String group;

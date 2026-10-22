@@ -72,6 +72,8 @@ export type Permission =
   | 'PRODUCTION_VIEW'
   | 'BODY_PREP_ENTRY'
   | 'PRESS_ENTRY'
+  | 'GLAZE_ENTRY'
+  | 'KILN_ENTRY'
   | 'PRODUCTION_CANCEL'
 
 export interface PermissionInfo {
@@ -940,7 +942,11 @@ export interface Lot {
     powderTon: number
     untracedTon: number
   }
+  /** pressed -> glazed -> fired, with tiles waiting between stages */
+  flow: LotFlow
   entries: PressEntrySummary[]
+  glazeEntries: LineEntrySummary[]
+  kilnEntries: LineEntrySummary[]
   trace: { runId: number; runNo: string; siloCode: string; prodDate: string; tonnes: number; batches: { id: number; batchNo: string }[] }[]
 }
 
@@ -1040,4 +1046,115 @@ export interface PressOverview {
   lines: { pressId: number; pressCode: string; pressName: string; lot?: LotSummary }[]
   today: { entries: number; pressed: number; rejects: number; good: number; goodSqm: number }
   silos: SiloStatus[]
+}
+
+// ---- production: glaze & print, kiln (step 4c) ----
+
+export type LineStage = 'GLAZE' | 'KILN'
+
+/** A lot's tiles stage by stage. waiting* can go negative when more was entered than came from the stage before. */
+export interface LotFlow {
+  pressed: number
+  pressRejects: number
+  pressGood: number
+  glazeIn: number
+  glazeRejects: number
+  glazeOut: number
+  kilnIn: number
+  kilnRejects: number
+  kilnOut: number
+  waitingGlaze: number
+  waitingKiln: number
+  firedSqm?: number
+  yieldPct?: number
+}
+
+export interface LineEntrySummary {
+  id: number
+  stage: LineStage
+  entryNo?: string
+  lotId: number
+  lotNo: string
+  designName: string
+  prodDate: string
+  shiftCode: string
+  machineCode: string
+  tilesIn: number
+  rejects: number
+  tilesOut: number
+  gasScm?: number
+  status: DocStatus
+}
+
+export interface LineEntry {
+  id: number
+  plantId: number
+  plantCode: string
+  stage: LineStage
+  entryNo?: string
+  lotId: number
+  lotNo: string
+  designName: string
+  pressCode: string
+  sqmPerTile?: number
+  prodDate: string
+  shiftId: number
+  shiftCode: string
+  shiftName: string
+  machineId: number
+  machineCode: string
+  machineName: string
+  printerId?: number
+  printerCode?: string
+  status: DocStatus
+  tilesIn: number
+  rejects: number
+  tilesOut: number
+  sqmOut?: number
+  engobeGpt?: number
+  glazeGpt?: number
+  glazeDensity?: number
+  inkLitres?: number
+  maxTemp?: number
+  cycleMin?: number
+  gasScm?: number
+  gasPerSqm?: number
+  remarks?: string
+  postedAt?: string
+  postedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+}
+
+export interface LineEntryRequest {
+  plantId: number
+  stage: LineStage
+  lotId: number
+  prodDate: string
+  shiftId: number
+  machineId: number
+  printerId?: number
+  tilesIn: number
+  rejects?: number
+  engobeGpt?: number
+  glazeGpt?: number
+  glazeDensity?: number
+  inkLitres?: number
+  maxTemp?: number
+  cycleMin?: number
+  gasScm?: number
+  remarks?: string
+}
+
+export interface LineOverview {
+  prodDate: string
+  shiftId?: number
+  shiftCode?: string
+  shiftName?: string
+  lots: { lot: LotSummary; flow: LotFlow }[]
+  today: { glazeIn: number; glazeRejects: number; kilnIn: number; kilnRejects: number; firedSqm: number; gasScm: number; gasPerSqm?: number }
 }
