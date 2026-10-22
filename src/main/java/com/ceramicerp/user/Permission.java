@@ -20,7 +20,10 @@ public enum Permission {
     ROLE_MANAGE("Users & Access", "Create, edit and delete roles"),
 
     MASTER_VIEW("Masters", "View product masters (sizes, finishes, categories, grades, designs)"),
-    MASTER_MANAGE("Masters", "Create and edit product masters");
+    MASTER_MANAGE("Masters", "Create and edit product masters"),
+
+    PARTY_VIEW("Parties", "View dealers, suppliers and transporters"),
+    PARTY_MANAGE("Parties", "Create and edit dealers, suppliers and transporters");
 
     private final String group;
     private final String description;

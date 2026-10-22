@@ -64,6 +64,8 @@ export type Permission =
   | 'ROLE_MANAGE'
   | 'MASTER_VIEW'
   | 'MASTER_MANAGE'
+  | 'PARTY_VIEW'
+  | 'PARTY_MANAGE'
 
 export interface PermissionInfo {
   code: Permission
@@ -347,5 +349,48 @@ export interface MachineRequest {
   make?: string
   model?: string
   installedOn?: string
+  active?: boolean
+}
+
+// ---- parties (must match party/*.java) ----
+
+export type PartyType = 'DEALER' | 'SUPPLIER' | 'TRANSPORTER'
+
+export const GST_REGISTRATIONS = ['REGULAR', 'COMPOSITION', 'UNREGISTERED', 'CONSUMER', 'OVERSEAS'] as const
+export type GstRegistration = (typeof GST_REGISTRATIONS)[number]
+
+export interface Party {
+  id: number
+  partyType: PartyType
+  code: string
+  name: string
+  contactPerson?: string
+  gstRegistration: GstRegistration
+  gstin?: string
+  pan?: string
+  addressLine?: string
+  city?: string
+  state?: string
+  stateCode?: string
+  pincode?: string
+  country: string
+  phone?: string
+  mobile?: string
+  email?: string
+  region?: string
+  creditLimit?: number
+  creditDays?: number
+  bankName?: string
+  bankAccountNo?: string
+  bankIfsc?: string
+  notes?: string
+  active: boolean
+  version: number
+}
+
+export type PartyRequest = Omit<Party, 'id' | 'version' | 'state' | 'code' | 'country' | 'active'> & {
+  /** empty = next automatic number */
+  code?: string
+  country?: string
   active?: boolean
 }

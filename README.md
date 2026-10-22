@@ -84,8 +84,8 @@ Every feature module has the same layers:
 | 2a | Product masters: sizes, finishes, categories, grades, designs | ✅ Done |
 | 2b | Masters: units, material groups, materials, machines/lines | ✅ Done |
 | ★ | Global search / Go To (Ctrl+K, Alt+G, /) across all modules | ✅ Done |
-| 2c | Masters: dealers, suppliers, transporters | ⏭ Next |
-| 3 | Raw material & store (GRN, stock, issue) | |
+| 2c | Parties: dealers, suppliers, transporters (GST-aware, auto codes) | ✅ Done |
+| 3 | Raw material & store (GRN, stock, issue) | ⏭ Next |
 | 4 | Production stage entries (mobile) + batch tracking | |
 | 5 | Finished goods stock by grade/shade/caliber | |
 | 6 | Sales orders, dispatch, Tally Prime sync | |

@@ -2,6 +2,9 @@ import type { ReactNode } from 'react'
 import {
   ApartmentOutlined,
   BankOutlined,
+  CarOutlined,
+  ShopOutlined,
+  ShoppingCartOutlined,
   BgColorsOutlined,
   BorderOutlined,
   PictureOutlined,
@@ -63,6 +66,23 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/masters/grades', labelKey: 'menu.grades', icon: <TrophyOutlined />, permission: 'MASTER_VIEW',
         searchType: 'grade', create: { labelKey: 'grade.new', permission: 'MASTER_MANAGE' },
+      },
+    ],
+  },
+  {
+    labelKey: 'menu.parties',
+    items: [
+      {
+        path: '/parties/dealers', labelKey: 'menu.dealers', icon: <ShopOutlined />, permission: 'PARTY_VIEW',
+        searchType: 'dealer', create: { labelKey: 'party.new.DEALER', permission: 'PARTY_MANAGE' },
+      },
+      {
+        path: '/parties/suppliers', labelKey: 'menu.suppliers', icon: <ShoppingCartOutlined />, permission: 'PARTY_VIEW',
+        searchType: 'supplier', create: { labelKey: 'party.new.SUPPLIER', permission: 'PARTY_MANAGE' },
+      },
+      {
+        path: '/parties/transporters', labelKey: 'menu.transporters', icon: <CarOutlined />, permission: 'PARTY_VIEW',
+        searchType: 'transporter', create: { labelKey: 'party.new.TRANSPORTER', permission: 'PARTY_MANAGE' },
       },
     ],
   },

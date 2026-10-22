@@ -18,6 +18,7 @@ import MaterialsPage from './features/masters/materials/MaterialsPage'
 import MachinesPage from './features/masters/machines/MachinesPage'
 import MaterialGroupsPage from './features/masters/material-groups/MaterialGroupsPage'
 import UnitsPage from './features/masters/units/UnitsPage'
+import PartiesPage from './features/parties/PartiesPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -56,6 +57,10 @@ export default function App() {
         <Route path="masters/machines" element={<RequirePermission permission="MASTER_VIEW"><MachinesPage /></RequirePermission>} />
         <Route path="masters/material-groups" element={<RequirePermission permission="MASTER_VIEW"><MaterialGroupsPage /></RequirePermission>} />
         <Route path="masters/units" element={<RequirePermission permission="MASTER_VIEW"><UnitsPage /></RequirePermission>} />
+        {/* one component, three routes; key makes React start fresh when switching type */}
+        <Route path="parties/dealers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="DEALER" type="DEALER" /></RequirePermission>} />
+        <Route path="parties/suppliers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="SUPPLIER" type="SUPPLIER" /></RequirePermission>} />
+        <Route path="parties/transporters" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="TRANSPORTER" type="TRANSPORTER" /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
