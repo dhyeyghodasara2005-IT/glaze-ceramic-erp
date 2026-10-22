@@ -1,6 +1,7 @@
 package com.ceramicerp.production;
 
 import com.ceramicerp.master.BodyRecipeService;
+import com.ceramicerp.master.DesignRepository;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MaterialRepository;
 import com.ceramicerp.master.ShiftService;
@@ -9,6 +10,7 @@ import com.ceramicerp.master.dto.ShiftResponse;
 import com.ceramicerp.production.dto.AvailableStock;
 import com.ceramicerp.production.dto.BodyPrepOverview;
 import com.ceramicerp.production.dto.CurrentShiftResponse;
+import com.ceramicerp.production.dto.DesignOption;
 import com.ceramicerp.production.dto.MachineOption;
 import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.StockBalanceRepository;
@@ -44,6 +46,7 @@ public class ProductionLookupController {
     private final MaterialRepository materialRepository;
     private final StoreLocationRepository locationRepository;
     private final StockBalanceRepository balanceRepository;
+    private final DesignRepository designRepository;
 
     @GetMapping("/body/overview")
     @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
@@ -110,6 +113,17 @@ public class ProductionLookupController {
         return balanceRepository.findByPlantId(plantId).stream()
                 .filter(b -> b.getQuantity().signum() > 0)
                 .map(b -> new AvailableStock(b.getMaterial().getId(), b.getLocation().getId(), b.getQuantity()))
+                .toList();
+    }
+
+    /** Active designs for "start a design on a line", with the area of one tile. */
+    @GetMapping("/lookups/designs")
+    @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
+    @Transactional(readOnly = true)
+    public List<DesignOption> designs() {
+        return designRepository.findByActiveTrueOrderByCodeAsc().stream()
+                .map(d -> new DesignOption(d.getId(), d.getCode(), d.getName(), d.getTileSize().getCode(),
+                        d.getFinish().getName(), ProductionRules.sqmPerTile(d.getTileSize())))
                 .toList();
     }
 }

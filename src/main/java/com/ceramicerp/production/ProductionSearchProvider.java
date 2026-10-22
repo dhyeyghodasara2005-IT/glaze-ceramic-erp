@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** Global search for body batch and spray dryer run numbers: type "BB/26-27/0012" or just "0012". */
+/** Global search for production numbers (body batches, spray runs, press entries) and design lots (also by design name). */
 @Component
 @RequiredArgsConstructor
 class ProductionSearchProvider implements SearchProvider {
@@ -54,6 +54,28 @@ class ProductionSearchProvider implements SearchProvider {
                 "spray-run", r.getId(), r.getRunNo(), "Spray dryer run · " + r.getSilo().getName(),
                 r.getProdDate().format(DATE) + " · " + r.getPowderTon().stripTrailingZeros().toPlainString() + " T powder",
                 r.getStatus() != DocStatus.CANCELLED)));
+
+        List<ProductionLot> lots = SearchQueries.find(em, """
+                select l from ProductionLot l join fetch l.design join fetch l.press
+                where lower(l.lotNo) like :q or lower(l.design.code) like :q or lower(l.design.name) like :q
+                order by l.id desc""", ProductionLot.class, term, limit).stream()
+                .filter(l -> user.canAccessPlant(l.getPlant().getId()))
+                .toList();
+        term.best(lots, limit, ProductionLot::getLotNo, l -> l.getDesign().getName()).forEach(l -> hits.add(new SearchHit(
+                "lot", l.getId(), l.getLotNo(), "Design lot · " + l.getDesign().getName(),
+                l.getPress().getCode() + " · " + l.getOpenedDate().format(DATE) + " · " + l.getStatus().name().toLowerCase(Locale.ROOT),
+                l.getStatus() != LotStatus.CANCELLED)));
+
+        List<PressEntry> entries = SearchQueries.find(em, """
+                select e from PressEntry e join fetch e.lot l join fetch l.design
+                where lower(e.entryNo) like :q
+                order by e.id desc""", PressEntry.class, term, limit).stream()
+                .filter(e -> user.canAccessPlant(e.getPlant().getId()))
+                .toList();
+        term.best(entries, limit, PressEntry::getEntryNo, PressEntry::getEntryNo).forEach(e -> hits.add(new SearchHit(
+                "press-entry", e.getId(), e.getEntryNo(), "Press entry · " + e.getLot().getDesign().getName(),
+                e.getProdDate().format(DATE) + " · " + e.goodCount() + " good tiles",
+                e.getStatus() != DocStatus.CANCELLED)));
         return hits;
     }
 }

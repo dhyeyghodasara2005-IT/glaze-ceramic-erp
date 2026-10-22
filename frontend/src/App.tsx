@@ -30,6 +30,12 @@ import BodyBatchesPage from './features/production/BodyBatchesPage'
 import BodyBatchPage from './features/production/BodyBatchPage'
 import SprayRunsPage from './features/production/SprayRunsPage'
 import SprayRunPage from './features/production/SprayRunPage'
+import SilosPage from './features/production/SilosPage'
+import PressPage from './features/production/PressPage'
+import LotsPage from './features/production/LotsPage'
+import LotPage from './features/production/LotPage'
+import PressEntriesPage from './features/production/PressEntriesPage'
+import PressEntryPage from './features/production/PressEntryPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -88,6 +94,12 @@ export default function App() {
         <Route path="production/body-batches/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><BodyBatchPage /></RequirePermission>} />
         <Route path="production/spray-runs" element={<RequirePermission permission="PRODUCTION_VIEW"><SprayRunsPage /></RequirePermission>} />
         <Route path="production/spray-runs/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><SprayRunPage /></RequirePermission>} />
+        <Route path="production/silos" element={<RequirePermission permission="PRODUCTION_VIEW"><SilosPage /></RequirePermission>} />
+        <Route path="production/press" element={<RequirePermission permission="PRODUCTION_VIEW"><PressPage /></RequirePermission>} />
+        <Route path="production/lots" element={<RequirePermission permission="PRODUCTION_VIEW"><LotsPage /></RequirePermission>} />
+        <Route path="production/lots/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LotPage /></RequirePermission>} />
+        <Route path="production/press-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><PressEntriesPage /></RequirePermission>} />
+        <Route path="production/press-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><PressEntryPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

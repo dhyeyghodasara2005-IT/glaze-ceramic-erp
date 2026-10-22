@@ -32,6 +32,7 @@ public enum Permission {
     // One ENTRY permission per production division: give it to that division's supervisor role.
     PRODUCTION_VIEW("Production", "View production entries, batches and runs"),
     BODY_PREP_ENTRY("Production", "Body preparation supervisor: ball mill charges, slip tests, spray dryer runs"),
+    PRESS_ENTRY("Production", "Press & dryer supervisor: design lots, press and dryer shift entries"),
     PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)");
 
     private final String group;

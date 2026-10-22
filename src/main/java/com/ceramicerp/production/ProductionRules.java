@@ -7,11 +7,14 @@ import com.ceramicerp.common.exception.NotFoundException;
 import com.ceramicerp.master.Machine;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MachineType;
+import com.ceramicerp.master.TileSize;
 import com.ceramicerp.organization.Plant;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -83,5 +86,25 @@ final class ProductionRules {
     static Pageable page(int page, int size) {
         return PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), 100),
                 Sort.by(Sort.Order.desc("prodDate"), Sort.Order.desc("id")));
+    }
+
+    /**
+     * Square metres of one tile: 600 x 1200 mm -> 0.72. Falls back to sq m per box / pieces per box
+     * for a size entered without length and width. null if neither is known.
+     */
+    static BigDecimal sqmPerTile(TileSize size) {
+        if (size.getLengthMm() != null && size.getWidthMm() != null) {
+            return BigDecimal.valueOf((long) size.getLengthMm() * size.getWidthMm())
+                    .divide(BigDecimal.valueOf(1_000_000), 4, RoundingMode.HALF_UP);
+        }
+        if (size.getSqmPerBox() != null && size.getPcsPerBox() != null && size.getPcsPerBox() > 0) {
+            return size.getSqmPerBox().divide(BigDecimal.valueOf(size.getPcsPerBox()), 4, RoundingMode.HALF_UP);
+        }
+        return null;
+    }
+
+    /** tiles x sq m per tile, or null when the size is unknown. */
+    static BigDecimal sqm(long tiles, BigDecimal sqmPerTile) {
+        return sqmPerTile == null ? null : sqmPerTile.multiply(BigDecimal.valueOf(tiles)).setScale(2, RoundingMode.HALF_UP);
     }
 }

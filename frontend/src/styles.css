@@ -1713,6 +1713,132 @@ body {
   font-size: 13px;
 }
 
+/* ---------------------------------------------------------------------
+   Production: press & dryer, design lots, silos
+   --------------------------------------------------------------------- */
+.status-pill.lot-open {
+  color: #166534;
+  background: #eaf6ee;
+}
+.status-pill.lot-open .status-dot {
+  box-shadow: 0 0 0 3px rgba(22, 101, 52, 0.15);
+}
+.status-pill.lot-closed {
+  color: var(--ink-soft);
+  background: #f0ebe7;
+}
+.status-pill.lot-cancelled {
+  color: #9b2c2c;
+  background: #fbeaea;
+}
+.line-card,
+.silo-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(31, 23, 20, 0.05);
+  box-shadow: var(--shadow-card);
+}
+.line-card.idle,
+.silo-card.empty {
+  background: #fcfaf8;
+  box-shadow: none;
+  border-style: dashed;
+  border-color: var(--line);
+}
+.line-design {
+  display: block;
+  margin-top: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.line-idle {
+  margin: 14px 0 6px;
+}
+.line-figures {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.line-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.silo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+.mill-time small {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.silo-runs {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.silo-runs li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-top: 1px dashed var(--line);
+  font-size: 13px;
+}
+.entry-result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  background: var(--brand-50);
+}
+.entry-result > div {
+  display: flex;
+  flex-direction: column;
+}
+.entry-result b {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.warn-text {
+  color: #b45309;
+}
+/* Trace: tonnes on the left, where they came from on the right. */
+.trace-list {
+  display: grid;
+  gap: 10px;
+}
+.trace-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.trace-tonnes {
+  padding: 2px 8px;
+  border-radius: 8px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-700);
+  background: var(--brand-50);
+}
+.trace-batches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

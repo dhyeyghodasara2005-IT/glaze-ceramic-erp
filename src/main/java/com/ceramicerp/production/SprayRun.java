@@ -69,6 +69,10 @@ public class SprayRun extends BaseEntity {
     @Column(nullable = false, precision = 10, scale = 3)
     private BigDecimal powderTon;
 
+    /** Powder from this run still in the silo. Set to powderTon when posted; press entries draw it down. */
+    @Column(nullable = false, precision = 10, scale = 3)
+    private BigDecimal powderLeft = BigDecimal.ZERO;
+
     @Column(precision = 5, scale = 2)
     private BigDecimal powderMoisture;
 

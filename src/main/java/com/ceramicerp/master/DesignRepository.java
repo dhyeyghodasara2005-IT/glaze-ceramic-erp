@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /** Database access for designs, with search + filters for the designs list. */
@@ -40,4 +41,8 @@ public interface DesignRepository extends JpaRepository<Design, Long> {
     /** Same as findById, but with category, size and finish loaded too. */
     @EntityGraph(attributePaths = {"category", "tileSize", "finish"})
     Optional<Design> findWithDetailsById(Long id);
+
+    /** Active designs with their size and finish - the press supervisor's "which design?" list. */
+    @EntityGraph(attributePaths = {"tileSize", "finish"})
+    List<Design> findByActiveTrueOrderByCodeAsc();
 }

@@ -7,7 +7,11 @@ public enum ProductionDocType implements DocumentKind {
     /** One ball mill charge. */
     BODY_BATCH("BB"),
     /** One spray dryer run. */
-    SPRAY_RUN("SD");
+    SPRAY_RUN("SD"),
+    /** One run of one design on a press line (design lot). */
+    LOT("LOT"),
+    /** One shift of one lot at the press and dryer. */
+    PRESS_ENTRY("PR");
 
     private final String prefix;
 

@@ -30,6 +30,8 @@ public record SprayRunResponse(
         LocalDateTime runStart,
         LocalDateTime runEnd,
         BigDecimal powderTon,
+        /** still in the silo (press entries draw it down, oldest run first) */
+        BigDecimal powderLeft,
         BigDecimal powderMoisture,
         BigDecimal gasScm,
         BigDecimal inletTemp,
@@ -62,7 +64,7 @@ public record SprayRunResponse(
                 r.getProdDate(), r.getShift().getId(), r.getShift().getCode(), r.getShift().getName(),
                 r.getSprayDryer().getId(), r.getSprayDryer().getCode(), r.getSprayDryer().getName(),
                 r.getSilo().getId(), r.getSilo().getCode(), r.getSilo().getName(), r.getStatus(),
-                r.getRunStart(), r.getRunEnd(), r.getPowderTon(), r.getPowderMoisture(), r.getGasScm(),
+                r.getRunStart(), r.getRunEnd(), r.getPowderTon(), r.getPowderLeft(), r.getPowderMoisture(), r.getGasScm(),
                 r.getInletTemp(), r.getOutletTemp(), r.getRemarks(), r.getPostedAt(), r.getPostedBy(),
                 r.getCancelledAt(), r.getCancelledBy(), r.getCancelReason(), r.getCreatedAt(), r.getCreatedBy(),
                 r.getVersion(),

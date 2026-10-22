@@ -12,7 +12,7 @@ import { applyFieldErrors, errorMessage } from '../../api/errors'
 import type { SprayRun, SprayRunRequest } from '../../api/types'
 import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
-import { dateTime, shortDate } from '../store/format'
+import { dateTime, qty, shortDate } from '../store/format'
 import {
   useAvailableBatches,
   useCancelRun,
@@ -234,7 +234,8 @@ function RunEditor({ runId }: { runId?: number }) {
           <Alert key={type} className="doc-alert" type="warning" showIcon title={t('prod.noMachines', { type: t(`machineType.${type}`) })} />
         ))}
         {run?.status === 'POSTED' && (
-          <Alert className="doc-alert" type="success" showIcon title={t('store.postedInfo', { by: run.postedBy, at: dateTime(run.postedAt) })} />
+          <Alert className="doc-alert" type="success" showIcon
+            title={`${t('store.postedInfo', { by: run.postedBy, at: dateTime(run.postedAt) })} · ${run.siloCode}: ${t('press.siloHas', { t: qty(run.powderLeft, 1) })}`} />
         )}
         {run?.status === 'CANCELLED' && (
           <Alert className="doc-alert" type="error" showIcon

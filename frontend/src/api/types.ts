@@ -71,6 +71,7 @@ export type Permission =
   | 'STORE_CANCEL'
   | 'PRODUCTION_VIEW'
   | 'BODY_PREP_ENTRY'
+  | 'PRESS_ENTRY'
   | 'PRODUCTION_CANCEL'
 
 export interface PermissionInfo {
@@ -797,6 +798,8 @@ export interface SprayRun {
   runStart: string
   runEnd?: string
   powderTon: number
+  /** still in the silo; press entries draw it down, oldest run first */
+  powderLeft: number
   powderMoisture?: number
   gasScm?: number
   inletTemp?: number
@@ -844,4 +847,197 @@ export interface BodyPrepOverview {
   waiting: BodyBatchSummary[]
   charged: DayTotal
   sprayed: DayTotal
+}
+
+// ---- production: press & dryer, design lots, silos (step 4b) ----
+
+export type LotStatus = 'OPEN' | 'CLOSED' | 'CANCELLED'
+export const LOT_STATUSES: LotStatus[] = ['OPEN', 'CLOSED', 'CANCELLED']
+
+export interface DesignOption {
+  id: number
+  code: string
+  name: string
+  sizeCode: string
+  finishName: string
+  /** 600 x 1200 -> 0.72 */
+  sqmPerTile?: number
+}
+
+export interface LotSummary {
+  id: number
+  lotNo: string
+  designId: number
+  designCode: string
+  designName: string
+  sizeCode: string
+  finishName: string
+  sqmPerTile?: number
+  pressId: number
+  pressCode: string
+  status: LotStatus
+  openedDate: string
+  openedShiftCode: string
+  openedAt: string
+  closedAt?: string
+  pressed: number
+  good: number
+  goodSqm?: number
+}
+
+export interface PressEntrySummary {
+  id: number
+  entryNo?: string
+  lotId: number
+  lotNo: string
+  designName: string
+  prodDate: string
+  shiftCode: string
+  pressCode: string
+  siloCode: string
+  pressedCount: number
+  pressRejects: number
+  dryerRejects: number
+  goodCount: number
+  powderTon: number
+  status: DocStatus
+}
+
+export interface Lot {
+  id: number
+  plantId: number
+  plantCode: string
+  lotNo: string
+  designId: number
+  designCode: string
+  designName: string
+  sizeCode: string
+  finishName: string
+  sqmPerTile?: number
+  pressId: number
+  pressCode: string
+  pressName: string
+  status: LotStatus
+  openedDate: string
+  openedShiftCode: string
+  remarks?: string
+  openedAt: string
+  openedBy: string
+  closedAt?: string
+  closedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  version: number
+  totals: {
+    entries: number
+    pressed: number
+    pressRejects: number
+    dryerRejects: number
+    good: number
+    goodSqm?: number
+    lossPct?: number
+    powderTon: number
+    untracedTon: number
+  }
+  entries: PressEntrySummary[]
+  trace: { runId: number; runNo: string; siloCode: string; prodDate: string; tonnes: number; batches: { id: number; batchNo: string }[] }[]
+}
+
+export interface LotOpenRequest {
+  plantId: number
+  designId: number
+  pressId: number
+  openedDate: string
+  shiftId: number
+  remarks?: string
+  closeCurrent: boolean
+}
+
+export interface PressEntry {
+  id: number
+  plantId: number
+  plantCode: string
+  entryNo?: string
+  lotId: number
+  lotNo: string
+  designCode: string
+  designName: string
+  sqmPerTile?: number
+  prodDate: string
+  shiftId: number
+  shiftCode: string
+  shiftName: string
+  pressId: number
+  pressCode: string
+  dryerId?: number
+  dryerCode?: string
+  siloId: number
+  siloCode: string
+  siloName: string
+  status: DocStatus
+  pressedCount: number
+  pressRejects: number
+  dryerRejects: number
+  goodCount: number
+  goodSqm?: number
+  greenWeightKg?: number
+  powderTon: number
+  untracedTon: number
+  pressure?: number
+  cyclesPerMin?: number
+  thicknessMm?: number
+  dryerTemp?: number
+  dryerMoisture?: number
+  remarks?: string
+  postedAt?: string
+  postedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+  powders: { runId: number; runNo: string; tonnes: number }[]
+}
+
+export interface PressEntryRequest {
+  plantId: number
+  lotId: number
+  prodDate: string
+  shiftId: number
+  dryerId?: number
+  siloId: number
+  pressedCount: number
+  pressRejects?: number
+  dryerRejects?: number
+  greenWeightKg?: number
+  /** leave empty: tiles pressed x green weight */
+  powderTon?: number
+  pressure?: number
+  cyclesPerMin?: number
+  thicknessMm?: number
+  dryerTemp?: number
+  dryerMoisture?: number
+  remarks?: string
+}
+
+export interface SiloStatus {
+  siloId: number
+  code: string
+  name: string
+  tonnes: number
+  /** when the oldest powder in it was made */
+  oldestAt?: string
+  runs: { runId: number; runNo: string; prodDate: string; madeAt: string; powderLeft: number; powderMoisture?: number }[]
+}
+
+export interface PressOverview {
+  prodDate: string
+  shiftId?: number
+  shiftCode?: string
+  shiftName?: string
+  lines: { pressId: number; pressCode: string; pressName: string; lot?: LotSummary }[]
+  today: { entries: number; pressed: number; rejects: number; good: number; goodSqm: number }
+  silos: SiloStatus[]
 }

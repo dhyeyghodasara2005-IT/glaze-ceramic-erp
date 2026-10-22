@@ -2,6 +2,10 @@ import type { ReactNode } from 'react'
 import {
   ApartmentOutlined,
   BankOutlined,
+  BuildOutlined,
+  ContainerOutlined,
+  OrderedListOutlined,
+  TagOutlined,
   ClockCircleOutlined,
   CloudOutlined,
   ControlOutlined,
@@ -131,6 +135,18 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/production/spray-runs', labelKey: 'menu.sprayRuns', icon: <CloudOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'spray-run', create: { labelKey: 'prod.newRunFull', permission: 'BODY_PREP_ENTRY' },
+      },
+      { path: '/production/silos', labelKey: 'menu.silos', icon: <ContainerOutlined />, permission: 'PRODUCTION_VIEW' },
+      {
+        path: '/production/press', labelKey: 'menu.press', icon: <BuildOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+      },
+      {
+        path: '/production/lots', labelKey: 'menu.lots', icon: <TagOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'lot', create: { labelKey: 'press.startDesign', permission: 'PRESS_ENTRY' },
+      },
+      {
+        path: '/production/press-entries', labelKey: 'menu.pressEntries', icon: <OrderedListOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'press-entry', create: { labelKey: 'press.newEntry', permission: 'PRESS_ENTRY' },
       },
     ],
   },

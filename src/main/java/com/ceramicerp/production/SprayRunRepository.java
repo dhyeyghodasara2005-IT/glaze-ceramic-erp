@@ -9,7 +9,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface SprayRunRepository extends JpaRepository<SprayRun, Long> {
@@ -42,4 +48,29 @@ public interface SprayRunRepository extends JpaRepository<SprayRun, Long> {
             """)
     DayTotal totalForDay(@Param("plantId") Long plantId, @Param("date") LocalDate date,
                          @Param("status") DocStatus status);
+
+    /**
+     * The powder in a silo, oldest first (FIFO: first in, first out - powder ages in the silo, so the
+     * press takes the oldest). Locked (SELECT ... FOR UPDATE) because posting changes powderLeft.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select r from SprayRun r
+            where r.silo.id = :siloId and r.status = com.ceramicerp.store.DocStatus.POSTED and r.powderLeft > 0
+            order by r.runStart asc, r.id asc
+            """)
+    List<SprayRun> findForDraw(@Param("siloId") Long siloId);
+
+    /** Everything still in the silos of a plant, oldest first. */
+    @EntityGraph(attributePaths = {"silo"})
+    List<SprayRun> findByPlantIdAndStatusAndPowderLeftGreaterThanOrderByRunStartAsc(Long plantId, DocStatus status,
+                                                                                    BigDecimal minimum);
+
+    /** Body batches of these runs, for the lot trace. */
+    @Query("""
+            select rb from SprayRunBatch rb join fetch rb.bodyBatch
+            where rb.run.id in :runIds
+            order by rb.bodyBatch.id
+            """)
+    List<SprayRunBatch> findBatchesOfRuns(@Param("runIds") Collection<Long> runIds);
 }

@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -51,6 +52,7 @@ public class SprayRunService {
     private final PlantService plantService;
     private final ShiftService shiftService;
     private final DocumentNumberService numberService;
+    private final PressEntryPowderRepository powderRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<SprayRunSummary> search(Long plantId, DocStatus status, LocalDate from, LocalDate to,
@@ -119,6 +121,7 @@ public class SprayRunService {
                 rb.getBodyBatch().setStatus(BodyBatchStatus.CONSUMED);
             }
         }
+        run.setPowderLeft(run.getPowderTon());   // the silo now holds this run's powder
         run.setStatus(DocStatus.POSTED);
         run.setPostedAt(Instant.now());
         run.setPostedBy(CurrentUser.get().getUsername());
@@ -132,6 +135,13 @@ public class SprayRunService {
         if (run.getStatus() != DocStatus.POSTED) {
             throw new BusinessException("Only a posted run can be cancelled");
         }
+        // Its powder already went into tiles? Then undo those press entries first, or the lot's trace breaks.
+        List<PressEntryPowder> used = powderRepository.findForRun(id, DocStatus.POSTED);
+        if (!used.isEmpty()) {
+            throw new BusinessException("Powder from " + run.getRunNo() + " was already used by press entry "
+                    + used.get(0).getEntry().getEntryNo() + ". Cancel that entry first.");
+        }
+        run.setPowderLeft(BigDecimal.ZERO);
         for (SprayRunBatch rb : run.getBatches()) {
             if (rb.isFinished() && rb.getBodyBatch().getStatus() == BodyBatchStatus.CONSUMED) {
                 rb.getBodyBatch().setStatus(BodyBatchStatus.DISCHARGED);
