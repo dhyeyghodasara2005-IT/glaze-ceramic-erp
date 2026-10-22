@@ -15,7 +15,9 @@ import MachineFormDrawer from './MachineFormDrawer'
 /** Tag colour by process stage, so a line-up reads like the factory floor. */
 const STAGE_COLOR: Record<MachineType, string> = {
   BALL_MILL: 'gold',
+  SLIP_TANK: 'gold',
   SPRAY_DRYER: 'gold',
+  SILO: 'gold',
   PRESS: 'blue',
   DRYER: 'blue',
   GLAZE_LINE: 'purple',

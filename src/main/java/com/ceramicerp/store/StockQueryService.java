@@ -3,6 +3,7 @@ package com.ceramicerp.store;
 import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.master.Material;
 import com.ceramicerp.master.MaterialRepository;
+import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.dto.LedgerRow;
 import com.ceramicerp.store.dto.StockRow;
 import lombok.RequiredArgsConstructor;

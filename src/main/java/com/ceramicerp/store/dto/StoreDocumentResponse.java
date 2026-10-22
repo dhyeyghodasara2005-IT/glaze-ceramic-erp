@@ -20,6 +20,8 @@ public record StoreDocumentResponse(
         String docNo,
         LocalDate docDate,
         DocStatus status,
+        /** null = typed in the store; "BODY_BATCH" = made by production (read-only here) */
+        String origin,
         Long supplierId,
         String supplierCode,
         String supplierName,
@@ -77,7 +79,7 @@ public record StoreDocumentResponse(
         var s = d.getSupplier();
         var m = d.getMachine();
         return new StoreDocumentResponse(d.getId(), d.getPlant().getId(), d.getPlant().getCode(), d.getDocType(),
-                d.getDocNo(), d.getDocDate(), d.getStatus(),
+                d.getDocNo(), d.getDocDate(), d.getStatus(), d.getOrigin(),
                 s == null ? null : s.getId(), s == null ? null : s.getCode(), s == null ? null : s.getName(),
                 d.getSupplierInvoiceNo(), d.getSupplierInvoiceDate(), d.getVehicleNo(), d.getWeighbridgeSlipNo(),
                 m == null ? null : m.getId(), m == null ? null : m.getCode(), m == null ? null : m.getName(),

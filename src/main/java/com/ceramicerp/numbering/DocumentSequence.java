@@ -1,4 +1,4 @@
-package com.ceramicerp.store;
+package com.ceramicerp.numbering;
 
 import com.ceramicerp.common.BaseEntity;
 import jakarta.persistence.Column;

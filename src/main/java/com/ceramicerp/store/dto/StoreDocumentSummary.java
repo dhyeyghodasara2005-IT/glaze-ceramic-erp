@@ -15,6 +15,7 @@ public record StoreDocumentSummary(
         String docNo,
         LocalDate docDate,
         DocStatus status,
+        String origin,
         String supplierName,
         String supplierInvoiceNo,
         String machineName,
@@ -24,7 +25,7 @@ public record StoreDocumentSummary(
         String createdBy
 ) {
     public static StoreDocumentSummary from(StoreDocument d) {
-        return new StoreDocumentSummary(d.getId(), d.getDocType(), d.getDocNo(), d.getDocDate(), d.getStatus(),
+        return new StoreDocumentSummary(d.getId(), d.getDocType(), d.getDocNo(), d.getDocDate(), d.getStatus(), d.getOrigin(),
                 d.getSupplier() == null ? null : d.getSupplier().getName(), d.getSupplierInvoiceNo(),
                 d.getMachine() == null ? null : d.getMachine().getName(), d.getIssuedTo(), d.getReason(),
                 d.getTotalValue(), d.getCreatedBy());

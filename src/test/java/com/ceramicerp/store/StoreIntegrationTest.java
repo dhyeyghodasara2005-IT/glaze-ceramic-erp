@@ -1,6 +1,7 @@
 package com.ceramicerp.store;
 
 import com.ceramicerp.IntegrationTestBase;
+import com.ceramicerp.numbering.DocumentNumberService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

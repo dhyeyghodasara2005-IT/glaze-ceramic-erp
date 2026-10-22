@@ -64,7 +64,12 @@ export default function StoreDocumentsPage({ type }: { type: StoreDocType }) {
       title: t('store.docNo'),
       dataIndex: 'docNo',
       width: 210,
-      render: (no?: string) => (no ? <span className="code-badge">{no}</span> : <span className="cell-sub">{t('store.status.DRAFT')}</span>),
+      render: (no: string | undefined, d) => (
+        <>
+          {no ? <span className="code-badge">{no}</span> : <span className="cell-sub">{t('store.status.DRAFT')}</span>}
+          {d.origin && <div className="cell-sub">{t('store.fromProduction')}</div>}
+        </>
+      ),
     },
     { title: t('store.date'), dataIndex: 'docDate', width: 120, render: shortDate },
     // The middle column depends on the type: who sent it / where it went / why.

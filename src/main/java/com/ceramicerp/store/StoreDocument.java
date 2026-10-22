@@ -54,6 +54,10 @@ public class StoreDocument extends BaseEntity {
     @Column(nullable = false, length = 20)
     private DocStatus status = DocStatus.DRAFT;
 
+    /** null = typed in the store. Otherwise the module that made it (e.g. "BODY_BATCH"); only that module may change it. */
+    @Column(length = 20)
+    private String origin;
+
     // ---- GRN ----
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")

@@ -69,6 +69,9 @@ export type Permission =
   | 'STORE_VIEW'
   | 'STORE_ENTRY'
   | 'STORE_CANCEL'
+  | 'PRODUCTION_VIEW'
+  | 'BODY_PREP_ENTRY'
+  | 'PRODUCTION_CANCEL'
 
 export interface PermissionInfo {
   code: Permission
@@ -310,7 +313,9 @@ export interface MaterialRequest {
 /** Must match MachineType.java (process order). */
 export const MACHINE_TYPES = [
   'BALL_MILL',
+  'SLIP_TANK',
   'SPRAY_DRYER',
+  'SILO',
   'PRESS',
   'DRYER',
   'GLAZE_LINE',
@@ -461,6 +466,8 @@ export interface StoreDocument {
   docNo?: string
   docDate: string
   status: DocStatus
+  /** set when another module made it, e.g. 'BODY_BATCH' - then it is read-only in the store */
+  origin?: string
   supplierId?: number
   supplierCode?: string
   supplierName?: string
@@ -493,6 +500,7 @@ export interface StoreDocumentSummary {
   docNo?: string
   docDate: string
   status: DocStatus
+  origin?: string
   supplierName?: string
   supplierInvoiceNo?: string
   machineName?: string
@@ -567,4 +575,273 @@ export interface LedgerRow {
   value: number
   balanceQty: number
   reversal: boolean
+}
+
+// ---- shifts & body recipes (masters, step 4a) ----
+
+export interface Shift {
+  id: number
+  code: string
+  name: string
+  /** "08:00:00" */
+  startTime: string
+  endTime: string
+  crossesMidnight: boolean
+  sortOrder: number
+  active: boolean
+  version: number
+}
+
+export interface ShiftRequest {
+  code: string
+  name: string
+  startTime: string
+  endTime: string
+  sortOrder: number
+  active?: boolean
+}
+
+export interface BodyRecipeLine {
+  id: number
+  lineNo: number
+  materialId: number
+  materialCode: string
+  materialName: string
+  unitCode: string
+  unitDecimals: number
+  /** in the material's own unit, per tonne of dry charge */
+  qtyPerTon: number
+}
+
+export interface BodyRecipe {
+  id: number
+  code: string
+  name: string
+  description?: string
+  active: boolean
+  version: number
+  lines: BodyRecipeLine[]
+}
+
+export interface BodyRecipeRequest {
+  code: string
+  name: string
+  description?: string
+  active?: boolean
+  lines: { materialId: number; qtyPerTon: number }[]
+}
+
+// ---- production: body preparation (step 4a) ----
+
+export type BodyBatchStatus = 'DRAFT' | 'CHARGED' | 'DISCHARGED' | 'CONSUMED' | 'CANCELLED'
+export const BODY_BATCH_STATUSES: BodyBatchStatus[] = ['DRAFT', 'CHARGED', 'DISCHARGED', 'CONSUMED', 'CANCELLED']
+
+export interface CurrentShift {
+  shiftId?: number
+  code?: string
+  name?: string
+  prodDate: string
+}
+
+export interface MachineOption {
+  id: number
+  code: string
+  name: string
+  type: MachineType
+}
+
+export interface AvailableStock {
+  materialId: number
+  locationId: number
+  quantity: number
+}
+
+export interface BodyBatchSummary {
+  id: number
+  batchNo?: string
+  prodDate: string
+  shiftCode: string
+  ballMillCode: string
+  ballMillName: string
+  recipeCode?: string
+  chargeTon: number
+  status: BodyBatchStatus
+  /** plant clock time, "2026-10-23T08:30:00" */
+  millingStart: string
+  millingEnd?: string
+  slipTankCode?: string
+  slipDensity?: number
+  slipViscosity?: number
+  slipResidue?: number
+}
+
+export interface BodyBatchLine {
+  id: number
+  lineNo: number
+  materialId: number
+  materialCode: string
+  materialName: string
+  unitCode: string
+  unitDecimals: number
+  locationId: number
+  locationCode: string
+  locationName: string
+  quantity: number
+}
+
+export interface BodyBatch {
+  id: number
+  plantId: number
+  plantCode: string
+  batchNo?: string
+  prodDate: string
+  shiftId: number
+  shiftCode: string
+  shiftName: string
+  ballMillId: number
+  ballMillCode: string
+  ballMillName: string
+  recipeId?: number
+  recipeCode?: string
+  recipeName?: string
+  status: BodyBatchStatus
+  chargeTon: number
+  waterLitres?: number
+  millingStart: string
+  millingEnd?: string
+  slipTankId?: number
+  slipTankCode?: string
+  slipTankName?: string
+  slipDensity?: number
+  slipViscosity?: number
+  slipResidue?: number
+  issueDocumentId?: number
+  issueDocNo?: string
+  remarks?: string
+  chargedAt?: string
+  chargedBy?: string
+  dischargedAt?: string
+  dischargedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+  lines: BodyBatchLine[]
+  sprayRuns: { runId: number; runNo: string; prodDate: string; finished: boolean }[]
+}
+
+export interface BodyBatchRequest {
+  plantId: number
+  prodDate: string
+  shiftId: number
+  ballMillId: number
+  recipeId?: number
+  chargeTon: number
+  waterLitres?: number
+  millingStart: string
+  remarks?: string
+  lines: { materialId: number; locationId: number; quantity: number }[]
+}
+
+export interface DischargeRequest {
+  millingEnd: string
+  slipTankId: number
+  slipDensity: number
+  slipViscosity?: number
+  slipResidue: number
+}
+
+export interface SprayRunSummary {
+  id: number
+  runNo?: string
+  prodDate: string
+  shiftCode: string
+  sprayDryerCode: string
+  siloCode: string
+  siloName: string
+  powderTon: number
+  powderMoisture?: number
+  status: DocStatus
+}
+
+export interface SprayRunBatchUse {
+  bodyBatchId: number
+  batchNo?: string
+  ballMillCode: string
+  chargeTon: number
+  slipTankCode?: string
+  millingEnd?: string
+  slipDensity?: number
+  slipResidue?: number
+  finished: boolean
+}
+
+export interface SprayRun {
+  id: number
+  plantId: number
+  plantCode: string
+  runNo?: string
+  prodDate: string
+  shiftId: number
+  shiftCode: string
+  shiftName: string
+  sprayDryerId: number
+  sprayDryerCode: string
+  sprayDryerName: string
+  siloId: number
+  siloCode: string
+  siloName: string
+  status: DocStatus
+  runStart: string
+  runEnd?: string
+  powderTon: number
+  powderMoisture?: number
+  gasScm?: number
+  inletTemp?: number
+  outletTemp?: number
+  remarks?: string
+  postedAt?: string
+  postedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+  batches: SprayRunBatchUse[]
+}
+
+export interface SprayRunRequest {
+  plantId: number
+  prodDate: string
+  shiftId: number
+  sprayDryerId: number
+  siloId: number
+  runStart: string
+  runEnd?: string
+  powderTon: number
+  powderMoisture?: number
+  gasScm?: number
+  inletTemp?: number
+  outletTemp?: number
+  remarks?: string
+  batches: { bodyBatchId: number; finished: boolean }[]
+}
+
+export interface DayTotal {
+  count: number
+  tonnes: number
+}
+
+export interface BodyPrepOverview {
+  prodDate: string
+  shiftId?: number
+  shiftCode?: string
+  shiftName?: string
+  inMills: BodyBatchSummary[]
+  waiting: BodyBatchSummary[]
+  charged: DayTotal
+  sprayed: DayTotal
 }

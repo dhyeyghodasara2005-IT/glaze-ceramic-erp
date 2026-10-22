@@ -1493,6 +1493,9 @@ body {
 .doc-readonly .ant-select-disabled * {
   color: var(--ink);
 }
+.doc-readonly .ant-checkbox-wrapper-disabled {
+  color: var(--ink);
+}
 /* Narrow panel (phones, tablets, small laptops): every line becomes a small card, two fields per row. */
 @container (max-width: 880px) {
   .doc-lines-head {
@@ -1526,6 +1529,188 @@ body {
   .line-static {
     justify-content: flex-start;
   }
+}
+
+/* ---------------------------------------------------------------------
+   Production: body preparation
+   --------------------------------------------------------------------- */
+.prod-actions {
+  margin-bottom: 28px;
+}
+.status-pill.batch-draft {
+  color: #8a5a00;
+  background: #fdf3dc;
+}
+.status-pill.batch-charged {
+  color: #2f4b8a;
+  background: #eef2fb;
+}
+.status-pill.batch-discharged {
+  color: #1f6b55;
+  background: #e6f4ef;
+}
+.status-pill.batch-consumed {
+  color: var(--ink-soft);
+  background: #eef1ec;
+}
+.status-pill.batch-cancelled {
+  color: #9b2c2c;
+  background: #fbeaea;
+}
+
+/* Running mills: one card each, with a big timer readable from arm's length. */
+.mill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+}
+.mill-card {
+  position: relative;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(31, 23, 20, 0.05);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition:
+    transform 0.28s var(--ease),
+    box-shadow 0.28s var(--ease);
+}
+.mill-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+}
+.mill-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mill-spin {
+  position: absolute;
+  right: 18px;
+  bottom: 70px;
+  font-size: 40px;
+  color: var(--brand-100);
+}
+.mill-time {
+  margin: 14px 0 2px;
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Slip waiting: a simple tappable list. */
+.slip-list {
+  padding: 6px 8px;
+}
+.slip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.2s var(--ease);
+}
+.slip-row + .slip-row {
+  border-top: 1px solid var(--line);
+}
+.slip-row:hover {
+  background: var(--brand-50);
+}
+.slip-readings {
+  display: flex;
+  gap: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.slip-readings small {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+/* Facts of a charged batch: label above value, as many per row as fit. */
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px 20px;
+}
+.fact-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.panel-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.cols-batch {
+  --line-cols: 24px minmax(180px, 2.2fr) minmax(130px, 1.3fr) minmax(130px, 1.2fr) 28px;
+}
+.charge-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.charge-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.recipe-total {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #8a5a00;
+  background: #fdf3dc;
+}
+.recipe-total.ok {
+  color: #166534;
+  background: #eaf6ee;
+}
+
+/* Spray dryer run: pick batches. */
+.batch-picker {
+  display: grid;
+  gap: 8px;
+}
+.batch-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fcfaf8;
+  border: 1px solid var(--line);
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.batch-option.selected {
+  background: #fff;
+  border-color: var(--brand-200);
+}
+.batch-option-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.used-up {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
 }
 
 @media (prefers-reduced-motion: reduce) {

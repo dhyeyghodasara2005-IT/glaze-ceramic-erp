@@ -2,6 +2,11 @@ import type { ReactNode } from 'react'
 import {
   ApartmentOutlined,
   BankOutlined,
+  ClockCircleOutlined,
+  CloudOutlined,
+  ControlOutlined,
+  ExperimentOutlined,
+  SyncOutlined,
   CarOutlined,
   ShopOutlined,
   ShoppingCartOutlined,
@@ -114,6 +119,22 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     ],
   },
   {
+    labelKey: 'menu.production',
+    items: [
+      {
+        path: '/production/body', labelKey: 'menu.bodyPrep', icon: <ControlOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+      },
+      {
+        path: '/production/body-batches', labelKey: 'menu.bodyBatches', icon: <SyncOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'body-batch', create: { labelKey: 'prod.newBatch', permission: 'BODY_PREP_ENTRY' },
+      },
+      {
+        path: '/production/spray-runs', labelKey: 'menu.sprayRuns', icon: <CloudOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'spray-run', create: { labelKey: 'prod.newRunFull', permission: 'BODY_PREP_ENTRY' },
+      },
+    ],
+  },
+  {
     labelKey: 'menu.plantMasters',
     items: [
       {
@@ -123,6 +144,14 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/masters/machines', labelKey: 'menu.machines', icon: <ToolOutlined />, permission: 'MASTER_VIEW',
         searchType: 'machine', create: { labelKey: 'machine.new', permission: 'MASTER_MANAGE' },
+      },
+      {
+        path: '/masters/body-recipes', labelKey: 'menu.bodyRecipes', icon: <ExperimentOutlined />, permission: 'MASTER_VIEW',
+        create: { labelKey: 'recipe.new', permission: 'MASTER_MANAGE' },
+      },
+      {
+        path: '/masters/shifts', labelKey: 'menu.shifts', icon: <ClockCircleOutlined />, permission: 'MASTER_VIEW',
+        create: { labelKey: 'shift.new', permission: 'MASTER_MANAGE' },
       },
       {
         path: '/masters/material-groups', labelKey: 'menu.materialGroups', icon: <FolderOutlined />, permission: 'MASTER_VIEW',

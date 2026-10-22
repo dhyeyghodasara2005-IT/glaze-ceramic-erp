@@ -16,8 +16,14 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        # Instants (created_at, posted_at ...) are stored in UTC.
         jdbc:
           time_zone: UTC
+        # Wall-clock values (a date, a shift's 20:00, a mill's start time) are stored exactly as
+        # typed - never shifted by a time zone - so they mean the same thing to SQL, reports and
+        # Python later, whatever zone the server runs in.
+        type:
+          java_time_use_direct_jdbc: true
 
   flyway:
     enabled: true

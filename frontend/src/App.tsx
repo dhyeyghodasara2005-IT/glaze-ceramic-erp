@@ -23,6 +23,13 @@ import StockPage from './features/store/StockPage'
 import StoreDocumentsPage from './features/store/StoreDocumentsPage'
 import StoreDocumentPage from './features/store/StoreDocumentPage'
 import GodownsPage from './features/store/GodownsPage'
+import ShiftsPage from './features/masters/shifts/ShiftsPage'
+import BodyRecipesPage from './features/masters/recipes/BodyRecipesPage'
+import BodyPrepPage from './features/production/BodyPrepPage'
+import BodyBatchesPage from './features/production/BodyBatchesPage'
+import BodyBatchPage from './features/production/BodyBatchPage'
+import SprayRunsPage from './features/production/SprayRunsPage'
+import SprayRunPage from './features/production/SprayRunPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -74,6 +81,13 @@ export default function App() {
         <Route path="store/issues/:id" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentPage key="ISSUE" type="ISSUE" /></RequirePermission>} />
         <Route path="store/adjustments" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentsPage key="ADJUSTMENT" type="ADJUSTMENT" /></RequirePermission>} />
         <Route path="store/adjustments/:id" element={<RequirePermission permission="STORE_VIEW"><StoreDocumentPage key="ADJUSTMENT" type="ADJUSTMENT" /></RequirePermission>} />
+        <Route path="masters/shifts" element={<RequirePermission permission="MASTER_VIEW"><ShiftsPage /></RequirePermission>} />
+        <Route path="masters/body-recipes" element={<RequirePermission permission="MASTER_VIEW"><BodyRecipesPage /></RequirePermission>} />
+        <Route path="production/body" element={<RequirePermission permission="PRODUCTION_VIEW"><BodyPrepPage /></RequirePermission>} />
+        <Route path="production/body-batches" element={<RequirePermission permission="PRODUCTION_VIEW"><BodyBatchesPage /></RequirePermission>} />
+        <Route path="production/body-batches/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><BodyBatchPage /></RequirePermission>} />
+        <Route path="production/spray-runs" element={<RequirePermission permission="PRODUCTION_VIEW"><SprayRunsPage /></RequirePermission>} />
+        <Route path="production/spray-runs/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><SprayRunPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

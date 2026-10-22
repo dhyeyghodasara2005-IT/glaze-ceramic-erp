@@ -27,7 +27,12 @@ public enum Permission {
 
     STORE_VIEW("Store", "View stock, godowns and store documents"),
     STORE_ENTRY("Store", "Create and post GRNs, issues and stock adjustments; manage godowns"),
-    STORE_CANCEL("Store", "Cancel posted store documents (reverses stock)");
+    STORE_CANCEL("Store", "Cancel posted store documents (reverses stock)"),
+
+    // One ENTRY permission per production division: give it to that division's supervisor role.
+    PRODUCTION_VIEW("Production", "View production entries, batches and runs"),
+    BODY_PREP_ENTRY("Production", "Body preparation supervisor: ball mill charges, slip tests, spray dryer runs"),
+    PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)");
 
     private final String group;
     private final String description;

@@ -8,7 +8,11 @@ package com.ceramicerp.master;
  */
 public enum MachineType {
     BALL_MILL,
+    /** Underground / agitator tank that holds slip after the ball mill. */
+    SLIP_TANK,
     SPRAY_DRYER,
+    /** Holds spray-dried powder while it ages, before the press. */
+    SILO,
     PRESS,
     DRYER,
     GLAZE_LINE,

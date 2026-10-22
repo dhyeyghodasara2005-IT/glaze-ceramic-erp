@@ -1,4 +1,4 @@
-package com.ceramicerp.store;
+package com.ceramicerp.numbering;
 
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;

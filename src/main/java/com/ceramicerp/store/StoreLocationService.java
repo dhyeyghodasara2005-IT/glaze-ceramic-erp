@@ -5,6 +5,7 @@ import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
 import com.ceramicerp.organization.Plant;
 import com.ceramicerp.organization.PlantService;
+import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.dto.StoreLocationRequest;
 import com.ceramicerp.store.dto.StoreLocationResponse;
 import lombok.RequiredArgsConstructor;

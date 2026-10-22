@@ -355,7 +355,7 @@ function DocumentEditor({ type, docId }: { type: StoreDocType; docId?: number })
       )}
       {editable && <Button icon={<SaveOutlined />} loading={save.isPending && !confirmPost} onClick={onSave}>{t('store.saveDraft')}</Button>}
       {editable && <Button type="primary" icon={<CheckCircleOutlined />} disabled={busy} onClick={onPostClick}>{t('store.post')}</Button>}
-      {doc?.status === 'POSTED' && can('STORE_CANCEL') && (
+      {doc?.status === 'POSTED' && can('STORE_CANCEL') && !doc.origin && (
         <Button danger icon={<StopOutlined />} onClick={() => setCancelOpen(true)}>{t('store.cancelDoc')}</Button>
       )}
     </Space>
@@ -369,6 +369,9 @@ function DocumentEditor({ type, docId }: { type: StoreDocType; docId?: number })
       <PageHeader title={title} subtitle={subtitle} icon={DOC_TYPES[type].icon} extra={actions} />
 
       <FadeIn delay={0.04}>
+        {doc?.origin && (
+          <Alert className="doc-alert" type="info" showIcon title={t('store.fromProductionInfo', { by: doc.issuedTo })} />
+        )}
         {doc?.status === 'POSTED' && (
           <Alert className="doc-alert" type="success" showIcon
             title={t('store.postedInfo', { by: doc.postedBy, at: dateTime(doc.postedAt) })} />

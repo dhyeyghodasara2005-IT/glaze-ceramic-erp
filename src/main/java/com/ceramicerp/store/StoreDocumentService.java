@@ -9,12 +9,14 @@ import com.ceramicerp.master.Machine;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.Material;
 import com.ceramicerp.master.MaterialRepository;
+import com.ceramicerp.numbering.DocumentNumberService;
 import com.ceramicerp.organization.Plant;
 import com.ceramicerp.organization.PlantService;
 import com.ceramicerp.party.Party;
 import com.ceramicerp.party.PartyRepository;
 import com.ceramicerp.party.PartyType;
 import com.ceramicerp.security.CurrentUser;
+import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.dto.StoreDocumentRequest;
 import com.ceramicerp.store.dto.StoreDocumentResponse;
 import com.ceramicerp.store.dto.StoreDocumentSummary;
@@ -22,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -89,6 +92,7 @@ public class StoreDocumentService {
     @Transactional
     public StoreDocumentResponse update(Long id, StoreDocumentRequest req) {
         StoreDocument doc = find(id);
+        requireTypedInStore(doc);
         requireDraft(doc, "edited");
         if (!doc.getPlant().getId().equals(req.plantId()) || doc.getDocType() != req.docType()) {
             throw new BusinessException("A document can't be moved to another plant or type");
@@ -100,6 +104,7 @@ public class StoreDocumentService {
     @Transactional
     public void deleteDraft(Long id) {
         StoreDocument doc = find(id);
+        requireTypedInStore(doc);
         requireDraft(doc, "deleted");
         documentRepository.delete(doc);
     }
@@ -108,7 +113,13 @@ public class StoreDocumentService {
     @Transactional
     public StoreDocumentResponse post(Long id) {
         StoreDocument doc = find(id);
+        requireTypedInStore(doc);
         requireDraft(doc, "posted");
+        postDocument(doc);
+        return StoreDocumentResponse.from(doc);
+    }
+
+    private void postDocument(StoreDocument doc) {
         requireNotFuture(doc.getDocDate());
 
         doc.setDocNo(numberService.next(doc.getPlant(), doc.getDocType(), doc.getDocDate()));
@@ -141,7 +152,6 @@ public class StoreDocumentService {
         doc.setStatus(DocStatus.POSTED);
         doc.setPostedAt(Instant.now());
         doc.setPostedBy(CurrentUser.get().getUsername());
-        return StoreDocumentResponse.from(doc);
     }
 
     /**
@@ -152,11 +162,17 @@ public class StoreDocumentService {
     @Transactional
     public StoreDocumentResponse cancel(Long id, String reason) {
         StoreDocument doc = find(id);
+        requireTypedInStore(doc);
+        cancelDocument(doc, reason);
+        return StoreDocumentResponse.from(doc);
+    }
+
+    private void cancelDocument(StoreDocument doc, String reason) {
         if (doc.getStatus() != DocStatus.POSTED) {
             throw new BusinessException("Only a posted document can be cancelled");
         }
 
-        List<StockTransaction> movements = transactionRepository.findByDocumentIdAndReversalFalseOrderByIdAsc(id)
+        List<StockTransaction> movements = transactionRepository.findByDocumentIdAndReversalFalseOrderByIdAsc(doc.getId())
                 .stream()
                 .sorted(Comparator.comparing((StockTransaction t) -> t.getLocation().getId())
                         .thenComparing(t -> t.getMaterial().getId()))
@@ -174,7 +190,33 @@ public class StoreDocumentService {
         doc.setCancelledAt(Instant.now());
         doc.setCancelledBy(CurrentUser.get().getUsername());
         doc.setCancelReason(reason.trim());
-        return StoreDocumentResponse.from(doc);
+    }
+
+    // ------------------------------------------------------------------ for other modules
+
+    /**
+     * Makes and posts an ISSUE for another module, e.g. the raw material behind a ball mill charge.
+     * Runs inside the caller's transaction (MANDATORY): if the caller fails later, the issue and its
+     * stock movement are rolled back with it. The caller must already have checked plant access.
+     *
+     * @param origin who made it ("BODY_BATCH"); the store screens then refuse to edit or cancel it
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public StoreDocument postIssueFor(String origin, StoreDocumentRequest req) {
+        StoreDocument doc = new StoreDocument();
+        doc.setPlant(plantService.find(req.plantId()));
+        doc.setDocType(StoreDocType.ISSUE);
+        doc.setOrigin(origin);
+        apply(doc, req);
+        documentRepository.save(doc);
+        postDocument(doc);
+        return doc;
+    }
+
+    /** Reverses a document made with {@link #postIssueFor}, inside the caller's transaction. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void cancelFor(StoreDocument doc, String reason) {
+        cancelDocument(doc, reason);
     }
 
     /** Loads the document with its lines and checks plant access. */
@@ -183,6 +225,14 @@ public class StoreDocumentService {
                 .orElseThrow(() -> new NotFoundException("Store document", id));
         PlantAccess.require(doc.getPlant().getId());
         return doc;
+    }
+
+    /** An issue made by production belongs to production: change or cancel it there, not here. */
+    private static void requireTypedInStore(StoreDocument doc) {
+        if (doc.getOrigin() != null) {
+            throw new BusinessException(doc.getDocNo() + " was made automatically (" + doc.getIssuedTo()
+                    + "). Change or cancel it from Production.");
+        }
     }
 
     private static void requireDraft(StoreDocument doc, String action) {

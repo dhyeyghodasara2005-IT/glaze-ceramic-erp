@@ -55,7 +55,9 @@ src/main/java/com/ceramicerp/
 ├── master/          sizes, designs, materials, machines …
 ├── party/           dealers, suppliers, transporters
 ├── search/          global search (each module plugs in a SearchProvider)
-└── store/           godowns, GRN / issue / adjustment, stock engine and ledger
+├── numbering/       document numbers per plant, type and financial year
+├── store/           godowns, GRN / issue / adjustment, stock engine and ledger
+└── production/      body batches (ball mill), spray dryer runs, supervisor lookups
 
 src/main/resources/
 ├── application.yml          settings for every environment
@@ -90,7 +92,10 @@ Every feature module has the same layers:
 | ★ | Global search / Go To (Ctrl+K, Alt+G, /) across all modules | ✅ Done |
 | 2c | Parties: dealers, suppliers, transporters (GST-aware, auto codes) | ✅ Done |
 | 3 | Raw material store: godowns, GRN, issues, adjustments, stock + ledger (weighted average) | ✅ Done |
-| 4 | Production stage entries (mobile) + batch tracking | ⏭ Next |
+| 4a | Production: shifts, body recipes, ball mill charges (auto store issue), slip tests, spray dryer runs | ✅ Done |
+| 4b | Press & dryer + design lots (which silo / body batches each lot used) | ⏭ Next |
+| 4c | Glaze line, digital printing, kiln | |
+| 4d | Polishing, sorting by grade / shade / caliber, packing | |
 | 5 | Finished goods stock by grade/shade/caliber | |
 | 6 | Sales orders, dispatch, Tally Prime sync | |
 | 7 | Owner dashboard | |
