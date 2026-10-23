@@ -35,6 +35,7 @@ class FinishingIntegrationTest extends IntegrationTestBase {
     private long shiftA;
     private long lotId;
     private long premium, standard, commercial;
+    private long pillar;
 
     /**
      * A lot that has been through the kiln:
@@ -76,6 +77,12 @@ class FinishingIntegrationTest extends IntegrationTestBase {
         postAs(admin, "/api/production/press-entries/" + id + "/post", Map.of()).andExpect(status().isOk());
         postLine(lineEntry("GLAZE", glazeLine, 1900, 40));
         postLine(lineEntry("KILN", kiln, 1800, 36));
+
+        // Step 5a: every row of boxes goes to a pillar of a finished-goods godown.
+        long godown = read(postAs(admin, "/api/fg/godowns", Map.of("plantId", plantId, "code", "FG-1", "name", "FG godown 1"))
+                .andExpect(status().isCreated())).get("id").asLong();
+        pillar = read(postAs(admin, "/api/fg/godowns/" + godown + "/pillars", Map.of("prefix", "A", "from", 1, "to", 1))
+                .andExpect(status().isOk())).at("/pillars/0/id").asLong();
     }
 
     @Test
@@ -123,7 +130,7 @@ class FinishingIntegrationTest extends IntegrationTestBase {
     void packRowsAreCheckedAndTheServerWorksOutThePieces() throws Exception {
         postAs(admin, PACK, packEntry(0, row(premium, "01", "C1", 10), row(premium, "01", "c1", 5)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Premium, shade 01, caliber C1 is entered twice. Put those boxes in one row."));
+                .andExpect(jsonPath("$.message").value("Premium, shade 01, caliber C1 at pillar A1 is entered twice. Put those boxes in one row."));
         postAs(admin, PACK, packEntry(0, row(idOf("grades", "REJECT"), "01", "C1", 10)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Reject tiles aren't boxed. Count them under Broken."));
@@ -268,8 +275,8 @@ class FinishingIntegrationTest extends IntegrationTestBase {
         return read(postAs(admin, LINE + "/" + id + "/post", Map.of()).andExpect(status().isOk()));
     }
 
-    private static Map<String, Object> row(long gradeId, String shade, String caliber, int boxes) {
-        return Map.of("gradeId", gradeId, "shade", shade, "caliber", caliber, "boxes", boxes);
+    private Map<String, Object> row(long gradeId, String shade, String caliber, int boxes) {
+        return Map.of("gradeId", gradeId, "shade", shade, "caliber", caliber, "boxes", boxes, "pillarId", pillar);
     }
 
     @SafeVarargs

@@ -4,6 +4,10 @@ import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.common.Text;
 import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
+import com.ceramicerp.fg.FgPillar;
+import com.ceramicerp.fg.FgPillarRepository;
+import com.ceramicerp.fg.FgSource;
+import com.ceramicerp.fg.FgStockService;
 import com.ceramicerp.master.Grade;
 import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.master.MachineRepository;
@@ -30,6 +34,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +52,8 @@ import static com.ceramicerp.production.ProductionRules.sqmPerTile;
 /**
  * Sorting & packing shift entries. The packing supervisor enters the boxes per grade, shade and
  * caliber plus the broken pieces; the server works out the pieces (boxes x pieces per box) and the
- * totals. Posting gives the number and makes the boxes count in the lot - step 5 will put them in stock.
+ * totals. Posting gives the number, makes the boxes count in the lot, and puts them into finished-goods
+ * stock at the pillars the supervisor chose. Cancelling takes them out again.
  */
 @Service
 @RequiredArgsConstructor
@@ -61,6 +67,8 @@ public class PackEntryService {
     private final ProductionLotRepository lotRepository;
     private final MachineRepository machineRepository;
     private final GradeRepository gradeRepository;
+    private final FgPillarRepository pillarRepository;
+    private final FgStockService fgStockService;
     private final PlantService plantService;
     private final ShiftService shiftService;
     private final DocumentNumberService numberService;
@@ -114,10 +122,18 @@ public class PackEntryService {
         requireDraft(entry, "posted");
         requireLotUsable(entry.getLot());
         requireNotFuture(entry.getProdDate());
+        for (PackEntryLine line : entry.getLines()) {
+            if (line.getPillar() == null) {      // a draft saved before pillars existed
+                throw new BusinessException("Choose the pillar for row " + line.getLineNo() + ", then save the draft again");
+            }
+        }
         entry.setEntryNo(numberService.next(entry.getPlant(), ProductionDocType.PACK_ENTRY, entry.getProdDate()));
         entry.setStatus(DocStatus.POSTED);
         entry.setPostedAt(Instant.now());
         entry.setPostedBy(CurrentUser.get().getUsername());
+        // the boxes go into finished-goods stock, each row at its pillar
+        fgStockService.applyAll(movements(entry, 1),
+                new FgStockService.Source(FgSource.PACK, entry.getId(), entry.getEntryNo(), entry.getProdDate(), false));
         return toResponse(entry);
     }
 
@@ -128,6 +144,10 @@ public class PackEntryService {
         if (entry.getStatus() != DocStatus.POSTED) {
             throw new BusinessException("Only a posted entry can be cancelled");
         }
+        // Take the boxes back out of stock. If some have moved on since (broken, regraded, dispatched),
+        // the engine refuses: those movements have to be undone first.
+        fgStockService.applyAll(movements(entry, -1),
+                new FgStockService.Source(FgSource.PACK, entry.getId(), entry.getEntryNo(), LocalDate.now(ProductionRules.PLANT_ZONE), true));
         entry.setStatus(DocStatus.CANCELLED);
         entry.setCancelledAt(Instant.now());
         entry.setCancelledBy(CurrentUser.get().getUsername());
@@ -162,6 +182,22 @@ public class PackEntryService {
         }
     }
 
+    /** The pillar must be in this plant, and open (unless this draft already had it). */
+    private static FgPillar requirePillar(FgPillar pillar, Long id, PackEntry entry, Set<Long> pillarsBefore) {
+        if (pillar == null) {
+            throw new NotFoundException("Pillar", id);
+        }
+        if (!pillar.getGodown().getPlant().getId().equals(entry.getPlant().getId())) {
+            throw new BusinessException("Pillar " + pillar.getCode() + " is not in plant " + entry.getPlant().getCode());
+        }
+        boolean open = pillar.isActive() && pillar.getGodown().isActive();
+        if (!open && !pillarsBefore.contains(pillar.getId())) {
+            throw new BusinessException("Pillar " + pillar.getGodown().getCode() + " " + pillar.getCode()
+                    + " is closed. Choose another one.");
+        }
+        return pillar;
+    }
+
     /** " a3 " -> "A3". Letters, digits and . / - only, so the stickers and the records always match. */
     private static String code(String value, String what) {
         String code = value.trim().toUpperCase(Locale.ROOT);
@@ -169,6 +205,16 @@ public class PackEntryService {
             throw new BusinessException(what + " \"" + value.trim() + "\" can only use letters, digits and . / - (up to 10)");
         }
         return code;
+    }
+
+    /** One stock movement per row: +boxes when posting (sign 1), -boxes when cancelling (sign -1). */
+    private static List<FgStockService.Movement> movements(PackEntry entry, int sign) {
+        ProductionLot lot = entry.getLot();
+        return entry.getLines().stream()
+                .filter(l -> l.getPillar() != null)
+                .map(l -> new FgStockService.Movement(new FgStockService.Batch(l.getPillar(), lot.getDesign(), lot.getId(),
+                        lot.getLotNo(), l.getGrade(), l.getShade(), l.getCaliber()), sign * l.getBoxes()))
+                .toList();
     }
 
     private PackEntryResponse toResponse(PackEntry e) {
@@ -201,10 +247,14 @@ public class PackEntryService {
             throw new BusinessException("Size " + size.getCode() + " has no pieces per box. Set it under Setup -> Sizes.");
         }
 
-        // A grade that was already on this draft may stay even if it has been made inactive since.
+        // A grade or pillar that was already on this draft may stay even if it has been made inactive since.
         Set<Long> gradesBefore = entry.getLines().stream().map(l -> l.getGrade().getId()).collect(Collectors.toSet());
+        Set<Long> pillarsBefore = entry.getLines().stream().filter(l -> l.getPillar() != null)
+                .map(l -> l.getPillar().getId()).collect(Collectors.toSet());
         Map<Long, Grade> grades = gradeRepository.findAllById(req.lines().stream().map(PackLineRequest::gradeId).toList())
                 .stream().collect(Collectors.toMap(Grade::getId, Function.identity()));
+        Map<Long, FgPillar> pillars = pillarRepository.findByIdIn(req.lines().stream().map(PackLineRequest::pillarId).toList())
+                .stream().collect(Collectors.toMap(FgPillar::getId, Function.identity()));
 
         entry.getLines().clear();
         if (entry.getId() != null) {
@@ -229,9 +279,10 @@ public class PackEntryService {
             }
             String shade = code(row.shade(), "Shade");
             String caliber = code(row.caliber(), "Caliber");
-            if (!seen.add(grade.getId() + "|" + shade + "|" + caliber)) {
-                throw new BusinessException(grade.getName() + ", shade " + shade + ", caliber " + caliber
-                        + " is entered twice. Put those boxes in one row.");
+            FgPillar pillar = requirePillar(pillars.get(row.pillarId()), row.pillarId(), entry, pillarsBefore);
+            if (!seen.add(grade.getId() + "|" + shade + "|" + caliber + "|" + pillar.getId())) {
+                throw new BusinessException(grade.getName() + ", shade " + shade + ", caliber " + caliber + " at pillar "
+                        + pillar.getCode() + " is entered twice. Put those boxes in one row.");
             }
             PackEntryLine line = new PackEntryLine();
             line.setEntry(entry);
@@ -239,6 +290,7 @@ public class PackEntryService {
             line.setGrade(grade);
             line.setShade(shade);
             line.setCaliber(caliber);
+            line.setPillar(pillar);
             line.setBoxes(row.boxes());
             line.setPieces(row.boxes() * perBox);
             entry.getLines().add(line);

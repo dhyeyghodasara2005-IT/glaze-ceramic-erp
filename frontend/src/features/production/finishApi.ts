@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
 import type {
   DocStatus, FinishingOverview, GradeOption, LotCheck, LotCheckRequest, PackCodes, PackEntry, PackEntryRequest,
-  PackEntrySummary, PageResponse,
+  PackEntrySummary, PageResponse, PillarOption,
 } from '../../api/types'
 import { useProdMutation } from './api'
 
@@ -27,6 +27,15 @@ export function useGradeOptions(enabled = true) {
     queryFn: async () => (await api.get<GradeOption[]>('/production/lookups/grades')).data,
     enabled,
     staleTime: 5 * 60_000,
+  })
+}
+
+/** Open pillars of the plant's finished-goods godowns, with how full each is (step 5a). */
+export function usePillarOptions(plantId?: number) {
+  return useQuery({
+    queryKey: ['pillar-options', plantId],
+    queryFn: async () => (await api.get<PillarOption[]>('/production/lookups/pillars', { params: { plantId } })).data,
+    enabled: plantId !== undefined,
   })
 }
 

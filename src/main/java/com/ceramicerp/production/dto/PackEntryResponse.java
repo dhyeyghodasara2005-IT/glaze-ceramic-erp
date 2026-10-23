@@ -49,7 +49,8 @@ public record PackEntryResponse(
         Long version
 ) {
     public record Line(Long id, int lineNo, Long gradeId, String gradeCode, String gradeName, String shade,
-                       String caliber, int boxes, int pieces, BigDecimal sqm) {
+                       String caliber, int boxes, int pieces, BigDecimal sqm, Long pillarId, String pillarCode,
+                       String godownCode) {
     }
 
     /** sqm: square metres of so many pieces (the service knows the tile size). */
@@ -57,9 +58,13 @@ public record PackEntryResponse(
                                          BigDecimal brokenPct) {
         var lot = e.getLot();
         var size = lot.getDesign().getTileSize();
-        List<Line> lines = e.getLines().stream().map((PackEntryLine l) -> new Line(l.getId(), l.getLineNo(),
-                l.getGrade().getId(), l.getGrade().getCode(), l.getGrade().getName(), l.getShade(), l.getCaliber(),
-                l.getBoxes(), l.getPieces(), sqm.apply(l.getPieces()))).toList();
+        List<Line> lines = e.getLines().stream().map((PackEntryLine l) -> {
+            var pillar = l.getPillar();
+            return new Line(l.getId(), l.getLineNo(), l.getGrade().getId(), l.getGrade().getCode(), l.getGrade().getName(),
+                    l.getShade(), l.getCaliber(), l.getBoxes(), l.getPieces(), sqm.apply(l.getPieces()),
+                    pillar == null ? null : pillar.getId(), pillar == null ? null : pillar.getCode(),
+                    pillar == null ? null : pillar.getGodown().getCode());
+        }).toList();
         return new PackEntryResponse(e.getId(), e.getPlant().getId(), e.getPlant().getCode(), e.getEntryNo(),
                 lot.getId(), lot.getLotNo(), lot.getDesign().getName(), size.getCode(), lot.getPress().getCode(),
                 size.getPcsPerBox(), sqmPerTile, e.getProdDate(), e.getShift().getId(), e.getShift().getCode(),

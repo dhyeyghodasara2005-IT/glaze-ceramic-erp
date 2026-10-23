@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/** One row of a pack entry: so many boxes of this grade, shade and caliber. */
+/** One row of a pack entry: so many boxes of this grade, shade and caliber, going to this pillar. */
 public record PackLineRequest(
         @NotNull(message = "Select the grade")
         Long gradeId,
@@ -18,6 +18,10 @@ public record PackLineRequest(
         String caliber,
 
         @NotNull(message = "Enter the boxes") @Min(1) @Max(100_000)
-        Integer boxes
+        Integer boxes,
+
+        /** The pillar in the finished-goods godown the pallets go to. */
+        @NotNull(message = "Choose the pillar")
+        Long pillarId
 ) {
 }

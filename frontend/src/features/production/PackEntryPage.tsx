@@ -16,7 +16,7 @@ import { dateTime, qty, shortDate } from '../store/format'
 import { useCurrentShift, useProdMachines, useProdShifts } from './api'
 import {
   PACK_PATH, useCancelPackEntry, useDeletePackEntry, useFinishingOverview, useGradeOptions, usePackCodes, usePackEntry,
-  usePostPackEntry, useSavePackEntry,
+  usePillarOptions, usePostPackEntry, useSavePackEntry,
 } from './finishApi'
 import { useSelectableLots } from './pressApi'
 import ReasonModal from './ReasonModal'
@@ -26,6 +26,8 @@ interface RowValues {
   shade?: string
   caliber?: string
   boxes?: number
+  /** the finished-goods pillar the pallets go to (step 5a) */
+  pillarId?: number
 }
 type FormValues = Omit<PackEntryRequest, 'plantId' | 'prodDate' | 'lines'> & { prodDate: Dayjs; lines: RowValues[] }
 
@@ -72,6 +74,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
   const grades = useGradeOptions()
   const selectable = useSelectableLots(editable ? plantId : undefined)
   const finishing = useFinishingOverview(editable ? plantId : undefined)
+  const pillars = usePillarOptions(editable ? plantId : undefined)
 
   const save = useSavePackEntry()
   const post = usePostPackEntry()
@@ -101,7 +104,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
       form.setFieldsValue({
         ...entry,
         prodDate: dayjs(entry.prodDate),
-        lines: entry.lines.map((l) => ({ gradeId: l.gradeId, shade: l.shade, caliber: l.caliber, boxes: l.boxes })),
+        lines: entry.lines.map((l) => ({ gradeId: l.gradeId, shade: l.shade, caliber: l.caliber, boxes: l.boxes, pillarId: l.pillarId })),
       })
     }
   }, [entry, form])
@@ -134,6 +137,21 @@ function PackEditor({ entryId }: { entryId?: number }) {
     // a grade made inactive since this draft was saved still shows by name
     if (!gradeOptions.some((o) => o.value === l.gradeId)) gradeOptions.push({ value: l.gradeId, label: l.gradeName })
   }
+  // Pillars: the godown code only matters when the plant has more than one godown.
+  const manyGodowns = new Set((pillars.data ?? []).map((p) => p.godownId)).size > 1
+  const pillarOptions = (pillars.data ?? []).map((p) => ({
+    value: p.id,
+    label: manyGodowns ? `${p.godownCode} · ${p.code}` : p.code,
+    // what the supervisor chooses by: how full it is, and which colour stands there
+    detail: p.boxes === 0 ? t('fg.fullness.empty')
+      : `${p.capacityPallets && !p.palletsUnknown ? `${p.pallets}/${p.capacityPallets} ${t('fg.palletsShort')}` : t('finishing.boxesN', { n: n(p.boxes) })}`
+        + (p.mainDesign ? ` · ${p.mainDesign} ${p.mainShade ?? ''}` : ''),
+  }))
+  for (const l of entry?.lines ?? []) {
+    if (l.pillarId && !pillarOptions.some((o) => o.value === l.pillarId)) {
+      pillarOptions.push({ value: l.pillarId, label: `${l.godownCode} · ${l.pillarCode}`, detail: '' })
+    }
+  }
 
   // Live figures: the server works out the same, this is only so the supervisor sees them while typing.
   const perBox = lot?.pcsPerBox ?? entry?.pcsPerBox
@@ -158,7 +176,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
     // the same grade + shade + caliber twice: show it on the second row, like the server would refuse it
     const seen = new Set<string>()
     for (const [i, r] of v.lines.entries()) {
-      const key = `${r.gradeId}|${r.shade}|${r.caliber}`
+      const key = `${r.gradeId}|${r.shade}|${r.caliber}|${r.pillarId}`
       if (seen.has(key)) {
         form.setFields([{ name: ['lines', i, 'caliber'], errors: [t('finishing.duplicateRow')] }])
         return undefined
@@ -175,7 +193,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
           shiftId: v.shiftId,
           machineId: v.machineId,
           broken: v.broken ?? 0,
-          lines: v.lines.map((r) => ({ gradeId: r.gradeId!, shade: r.shade!, caliber: r.caliber!, boxes: r.boxes! })),
+          lines: v.lines.map((r) => ({ gradeId: r.gradeId!, shade: r.shade!, caliber: r.caliber!, boxes: r.boxes!, pillarId: r.pillarId! })),
           remarks: v.remarks?.trim() || undefined,
         },
       })
@@ -235,6 +253,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
   const required = { required: true, message: t('common.required') }
   const codeRules = [required, { pattern: CODE, message: t('finishing.codeInvalid') }]
   const noMachine = editable && machines.data !== undefined && sorters.length === 0
+  const noPillars = editable && pillars.data !== undefined && pillars.data.length === 0
 
   return (
     <>
@@ -280,6 +299,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
 
       <FadeIn delay={0.04}>
         {noMachine && <Alert className="doc-alert" type="warning" showIcon title={t('prod.noMachines', { type: t('finishing.sortingLine') })} />}
+        {noPillars && <Alert className="doc-alert" type="warning" showIcon title={t('fg.noPillarsForPack')} />}
         {entry?.status === 'POSTED' && (
           <Alert className="doc-alert" type="success" showIcon title={t('store.postedInfo', { by: entry.postedBy, at: dateTime(entry.postedAt) })} />
         )}
@@ -336,6 +356,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
                     <span>{t('finishing.grade')}</span>
                     <span>{t('finishing.shade')}</span>
                     <span>{t('finishing.caliber')}</span>
+                    <span>{t('fg.pillar')}</span>
                     <span>{t('finishing.boxes')}</span>
                     <span className="num">{t('finishing.pieces')}</span>
                     <span className="num">{t('finishing.area')}</span>
@@ -367,6 +388,18 @@ function PackEditor({ entryId }: { entryId?: number }) {
                             </AutoComplete>
                           </Form.Item>
                         </Cell>
+                        <Cell label={t('fg.pillar')}>
+                          <Form.Item name={[field.name, 'pillarId']} rules={[required]}>
+                            <Select options={pillarOptions} loading={pillars.isLoading} aria-label={t('fg.pillar')}
+                              showSearch={{ optionFilterProp: 'label' }} popupMatchSelectWidth={false}
+                              optionRender={(o) => (
+                                <div>
+                                  <b>{o.label}</b>
+                                  {o.data.detail && <div className="cell-sub">{o.data.detail}</div>}
+                                </div>
+                              )} />
+                          </Form.Item>
+                        </Cell>
                         <Cell label={t('finishing.boxes')}>
                           <Form.Item name={[field.name, 'boxes']} rules={[required]}>
                             <InputNumber<number> min={1} max={100000} precision={0} style={{ width: '100%' }} inputMode="numeric"
@@ -392,8 +425,11 @@ function PackEditor({ entryId }: { entryId?: number }) {
                 <Form.ErrorList errors={errors} />
                 {editable && (
                   <Button type="dashed" block icon={<PlusOutlined />}
-                    // a new row starts with the last row's shade and caliber: boxes of one shade come in several grades
-                    onClick={() => add({ shade: rows?.[rows.length - 1]?.shade, caliber: rows?.[rows.length - 1]?.caliber })}>
+                    // a new row starts with the last row's shade, caliber and pillar: boxes of one shade come in several grades
+                    onClick={() => {
+                      const last = rows?.[rows.length - 1]
+                      add({ shade: last?.shade, caliber: last?.caliber, pillarId: last?.pillarId })
+                    }}>
                     {t('finishing.addRow')}
                   </Button>
                 )}

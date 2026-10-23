@@ -38,7 +38,10 @@ public enum Permission {
     QUALITY_CHECK("Production", "Quality checker: bend, size and thickness checks in the cooling area"),
     POLISH_ENTRY("Production", "Polishing supervisor: polishing line shift entries"),
     PACKING_ENTRY("Production", "Packing supervisor: sorting & packing entries - boxes by grade, shade and caliber"),
-    PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)");
+    PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)"),
+
+    FG_VIEW("Finished goods", "View finished-goods stock, godowns and pillars"),
+    FG_ENTRY("Finished goods", "Warehouse: set up finished-goods godowns and pillars");
 
     private final String group;
     private final String description;

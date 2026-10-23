@@ -78,6 +78,8 @@ export type Permission =
   | 'POLISH_ENTRY'
   | 'PACKING_ENTRY'
   | 'PRODUCTION_CANCEL'
+  | 'FG_VIEW'
+  | 'FG_ENTRY'
 
 export interface PermissionInfo {
   code: Permission
@@ -1263,6 +1265,9 @@ export interface PackLine {
   boxes: number
   pieces: number
   sqm?: number
+  pillarId?: number
+  pillarCode?: string
+  godownCode?: string
 }
 
 export interface PackEntry {
@@ -1309,7 +1314,7 @@ export interface PackEntryRequest {
   prodDate: string
   shiftId: number
   machineId: number
-  lines: { gradeId: number; shade: string; caliber: string; boxes: number }[]
+  lines: { gradeId: number; shade: string; caliber: string; boxes: number; pillarId: number }[]
   broken?: number
   remarks?: string
 }
@@ -1380,4 +1385,97 @@ export interface FinishingOverview {
     checks: number
     grades: GradeCount[]
   }
+}
+
+// ---- finished goods (step 5) ----
+
+export interface FgGodown {
+  id: number
+  plantId: number
+  code: string
+  name: string
+  active: boolean
+  pillars: number
+  boxes: number
+  version: number
+}
+
+export interface FgGodownRequest {
+  plantId: number
+  code: string
+  name: string
+  active?: boolean
+}
+
+/** Boxes of one batch + grade + shade + caliber at one pillar. */
+export interface FgStockRow {
+  id: number
+  godownId: number
+  godownCode: string
+  pillarId: number
+  pillarCode: string
+  designId: number
+  designCode: string
+  designName: string
+  sizeCode: string
+  lotId?: number
+  batchCode: string
+  gradeId: number
+  gradeCode: string
+  gradeName: string
+  gradeSortOrder: number
+  shade: string
+  caliber: string
+  boxes: number
+  sqm?: number
+  /** whole pallets (rounded up); missing when the size has no boxes per pallet */
+  pallets?: number
+}
+
+export interface FgMove {
+  id: number
+  moveDate: string
+  boxes: number
+  balanceBoxes: number
+  source: 'PACK'
+  sourceId: number
+  sourceNo: string
+  reversal: boolean
+  createdAt: string
+  createdBy: string
+}
+
+export interface FgLedger {
+  stock: FgStockRow
+  moves: FgMove[]
+}
+
+export interface GodownMapPillar {
+  id: number
+  code: string
+  capacityPallets?: number
+  active: boolean
+  boxes: number
+  pallets: number
+  palletsUnknown: boolean
+  stock: FgStockRow[]
+}
+
+export interface GodownMap {
+  godown: FgGodown
+  pillars: GodownMapPillar[]
+}
+
+/** A pillar for the pack entry's dropdown, with how full it is. */
+export interface PillarOption {
+  id: number
+  code: string
+  godownId: number
+  godownCode: string
+  capacityPallets?: number
+  boxes: number
+  pallets: number
+  palletsUnknown: boolean
+  mainDesign?: string
+  mainShade?: string
 }

@@ -4,7 +4,9 @@ import {
   AppstoreOutlined,
   AuditOutlined,
   GoldOutlined,
+  HddOutlined,
   SketchOutlined,
+  TableOutlined,
   BankOutlined,
   FireOutlined,
   FormatPainterOutlined,
@@ -194,6 +196,17 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         path: '/production/pack-entries', labelKey: 'menu.packEntries', icon: <GoldOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'pack-entry', create: { labelKey: 'finishing.newPack', permission: 'PACKING_ENTRY' },
       },
+    ],
+  },
+  {
+    // Step 5: boxes ready to sell, and where they stand.
+    labelKey: 'menu.finishedGoods',
+    items: [
+      {
+        path: '/fg/stock', labelKey: 'menu.fgStock', icon: <HddOutlined />, permission: 'FG_VIEW', mobile: true,
+        worksIn: ['FG_ENTRY'],
+      },
+      { path: '/fg/godowns', labelKey: 'menu.fgGodowns', icon: <TableOutlined />, permission: 'FG_VIEW' },
     ],
   },
   {

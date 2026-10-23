@@ -127,6 +127,8 @@ const AFFECTED = [
   'body-batches', 'spray-runs', 'body-overview', 'prod-stock', 'available-batches', 'stock', 'store-docs', 'ledger',
   'lots', 'selectable-lots', 'press-entries', 'press-overview', 'silos', 'line-entries', 'line-overview',
   'finishing-overview', 'pack-entries', 'pack-codes', 'lot-checks',
+  // posting a pack entry puts boxes into finished-goods stock
+  'pillar-options', 'fg-stock', 'fg-godowns', 'godown-map', 'fg-ledger',
 ]
 
 export function useProdMutation<V, R extends { id: number } | void>(cacheKey: string, fn: (vars: V) => Promise<R>) {

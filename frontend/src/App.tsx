@@ -43,6 +43,9 @@ import FinishingPage from './features/production/FinishingPage'
 import QualityChecksPage from './features/production/QualityChecksPage'
 import PackEntriesPage from './features/production/PackEntriesPage'
 import PackEntryPage from './features/production/PackEntryPage'
+import FgStockPage from './features/fg/FgStockPage'
+import FgGodownsPage from './features/fg/FgGodownsPage'
+import GodownMapPage from './features/fg/GodownMapPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -119,6 +122,9 @@ export default function App() {
         <Route path="production/polish-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntryPage key="POLISH" stage="POLISH" /></RequirePermission>} />
         <Route path="production/pack-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><PackEntriesPage /></RequirePermission>} />
         <Route path="production/pack-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><PackEntryPage /></RequirePermission>} />
+        <Route path="fg/stock" element={<RequirePermission permission="FG_VIEW"><FgStockPage /></RequirePermission>} />
+        <Route path="fg/godowns" element={<RequirePermission permission="FG_VIEW"><FgGodownsPage /></RequirePermission>} />
+        <Route path="fg/godowns/:id" element={<RequirePermission permission="FG_VIEW"><GodownMapPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -1,5 +1,7 @@
 package com.ceramicerp.production;
 
+import com.ceramicerp.fg.FgGodownService;
+import com.ceramicerp.fg.dto.PillarOption;
 import com.ceramicerp.master.BodyRecipeService;
 import com.ceramicerp.master.DesignRepository;
 import com.ceramicerp.master.GradeRepository;
@@ -50,6 +52,7 @@ public class ProductionLookupController {
     private final StockBalanceRepository balanceRepository;
     private final DesignRepository designRepository;
     private final GradeRepository gradeRepository;
+    private final FgGodownService fgGodownService;
 
     @GetMapping("/body/overview")
     @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
@@ -139,5 +142,12 @@ public class ProductionLookupController {
                 .filter(g -> g.isActive() && g.isSellable())
                 .map(g -> new GradeOption(g.getId(), g.getCode(), g.getName(), g.getSortOrder()))
                 .toList();
+    }
+
+    /** Open pillars of the plant's finished-goods godowns, with how full each is: for the pack entry. */
+    @GetMapping("/lookups/pillars")
+    @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
+    public List<PillarOption> pillars(@RequestParam Long plantId) {
+        return fgGodownService.pillarOptions(plantId);
     }
 }

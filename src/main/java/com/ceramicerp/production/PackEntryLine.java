@@ -1,6 +1,7 @@
 package com.ceramicerp.production;
 
 import com.ceramicerp.common.BaseEntity;
+import com.ceramicerp.fg.FgPillar;
 import com.ceramicerp.master.Grade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +35,11 @@ public class PackEntryLine extends BaseEntity {
 
     @Column(nullable = false, length = 10)
     private String caliber;
+
+    /** Where in the finished-goods godown these boxes go: the packing supervisor chooses it. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pillar_id")
+    private FgPillar pillar;
 
     @Column(nullable = false)
     private int boxes;
