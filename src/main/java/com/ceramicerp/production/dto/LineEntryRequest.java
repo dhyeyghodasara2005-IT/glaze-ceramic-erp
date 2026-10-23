@@ -13,8 +13,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * One shift of a lot at the glaze line or the kiln (saved as DRAFT). Readings of the other stage
- * are ignored: a kiln entry has no glaze weight, a glaze entry has no firing temperature.
+ * One shift of a lot at the glaze line, the kiln or the polishing line (saved as DRAFT). Readings of
+ * other stages are ignored: a kiln entry has no glaze weight, a glaze entry has no firing temperature.
  */
 public record LineEntryRequest(
         @NotNull(message = "Select a plant")
@@ -32,7 +32,7 @@ public record LineEntryRequest(
         @NotNull(message = "Select the shift")
         Long shiftId,
 
-        /** The glaze line or the kiln. */
+        /** The glaze line, the kiln or the polishing line. */
         @NotNull(message = "Select the machine")
         Long machineId,
 
@@ -67,6 +67,10 @@ public record LineEntryRequest(
 
         @DecimalMin("0") @Digits(integer = 10, fraction = 2)
         BigDecimal gasScm,
+
+        // polishing
+        @DecimalMin("0") @Digits(integer = 10, fraction = 2)
+        BigDecimal powerKwh,
 
         @Size(max = 500)
         String remarks

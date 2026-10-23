@@ -39,6 +39,10 @@ import PressEntryPage from './features/production/PressEntryPage'
 import LinePage from './features/production/LinePage'
 import LineEntriesPage from './features/production/LineEntriesPage'
 import LineEntryPage from './features/production/LineEntryPage'
+import FinishingPage from './features/production/FinishingPage'
+import QualityChecksPage from './features/production/QualityChecksPage'
+import PackEntriesPage from './features/production/PackEntriesPage'
+import PackEntryPage from './features/production/PackEntryPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -104,11 +108,17 @@ export default function App() {
         <Route path="production/press-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><PressEntriesPage /></RequirePermission>} />
         <Route path="production/press-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><PressEntryPage /></RequirePermission>} />
         <Route path="production/line" element={<RequirePermission permission="PRODUCTION_VIEW"><LinePage /></RequirePermission>} />
-        {/* one list + one editor for both stages; key makes React start fresh when the stage changes */}
+        {/* one list + one editor for every line stage; key makes React start fresh when the stage changes */}
         <Route path="production/glaze-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntriesPage key="GLAZE" stage="GLAZE" /></RequirePermission>} />
         <Route path="production/glaze-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntryPage key="GLAZE" stage="GLAZE" /></RequirePermission>} />
         <Route path="production/kiln-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntriesPage key="KILN" stage="KILN" /></RequirePermission>} />
         <Route path="production/kiln-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntryPage key="KILN" stage="KILN" /></RequirePermission>} />
+        <Route path="production/finishing" element={<RequirePermission permission="PRODUCTION_VIEW"><FinishingPage /></RequirePermission>} />
+        <Route path="production/quality-checks" element={<RequirePermission permission="PRODUCTION_VIEW"><QualityChecksPage /></RequirePermission>} />
+        <Route path="production/polish-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntriesPage key="POLISH" stage="POLISH" /></RequirePermission>} />
+        <Route path="production/polish-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><LineEntryPage key="POLISH" stage="POLISH" /></RequirePermission>} />
+        <Route path="production/pack-entries" element={<RequirePermission permission="PRODUCTION_VIEW"><PackEntriesPage /></RequirePermission>} />
+        <Route path="production/pack-entries/:id" element={<RequirePermission permission="PRODUCTION_VIEW"><PackEntryPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

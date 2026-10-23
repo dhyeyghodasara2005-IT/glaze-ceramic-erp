@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
-/** One shift of one design lot at the glaze line (stage GLAZE) or the kiln (stage KILN). */
+/** One shift of one design lot at the glaze line (stage GLAZE), the kiln (KILN) or the polishing line (POLISH). */
 @Getter
 @Setter
 @Entity
@@ -52,7 +52,7 @@ public class LineEntry extends BaseEntity {
     @JoinColumn(name = "shift_id", nullable = false)
     private Shift shift;
 
-    /** The glaze line, or the kiln. */
+    /** The glaze line, the kiln or the polishing line. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "machine_id", nullable = false)
     private Machine machine;
@@ -95,6 +95,10 @@ public class LineEntry extends BaseEntity {
 
     @Column(precision = 12, scale = 2)
     private BigDecimal gasScm;
+
+    // ---- polishing ----
+    @Column(precision = 12, scale = 2)
+    private BigDecimal powerKwh;
 
     @Column(length = 500)
     private String remarks;

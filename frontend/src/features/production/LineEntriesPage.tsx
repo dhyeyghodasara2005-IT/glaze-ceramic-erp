@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, DatePicker, Input, Segmented, Table, type TableColumnsType } from 'antd'
-import { FireOutlined, FormatPainterOutlined, PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { Dayjs } from 'dayjs'
@@ -13,11 +13,12 @@ import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
 import { DOC_STATUSES } from '../store/docTypes'
 import { qty, shortDate } from '../store/format'
-import { LINE_PATHS, useLineEntries } from './lineApi'
+import { LINE_PATHS, LINE_PERMISSION, useLineEntries } from './lineApi'
+import LineStageIcon from './LineStageIcon'
 
 type StatusFilter = DocStatus | 'ALL'
 
-/** Glaze or kiln entries of the current plant. App.tsx mounts it once per stage. */
+/** Glaze, kiln or polishing entries of the current plant. App.tsx mounts it once per stage. */
 export default function LineEntriesPage({ stage }: { stage: LineStage }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -48,7 +49,7 @@ export default function LineEntriesPage({ stage }: { stage: LineStage }) {
 
   if (!currentPlant) return <NoPlant />
 
-  const newButton = can(stage === 'GLAZE' ? 'GLAZE_ENTRY' : 'KILN_ENTRY') && (
+  const newButton = can(LINE_PERMISSION[stage]) && (
     <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(`${base}/new`)}>{t(`line.newEntry.${stage}`)}</Button>
   )
 
@@ -91,6 +92,7 @@ export default function LineEntriesPage({ stage }: { stage: LineStage }) {
           <div className="cell-sub">
             {e.tilesIn.toLocaleString('en-IN')} {t('line.tilesIn').toLowerCase()} · −{e.rejects.toLocaleString('en-IN')}
             {e.gasScm != null && ` · ${qty(e.gasScm, 0)} SCM`}
+            {e.powerKwh != null && ` · ${qty(e.powerKwh, 0)} kWh`}
           </div>
         </>
       ),
@@ -101,7 +103,7 @@ export default function LineEntriesPage({ stage }: { stage: LineStage }) {
   return (
     <>
       <PageHeader title={t(`line.listTitle.${stage}`)} subtitle={t(`line.listSubtitle.${stage}`)}
-        icon={stage === 'GLAZE' ? <FormatPainterOutlined /> : <FireOutlined />} extra={newButton} />
+        icon={<LineStageIcon stage={stage} />} extra={newButton} />
       <FadeIn delay={0.05} className="toolbar">
         <Input.Search allowClear placeholder={t('line.searchEntries')} style={{ maxWidth: 280 }}
           onSearch={(v) => {

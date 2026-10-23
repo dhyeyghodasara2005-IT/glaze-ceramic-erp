@@ -6,6 +6,8 @@ import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
 import com.ceramicerp.master.Design;
 import com.ceramicerp.master.DesignRepository;
+import com.ceramicerp.master.Grade;
+import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.master.Machine;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MachineType;
@@ -15,11 +17,15 @@ import com.ceramicerp.numbering.DocumentNumberService;
 import com.ceramicerp.organization.Plant;
 import com.ceramicerp.organization.PlantService;
 import com.ceramicerp.production.dto.LineEntrySummary;
+import com.ceramicerp.production.dto.LotCheckResponse;
 import com.ceramicerp.production.dto.LotFlow;
 import com.ceramicerp.production.dto.LotOpenRequest;
 import com.ceramicerp.production.dto.LotResponse;
 import com.ceramicerp.production.dto.LotSummary;
 import com.ceramicerp.production.dto.LotTotals;
+import com.ceramicerp.production.dto.PackEntrySummary;
+import com.ceramicerp.production.dto.PackTotals;
+import com.ceramicerp.production.dto.PackedBatch;
 import com.ceramicerp.production.dto.PressEntrySummary;
 import com.ceramicerp.production.dto.StageTotals;
 import com.ceramicerp.security.CurrentUser;
@@ -43,9 +49,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.ceramicerp.production.ProductionRules.pct;
 import static com.ceramicerp.production.ProductionRules.requireActiveIfChanged;
 import static com.ceramicerp.production.ProductionRules.requireMachine;
 import static com.ceramicerp.production.ProductionRules.requireNotFuture;
@@ -66,6 +74,9 @@ public class LotService {
     private final ProductionLotRepository lotRepository;
     private final PressEntryRepository entryRepository;
     private final LineEntryRepository lineRepository;
+    private final PackEntryRepository packRepository;
+    private final LotCheckRepository checkRepository;
+    private final GradeRepository gradeRepository;
     private final PressEntryPowderRepository powderRepository;
     private final SprayRunRepository runRepository;
     private final DesignRepository designRepository;
@@ -187,8 +198,8 @@ public class LotService {
         var design = l.getDesign();
         BigDecimal perTile = sqmPerTile(design.getTileSize());
         return new LotSummary(l.getId(), l.getLotNo(), design.getId(), design.getCode(), design.getName(),
-                design.getTileSize().getCode(), design.getFinish().getName(), perTile, l.getPress().getId(),
-                l.getPress().getCode(), l.getStatus(), l.getOpenedDate(), l.getOpenedShift().getCode(),
+                design.getTileSize().getCode(), design.getFinish().getName(), perTile, design.getTileSize().getPcsPerBox(),
+                l.getPress().getId(), l.getPress().getCode(), l.getStatus(), l.getOpenedDate(), l.getOpenedShift().getCode(),
                 l.getOpenedAt(), l.getClosedAt(), t.pressed(), t.good(), sqm(t.good(), perTile));
     }
 
@@ -204,12 +215,33 @@ public class LotService {
         List<PressEntrySummary> entries = entryRepository.findByLotIdOrderByProdDateAscIdAsc(l.getId()).stream()
                 .map(PressEntrySummary::from).toList();
         LotFlow flow = flows(List.of(l), Map.of(l.getId(), t)).get(l.getId());
+        List<LotCheckResponse> checks = checkRepository.findByLotIdOrderByCheckDateAscIdAsc(l.getId()).stream()
+                .map(LotCheckResponse::from).toList();
+        List<PackEntrySummary> packEntries = packRepository.findByLotIdOrderByProdDateAscIdAsc(l.getId()).stream()
+                .map(e -> PackEntrySummary.from(e, sqm(e.getPiecesPacked(), perTile))).toList();
+        List<PackedBatch> packed = packRepository.packedBatches(l.getId());
         return new LotResponse(l.getId(), l.getPlant().getId(), l.getPlant().getCode(), l.getLotNo(), design.getId(),
                 design.getCode(), design.getName(), design.getTileSize().getCode(), design.getFinish().getName(), perTile,
                 l.getPress().getId(), l.getPress().getCode(), l.getPress().getName(), l.getStatus(), l.getOpenedDate(),
                 l.getOpenedShift().getCode(), l.getRemarks(), l.getOpenedAt(), l.getOpenedBy(), l.getClosedAt(),
                 l.getClosedBy(), l.getCancelledAt(), l.getCancelledBy(), l.getCancelReason(), l.getVersion(), totals,
-                flow, entries, lineEntries(l.getId(), LineStage.GLAZE), lineEntries(l.getId(), LineStage.KILN), trace(l.getId()));
+                flow, entries, lineEntries(l.getId(), LineStage.GLAZE), lineEntries(l.getId(), LineStage.KILN), checks,
+                lineEntries(l.getId(), LineStage.POLISH), packEntries, packed, quality(checks, packed, flow),
+                trace(l.getId()));
+    }
+
+    /** Expected top-grade share (latest check that gave one) against what sorting found so far. */
+    private LotResponse.Quality quality(List<LotCheckResponse> checks, List<PackedBatch> packed, LotFlow flow) {
+        Optional<Grade> top = ProductionRules.topGrade(gradeRepository);
+        BigDecimal expected = null;
+        for (LotCheckResponse c : checks) {     // oldest first: the last one wins
+            if (c.status() == DocStatus.POSTED && c.expectedTopPct() != null) {
+                expected = c.expectedTopPct();
+            }
+        }
+        BigDecimal actual = top.map(g -> pct(packed.stream().filter(b -> b.gradeId().equals(g.getId()))
+                .mapToLong(PackedBatch::pieces).sum(), flow.sorted())).orElse(null);
+        return new LotResponse.Quality(top.map(Grade::getName).orElse(null), expected, actual);
     }
 
     private List<LineEntrySummary> lineEntries(Long lotId, LineStage stage) {
@@ -218,22 +250,24 @@ public class LotService {
     }
 
     /**
-     * Funnels for many lots: one grouped query for the glaze / kiln totals of all of them.
+     * Funnels for many lots: one grouped query for the line-stage totals of all of them, one for packing.
      * pressTotals: the lots' press totals, by lot id (missing = nothing pressed yet).
      */
     Map<Long, LotFlow> flows(List<ProductionLot> lots, Map<Long, LotTotals> pressTotals) {
         List<Long> ids = lots.stream().map(ProductionLot::getId).toList();
         Map<Long, Map<LineStage, StageTotals>> byLot = new HashMap<>();
+        Map<Long, PackTotals> packs = new HashMap<>();
         if (!ids.isEmpty()) {
             for (StageTotals s : lineRepository.totalsForLots(ids)) {
                 byLot.computeIfAbsent(s.lotId(), k -> new EnumMap<>(LineStage.class)).put(s.stage(), s);
             }
+            packRepository.totalsForLots(ids).forEach(p -> packs.put(p.lotId(), p));
         }
         Map<Long, LotFlow> result = new HashMap<>();
         for (ProductionLot l : lots) {
             LotTotals press = pressTotals.getOrDefault(l.getId(), LotTotals.empty(l.getId()));
             result.put(l.getId(), LotFlows.of(press, byLot.getOrDefault(l.getId(), Map.of()),
-                    sqmPerTile(l.getDesign().getTileSize())));
+                    packs.getOrDefault(l.getId(), PackTotals.empty(l.getId())), sqmPerTile(l.getDesign().getTileSize())));
         }
         return result;
     }

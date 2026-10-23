@@ -126,6 +126,7 @@ export function useBodyBatch(id?: number) {
 const AFFECTED = [
   'body-batches', 'spray-runs', 'body-overview', 'prod-stock', 'available-batches', 'stock', 'store-docs', 'ledger',
   'lots', 'selectable-lots', 'press-entries', 'press-overview', 'silos', 'line-entries', 'line-overview',
+  'finishing-overview', 'pack-entries', 'pack-codes', 'lot-checks',
 ]
 
 export function useProdMutation<V, R extends { id: number } | void>(cacheKey: string, fn: (vars: V) => Promise<R>) {
@@ -136,7 +137,7 @@ export function useProdMutation<V, R extends { id: number } | void>(cacheKey: st
       if (saved) queryClient.setQueryData([cacheKey, saved.id], saved)
       for (const key of AFFECTED) queryClient.invalidateQueries({ queryKey: [key] })
       // Records point at each other (batch <-> run <-> press entry <-> lot): refresh the single-record views too.
-      for (const key of ['body-batch', 'spray-run', 'lot', 'press-entry', 'line-entry']) {
+      for (const key of ['body-batch', 'spray-run', 'lot', 'press-entry', 'line-entry', 'pack-entry', 'lot-check']) {
         if (key !== cacheKey) queryClient.invalidateQueries({ queryKey: [key] })
       }
     },

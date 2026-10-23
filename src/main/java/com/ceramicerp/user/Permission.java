@@ -35,6 +35,9 @@ public enum Permission {
     PRESS_ENTRY("Production", "Press & dryer supervisor: design lots, press and dryer shift entries"),
     GLAZE_ENTRY("Production", "Glaze & print supervisor: glaze line and digital printer shift entries"),
     KILN_ENTRY("Production", "Kiln supervisor: kiln shift entries"),
+    QUALITY_CHECK("Production", "Quality checker: bend, size and thickness checks in the cooling area"),
+    POLISH_ENTRY("Production", "Polishing supervisor: polishing line shift entries"),
+    PACKING_ENTRY("Production", "Packing supervisor: sorting & packing entries - boxes by grade, shade and caliber"),
     PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)");
 
     private final String group;

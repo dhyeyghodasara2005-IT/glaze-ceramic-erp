@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react'
 import {
   ApartmentOutlined,
+  AppstoreOutlined,
+  AuditOutlined,
+  GoldOutlined,
+  SketchOutlined,
   BankOutlined,
   FireOutlined,
   FormatPainterOutlined,
@@ -48,6 +52,8 @@ export interface MenuEntry {
   permission?: Permission
   /** true = also shown in the phone bottom bar (max 3 besides Home) */
   mobile?: boolean
+  /** Supervisors with one of these work on this page: their phone bar shows it before the others. */
+  worksIn?: Permission[]
   /** Shows "New …" in the search palette; opens `${path}?new=1`. */
   create?: { labelKey: string; permission: Permission }
   /** Search results of this type (from GET /api/search) open on this page with `?open=<id>`. */
@@ -74,7 +80,7 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       },
       {
         path: '/masters/finishes', labelKey: 'menu.finishes', icon: <BgColorsOutlined />, permission: 'MASTER_VIEW',
-        searchType: 'finish', create: { labelKey: 'finish.new', permission: 'MASTER_MANAGE' },
+        searchType: 'finish', create: { labelKey: 'finishing.new', permission: 'MASTER_MANAGE' },
       },
       {
         path: '/masters/categories', labelKey: 'menu.categories', icon: <TagsOutlined />, permission: 'MASTER_VIEW',
@@ -131,13 +137,20 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     items: [
       {
         path: '/production/body', labelKey: 'menu.bodyPrep', icon: <ControlOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+        worksIn: ['BODY_PREP_ENTRY'],
       },
       { path: '/production/silos', labelKey: 'menu.silos', icon: <ContainerOutlined />, permission: 'PRODUCTION_VIEW' },
       {
         path: '/production/press', labelKey: 'menu.press', icon: <BuildOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+        worksIn: ['PRESS_ENTRY'],
       },
       {
         path: '/production/line', labelKey: 'menu.line', icon: <NodeExpandOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+        worksIn: ['GLAZE_ENTRY', 'KILN_ENTRY'],
+      },
+      {
+        path: '/production/finishing', labelKey: 'menu.finishing', icon: <AppstoreOutlined />, permission: 'PRODUCTION_VIEW', mobile: true,
+        worksIn: ['QUALITY_CHECK', 'POLISH_ENTRY', 'PACKING_ENTRY'],
       },
       {
         path: '/production/lots', labelKey: 'menu.lots', icon: <TagOutlined />, permission: 'PRODUCTION_VIEW',
@@ -168,6 +181,18 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/production/kiln-entries', labelKey: 'menu.kilnEntries', icon: <FireOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'kiln-entry', create: { labelKey: 'line.newEntry.KILN', permission: 'KILN_ENTRY' },
+      },
+      {
+        path: '/production/quality-checks', labelKey: 'menu.qualityChecks', icon: <AuditOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'quality-check', create: { labelKey: 'finishing.newCheck', permission: 'QUALITY_CHECK' },
+      },
+      {
+        path: '/production/polish-entries', labelKey: 'menu.polishEntries', icon: <SketchOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'polish-entry', create: { labelKey: 'line.newEntry.POLISH', permission: 'POLISH_ENTRY' },
+      },
+      {
+        path: '/production/pack-entries', labelKey: 'menu.packEntries', icon: <GoldOutlined />, permission: 'PRODUCTION_VIEW',
+        searchType: 'pack-entry', create: { labelKey: 'finishing.newPack', permission: 'PACKING_ENTRY' },
       },
     ],
   },

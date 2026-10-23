@@ -15,7 +15,13 @@ public enum ProductionDocType implements DocumentKind {
     /** One shift of one lot on the glaze line and digital printer. */
     GLAZE_ENTRY("GL"),
     /** One shift of one lot through the kiln. */
-    KILN_ENTRY("KL");
+    KILN_ENTRY("KL"),
+    /** One quality check of a lot in the cooling area. */
+    LOT_CHECK("QC"),
+    /** One shift of one lot on the polishing line. */
+    POLISH_ENTRY("PL"),
+    /** One shift of one lot through sorting and packing. */
+    PACK_ENTRY("PK");
 
     private final String prefix;
 

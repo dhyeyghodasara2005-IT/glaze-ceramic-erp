@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, App, Button, Col, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin } from 'antd'
-import { ArrowLeftOutlined, CheckCircleOutlined, DeleteOutlined, FireOutlined, FormatPainterOutlined, SaveOutlined, StopOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, CheckCircleOutlined, DeleteOutlined, SaveOutlined, StopOutlined } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -9,18 +9,22 @@ import EmptyState from '../../components/EmptyState'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import { applyFieldErrors, errorMessage } from '../../api/errors'
-import type { LineEntry, LineEntryRequest, LineStage } from '../../api/types'
+import type { LineEntry, LineEntryRequest, LineStage, MachineType } from '../../api/types'
 import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
 import { useCurrentShift, useProdMachines, useProdShifts } from './api'
-import { LINE_PATHS, useCancelLineEntry, useDeleteLineEntry, useLineEntry, useLineOverview, usePostLineEntry, useSaveLineEntry } from './lineApi'
+import { LINE_PATHS, LINE_PERMISSION, useCancelLineEntry, useDeleteLineEntry, useLineEntry, useLineOverview, usePostLineEntry, useSaveLineEntry } from './lineApi'
+import { useFinishingOverview } from './finishApi'
 import { useSelectableLots } from './pressApi'
+import LineStageIcon from './LineStageIcon'
 import ReasonModal from './ReasonModal'
 
 type FormValues = Omit<LineEntryRequest, 'plantId' | 'stage' | 'prodDate'> & { prodDate: Dayjs }
 
-/** /production/glaze-entries/new, /production/kiln-entries/12 ... - one editor, the stage decides the fields. */
+const STAGE_MACHINE: Record<LineStage, MachineType> = { GLAZE: 'GLAZE_LINE', KILN: 'KILN', POLISH: 'POLISHING_LINE' }
+
+/** /production/glaze-entries/new, /production/polish-entries/12 ... - one editor, the stage decides the fields. */
 export default function LineEntryPage({ stage }: { stage: LineStage }) {
   const { id } = useParams()
   return <EntryEditor key={id} stage={stage} entryId={id && id !== 'new' ? Number(id) : undefined} />
@@ -36,19 +40,22 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
   const base = LINE_PATHS[stage]
   const isNew = entryId === undefined
   const isGlaze = stage === 'GLAZE'
+  const isPolish = stage === 'POLISH'
   const goBack = () => (location.key !== 'default' ? navigate(-1) : navigate(base))
 
   const entryQuery = useLineEntry(entryId)
   const entry = entryQuery.data
   const plantId = entry?.plantId ?? currentPlant?.id
-  const canEntry = can(isGlaze ? 'GLAZE_ENTRY' : 'KILN_ENTRY')
+  const canEntry = can(LINE_PERMISSION[stage])
   const editable = canEntry && (isNew || entry?.status === 'DRAFT')
 
   const current = useCurrentShift()
   const shifts = useProdShifts()
   const machines = useProdMachines(plantId)
   const lots = useSelectableLots(editable ? plantId : undefined)
-  const overview = useLineOverview(editable ? plantId : undefined)
+  // Polishing: fired tiles can wait in the cooling area for days, so its lots come from the finishing screen.
+  const overview = useLineOverview(editable && !isPolish ? plantId : undefined)
+  const finishing = useFinishingOverview(editable && isPolish ? plantId : undefined)
 
   const save = useSaveLineEntry()
   const post = usePostLineEntry()
@@ -63,12 +70,12 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
   const rejects = Form.useWatch('rejects', form) as number | undefined
 
   // useMemo: the same arrays between renders, so the effect below doesn't re-run on every keystroke.
-  const stageMachines = useMemo(() => (machines.data ?? []).filter((m) => m.type === (isGlaze ? 'GLAZE_LINE' : 'KILN')), [machines.data, isGlaze])
+  const stageMachines = useMemo(() => (machines.data ?? []).filter((m) => m.type === STAGE_MACHINE[stage]), [machines.data, stage])
   const printers = useMemo(() => (machines.data ?? []).filter((m) => m.type === 'DIGITAL_PRINTER'), [machines.data])
 
   // Tiles waiting for this stage in the chosen lot (good from the stage before, not yet entered here).
-  const flow = overview.data?.lots.find((l) => l.lot.id === lotId)?.flow
-  const waiting = flow ? (isGlaze ? flow.waitingGlaze : flow.waitingKiln) : undefined
+  const flow = (isPolish ? finishing.data : overview.data)?.lots.find((l) => l.lot.id === lotId)?.flow
+  const waiting = flow ? { GLAZE: flow.waitingGlaze, KILN: flow.waitingKiln, POLISH: flow.waitingPolish }[stage] : undefined
 
   useEffect(() => {
     if (entry) form.setFieldsValue({ ...entry, prodDate: dayjs(entry.prodDate) })
@@ -92,20 +99,25 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
     if (isNew && waiting !== undefined && waiting > 0 && !form.isFieldTouched('tilesIn')) form.setFieldValue('tilesIn', waiting)
   }, [isNew, waiting, form])
 
+  // Running / recently closed lots, plus (polishing) older lots whose tiles are still in the cooling area.
+  const allLots = useMemo(() => {
+    const list = [...(lots.data ?? []), ...(finishing.data?.lots.map((l) => l.lot) ?? [])]
+    return list.filter((l, i) => list.findIndex((o) => o.id === l.id) === i)
+  }, [lots.data, finishing.data])
   const lotOptions = useMemo(() => {
-    const opts = (lots.data ?? []).map((l) => ({
+    const opts = allLots.map((l) => ({
       value: l.id,
       label: `${l.lotNo} · ${l.designName} · ${l.pressCode}${l.status === 'CLOSED' ? ` (${t('press.lotStatus.CLOSED')})` : ''}`,
     }))
     if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.pressCode}` })
     return opts
-  }, [lots.data, entry, t])
+  }, [allLots, entry, t])
   const machineOptions = stageMachines.map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
   if (entry && !machineOptions.some((o) => o.value === entry.machineId)) machineOptions.push({ value: entry.machineId, label: `${entry.machineCode} · ${entry.machineName}` })
   const printerOptions = printers.map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
   if (entry?.printerId && !printerOptions.some((o) => o.value === entry.printerId)) printerOptions.push({ value: entry.printerId, label: entry.printerCode ?? '' })
 
-  const sqmPerTile = lots.data?.find((l) => l.id === lotId)?.sqmPerTile ?? entry?.sqmPerTile
+  const sqmPerTile = allLots.find((l) => l.id === lotId)?.sqmPerTile ?? entry?.sqmPerTile
   const out = tilesIn ? tilesIn - (rejects ?? 0) : undefined
   const loss = tilesIn ? ((rejects ?? 0) * 100) / tilesIn : undefined
 
@@ -185,7 +197,7 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
             <span>{shortDate(entry.prodDate)} · {t('prod.shift')} {entry.shiftCode}</span>
           </Space>
         )}
-        icon={isGlaze ? <FormatPainterOutlined /> : <FireOutlined />}
+        icon={<LineStageIcon stage={stage} />}
         extra={(
           <Space wrap>
             <Button icon={<ArrowLeftOutlined />} onClick={goBack}>{t('common.back')}</Button>
@@ -319,6 +331,12 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
                   </Form.Item>
                 </Col>
               </>
+            ) : isPolish ? (
+              <Col xs={12} md={4}>
+                <Form.Item name="powerKwh" label={t('finishing.power')}>
+                  <InputNumber<number> min={0} suffix="kWh" style={{ width: '100%' }} inputMode="decimal" />
+                </Form.Item>
+              </Col>
             ) : (
               <>
                 <Col xs={12} md={4}>
@@ -338,7 +356,7 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
                 </Col>
               </>
             )}
-            <Col xs={24} md={isGlaze ? 8 : 12}>
+            <Col xs={24} md={isGlaze ? 8 : isPolish ? 20 : 12}>
               <Form.Item name="remarks" label={t('store.remarks')}>
                 <Input.TextArea maxLength={500} autoSize={{ minRows: 1, maxRows: 4 }} />
               </Form.Item>

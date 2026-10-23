@@ -74,6 +74,9 @@ export type Permission =
   | 'PRESS_ENTRY'
   | 'GLAZE_ENTRY'
   | 'KILN_ENTRY'
+  | 'QUALITY_CHECK'
+  | 'POLISH_ENTRY'
+  | 'PACKING_ENTRY'
   | 'PRODUCTION_CANCEL'
 
 export interface PermissionInfo {
@@ -875,6 +878,8 @@ export interface LotSummary {
   sizeCode: string
   finishName: string
   sqmPerTile?: number
+  /** from the size master: 2 for 600 x 1200 */
+  pcsPerBox?: number
   pressId: number
   pressCode: string
   status: LotStatus
@@ -942,11 +947,18 @@ export interface Lot {
     powderTon: number
     untracedTon: number
   }
-  /** pressed -> glazed -> fired, with tiles waiting between stages */
+  /** pressed -> glazed -> fired -> polished -> packed, with tiles waiting between stages */
   flow: LotFlow
   entries: PressEntrySummary[]
   glazeEntries: LineEntrySummary[]
   kilnEntries: LineEntrySummary[]
+  checks: LotCheck[]
+  polishEntries: LineEntrySummary[]
+  packEntries: PackEntrySummary[]
+  /** boxes per grade + shade + caliber, best grade first */
+  packed: PackedBatch[]
+  /** what the cooling area expected against what sorting found */
+  quality: { topGradeName?: string; expectedTopPct?: number; actualTopPct?: number }
   trace: { runId: number; runNo: string; siloCode: string; prodDate: string; tonnes: number; batches: { id: number; batchNo: string }[] }[]
 }
 
@@ -1048,9 +1060,9 @@ export interface PressOverview {
   silos: SiloStatus[]
 }
 
-// ---- production: glaze & print, kiln (step 4c) ----
+// ---- production: glaze & print, kiln (step 4c), polishing (step 4d) ----
 
-export type LineStage = 'GLAZE' | 'KILN'
+export type LineStage = 'GLAZE' | 'KILN' | 'POLISH'
 
 /** A lot's tiles stage by stage. waiting* can go negative when more was entered than came from the stage before. */
 export interface LotFlow {
@@ -1063,10 +1075,26 @@ export interface LotFlow {
   kilnIn: number
   kilnRejects: number
   kilnOut: number
+  polishIn: number
+  polishRejects: number
+  polishOut: number
+  /** tiles into sorting = packed + broken */
+  sorted: number
+  broken: number
+  /** pieces in boxes */
+  packed: number
+  boxes: number
   waitingGlaze: number
   waitingKiln: number
+  /** fired, not yet polished: in the cooling area */
+  waitingPolish: number
+  waitingSort: number
   firedSqm?: number
+  packedSqm?: number
+  /** fired / pressed */
   yieldPct?: number
+  /** packed / pressed */
+  packedYieldPct?: number
 }
 
 export interface LineEntrySummary {
@@ -1083,6 +1111,7 @@ export interface LineEntrySummary {
   rejects: number
   tilesOut: number
   gasScm?: number
+  powerKwh?: number
   status: DocStatus
 }
 
@@ -1119,6 +1148,7 @@ export interface LineEntry {
   cycleMin?: number
   gasScm?: number
   gasPerSqm?: number
+  powerKwh?: number
   remarks?: string
   postedAt?: string
   postedBy?: string
@@ -1147,6 +1177,7 @@ export interface LineEntryRequest {
   maxTemp?: number
   cycleMin?: number
   gasScm?: number
+  powerKwh?: number
   remarks?: string
 }
 
@@ -1157,4 +1188,196 @@ export interface LineOverview {
   shiftName?: string
   lots: { lot: LotSummary; flow: LotFlow }[]
   today: { glazeIn: number; glazeRejects: number; kilnIn: number; kilnRejects: number; firedSqm: number; gasScm: number; gasPerSqm?: number }
+}
+
+// ---- production: quality check, sorting & packing, finishing (step 4d) ----
+
+export type CheckVerdict = 'GOOD' | 'WATCH' | 'PROBLEM'
+export const CHECK_VERDICTS: CheckVerdict[] = ['GOOD', 'WATCH', 'PROBLEM']
+
+/** A quality check in the cooling area. Final when saved (POSTED), or CANCELLED. */
+export interface LotCheck {
+  id: number
+  plantId: number
+  plantCode: string
+  checkNo: string
+  lotId: number
+  lotNo: string
+  designName: string
+  pressCode: string
+  checkDate: string
+  shiftId: number
+  shiftCode: string
+  status: DocStatus
+  samples: number
+  /** + convex, - concave */
+  centreBendMm?: number
+  edgeBendMm?: number
+  warpageMm?: number
+  lengthMm?: number
+  widthMm?: number
+  thicknessMm?: number
+  verdict: CheckVerdict
+  expectedTopPct?: number
+  remarks?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+}
+
+export interface LotCheckRequest {
+  plantId: number
+  lotId: number
+  checkDate: string
+  shiftId: number
+  samples: number
+  centreBendMm?: number
+  edgeBendMm?: number
+  warpageMm?: number
+  lengthMm?: number
+  widthMm?: number
+  thicknessMm?: number
+  verdict: CheckVerdict
+  expectedTopPct?: number
+  remarks?: string
+}
+
+export interface GradeOption {
+  id: number
+  code: string
+  name: string
+  sortOrder: number
+}
+
+export interface PackLine {
+  id: number
+  lineNo: number
+  gradeId: number
+  gradeCode: string
+  gradeName: string
+  shade: string
+  caliber: string
+  boxes: number
+  pieces: number
+  sqm?: number
+}
+
+export interface PackEntry {
+  id: number
+  plantId: number
+  plantCode: string
+  entryNo?: string
+  lotId: number
+  lotNo: string
+  designName: string
+  sizeCode: string
+  pressCode: string
+  pcsPerBox?: number
+  sqmPerTile?: number
+  prodDate: string
+  shiftId: number
+  shiftCode: string
+  shiftName: string
+  machineId: number
+  machineCode: string
+  machineName: string
+  status: DocStatus
+  tilesSorted: number
+  piecesPacked: number
+  boxes: number
+  broken: number
+  packedSqm?: number
+  brokenPct?: number
+  lines: PackLine[]
+  remarks?: string
+  postedAt?: string
+  postedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+}
+
+export interface PackEntryRequest {
+  plantId: number
+  lotId: number
+  prodDate: string
+  shiftId: number
+  machineId: number
+  lines: { gradeId: number; shade: string; caliber: string; boxes: number }[]
+  broken?: number
+  remarks?: string
+}
+
+export interface PackEntrySummary {
+  id: number
+  entryNo?: string
+  lotId: number
+  lotNo: string
+  designName: string
+  prodDate: string
+  shiftCode: string
+  machineCode: string
+  tilesSorted: number
+  boxes: number
+  broken: number
+  packedSqm?: number
+  status: DocStatus
+}
+
+/** Boxes of one grade + shade + caliber in a lot. */
+export interface PackedBatch {
+  gradeId: number
+  gradeCode: string
+  gradeName: string
+  gradeSortOrder: number
+  shade: string
+  caliber: string
+  boxes: number
+  pieces: number
+}
+
+export interface GradeCount {
+  gradeId: number
+  code: string
+  name: string
+  sortOrder: number
+  boxes: number
+  pieces: number
+}
+
+export interface PackCodes {
+  shades: string[]
+  calibers: string[]
+}
+
+export interface FinishingOverview {
+  prodDate: string
+  shiftId?: number
+  shiftCode?: string
+  shiftName?: string
+  topGradeName?: string
+  lots: {
+    lot: LotSummary
+    flow: LotFlow
+    lastCheck?: { id: number; checkNo: string; checkDate: string; verdict: CheckVerdict; expectedTopPct?: number }
+    topPct?: number
+  }[]
+  today: {
+    polishIn: number
+    polishRejects: number
+    powerKwh: number
+    sorted: number
+    broken: number
+    boxes: number
+    packedSqm: number
+    topPct?: number
+    checks: number
+    grades: GradeCount[]
+  }
 }

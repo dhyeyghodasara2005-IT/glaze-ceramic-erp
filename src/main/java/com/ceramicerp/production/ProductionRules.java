@@ -4,6 +4,8 @@ import com.ceramicerp.common.BaseEntity;
 import com.ceramicerp.common.Text;
 import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
+import com.ceramicerp.master.Grade;
+import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.master.Machine;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MachineType;
@@ -19,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Locale;
+import java.util.Optional;
 
 /** Checks shared by every production entry. */
 final class ProductionRules {
@@ -106,5 +109,18 @@ final class ProductionRules {
     /** tiles x sq m per tile, or null when the size is unknown. */
     static BigDecimal sqm(long tiles, BigDecimal sqmPerTile) {
         return sqmPerTile == null ? null : sqmPerTile.multiply(BigDecimal.valueOf(tiles)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** part / whole x 100 with 2 decimals, or null when the whole is 0. */
+    static BigDecimal pct(long part, long whole) {
+        return whole == 0 ? null
+                : BigDecimal.valueOf(part * 100).divide(BigDecimal.valueOf(whole), 2, RoundingMode.HALF_UP);
+    }
+
+    /** The best grade a tile can be sold as: the active, sellable grade with the lowest sort order (Premium). */
+    static Optional<Grade> topGrade(GradeRepository grades) {
+        return grades.findAllByOrderBySortOrderAscNameAsc().stream()
+                .filter(g -> g.isActive() && g.isSellable())
+                .findFirst();
     }
 }

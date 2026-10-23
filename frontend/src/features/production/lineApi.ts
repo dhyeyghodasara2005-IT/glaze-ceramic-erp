@@ -1,9 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
-import type { DocStatus, LineEntry, LineEntryRequest, LineEntrySummary, LineOverview, LineStage, PageResponse } from '../../api/types'
+import type { DocStatus, LineEntry, LineEntryRequest, LineEntrySummary, LineOverview, LineStage, PageResponse, Permission } from '../../api/types'
 import { useProdMutation } from './api'
 
-// Step 4c: /api/production/line-entries?stage=GLAZE|KILN and /api/production/line/overview
+// Step 4c/4d: /api/production/line-entries?stage=GLAZE|KILN|POLISH and /api/production/line/overview
 
 export function useLineOverview(plantId?: number) {
   return useQuery({
@@ -66,4 +66,8 @@ export const useDeleteLineEntry = () =>
 export const LINE_PATHS: Record<LineStage, string> = {
   GLAZE: '/production/glaze-entries',
   KILN: '/production/kiln-entries',
+  POLISH: '/production/polish-entries',
 }
+
+/** The permission a stage's supervisor needs. */
+export const LINE_PERMISSION: Record<LineStage, Permission> = { GLAZE: 'GLAZE_ENTRY', KILN: 'KILN_ENTRY', POLISH: 'POLISH_ENTRY' }

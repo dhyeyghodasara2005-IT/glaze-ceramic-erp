@@ -44,7 +44,7 @@ import static com.ceramicerp.production.ProductionRules.sqm;
 import static com.ceramicerp.production.ProductionRules.sqmPerTile;
 
 /**
- * Glaze & print and kiln shift entries (one table, a "stage" column).
+ * Glaze & print, kiln and polishing shift entries (one table, a "stage" column).
  * These stages move no stock and draw no powder: posting gives the number and makes the
  * entry count in the lot's funnel.
  */
@@ -164,7 +164,7 @@ public class LineEntryService {
             if (e.getStage() == LineStage.GLAZE) {
                 glazeIn += e.getTilesIn();
                 glazeRejects += e.getRejects();
-            } else {
+            } else if (e.getStage() == LineStage.KILN) {
                 kilnIn += e.getTilesIn();
                 kilnRejects += e.getRejects();
                 BigDecimal sqm = sqm(e.tilesOut(), sqmPerTile(e.getLot().getDesign().getTileSize()));
@@ -177,7 +177,7 @@ public class LineEntryService {
     }
 
     /**
-     * The controller lets in anyone with GLAZE_ENTRY or KILN_ENTRY; this checks the one this stage needs.
+     * The controller lets in anyone with a stage permission; this checks the one this stage needs.
      * (Method security can't see the stage inside the request body - the service can.)
      */
     private static void requireStagePermission(LineStage stage) {
@@ -248,15 +248,17 @@ public class LineEntryService {
         entry.setTilesIn(req.tilesIn());
         entry.setRejects(rejects);
 
-        // Each stage keeps only its own readings; the other stage's fields are cleared.
+        // Each stage keeps only its own readings; the other stages' fields are cleared.
         boolean glaze = stage == LineStage.GLAZE;
+        boolean kiln = stage == LineStage.KILN;
         entry.setEngobeGpt(glaze ? req.engobeGpt() : null);
         entry.setGlazeGpt(glaze ? req.glazeGpt() : null);
         entry.setGlazeDensity(glaze ? req.glazeDensity() : null);
         entry.setInkLitres(glaze ? req.inkLitres() : null);
-        entry.setMaxTemp(glaze ? null : req.maxTemp());
-        entry.setCycleMin(glaze ? null : req.cycleMin());
-        entry.setGasScm(glaze ? null : req.gasScm());
+        entry.setMaxTemp(kiln ? req.maxTemp() : null);
+        entry.setCycleMin(kiln ? req.cycleMin() : null);
+        entry.setGasScm(kiln ? req.gasScm() : null);
+        entry.setPowerKwh(stage == LineStage.POLISH ? req.powerKwh() : null);
         entry.setRemarks(Text.trimToNull(req.remarks()));
     }
 }

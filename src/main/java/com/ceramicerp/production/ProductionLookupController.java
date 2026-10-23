@@ -2,6 +2,7 @@ package com.ceramicerp.production;
 
 import com.ceramicerp.master.BodyRecipeService;
 import com.ceramicerp.master.DesignRepository;
+import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MaterialRepository;
 import com.ceramicerp.master.ShiftService;
@@ -11,6 +12,7 @@ import com.ceramicerp.production.dto.AvailableStock;
 import com.ceramicerp.production.dto.BodyPrepOverview;
 import com.ceramicerp.production.dto.CurrentShiftResponse;
 import com.ceramicerp.production.dto.DesignOption;
+import com.ceramicerp.production.dto.GradeOption;
 import com.ceramicerp.production.dto.MachineOption;
 import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.StockBalanceRepository;
@@ -47,6 +49,7 @@ public class ProductionLookupController {
     private final StoreLocationRepository locationRepository;
     private final StockBalanceRepository balanceRepository;
     private final DesignRepository designRepository;
+    private final GradeRepository gradeRepository;
 
     @GetMapping("/body/overview")
     @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
@@ -124,6 +127,17 @@ public class ProductionLookupController {
         return designRepository.findByActiveTrueOrderByCodeAsc().stream()
                 .map(d -> new DesignOption(d.getId(), d.getCode(), d.getName(), d.getTileSize().getCode(),
                         d.getFinish().getName(), ProductionRules.sqmPerTile(d.getTileSize())))
+                .toList();
+    }
+
+    /** Grades boxes can be packed in (sellable, active), best first. Broken tiles are counted, not graded. */
+    @GetMapping("/lookups/grades")
+    @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
+    @Transactional(readOnly = true)
+    public List<GradeOption> grades() {
+        return gradeRepository.findAllByOrderBySortOrderAscNameAsc().stream()
+                .filter(g -> g.isActive() && g.isSellable())
+                .map(g -> new GradeOption(g.getId(), g.getCode(), g.getName(), g.getSortOrder()))
                 .toList();
     }
 }

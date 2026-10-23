@@ -42,6 +42,7 @@ public record LineEntryResponse(
         BigDecimal gasScm,
         /** kiln: gas per square metre fired - the kiln's main cost figure */
         BigDecimal gasPerSqm,
+        BigDecimal powerKwh,
         String remarks,
         Instant postedAt,
         String postedBy,
@@ -62,7 +63,7 @@ public record LineEntryResponse(
                 printer == null ? null : printer.getId(), printer == null ? null : printer.getCode(), e.getStatus(),
                 e.getTilesIn(), e.getRejects(), e.tilesOut(), sqmOut, e.getEngobeGpt(), e.getGlazeGpt(),
                 e.getGlazeDensity(), e.getInkLitres(), e.getMaxTemp(), e.getCycleMin(), e.getGasScm(), gasPerSqm,
-                e.getRemarks(), e.getPostedAt(), e.getPostedBy(), e.getCancelledAt(), e.getCancelledBy(),
+                e.getPowerKwh(), e.getRemarks(), e.getPostedAt(), e.getPostedBy(), e.getCancelledAt(), e.getCancelledBy(),
                 e.getCancelReason(), e.getCreatedAt(), e.getCreatedBy(), e.getVersion());
     }
 }

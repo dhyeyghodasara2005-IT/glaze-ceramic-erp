@@ -78,7 +78,7 @@ export default function LinePage() {
                 </span>
                 <LotStatusTag status={lot.status} />
               </div>
-              <LotFunnel flow={flow} compact />
+              <LotFunnel flow={flow} compact part="line" />
               <div className="line-actions">
                 {can('GLAZE_ENTRY') && (
                   <Button type="primary" size="small" onClick={() => navigate(`${LINE_PATHS.GLAZE}/new?lot=${lot.id}`)}>

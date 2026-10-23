@@ -27,10 +27,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 /**
- * /api/production/line-entries?stage=GLAZE|KILN - glaze & print and kiln shift entries.
- * Writing needs GLAZE_ENTRY or KILN_ENTRY here; the service then checks the one the stage needs.
+ * /api/production/line-entries?stage=GLAZE|KILN|POLISH - glaze & print, kiln and polishing shift entries.
+ * Writing needs one of the stage permissions here; the service then checks the one the stage needs.
  */
-@Tag(name = "Production - Glaze & kiln")
+@Tag(name = "Production - Glaze, kiln & polishing")
 @RestController
 @RequestMapping("/api/production")
 @RequiredArgsConstructor
@@ -59,26 +59,26 @@ public class LineEntryController {
 
     @PostMapping("/line-entries")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY')")
+    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY', 'POLISH_ENTRY')")
     public LineEntryResponse create(@Valid @RequestBody LineEntryRequest req) {
         return entryService.create(req);
     }
 
     @PutMapping("/line-entries/{id}")
-    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY')")
+    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY', 'POLISH_ENTRY')")
     public LineEntryResponse update(@PathVariable Long id, @Valid @RequestBody LineEntryRequest req) {
         return entryService.update(id, req);
     }
 
     @DeleteMapping("/line-entries/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY')")
+    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY', 'POLISH_ENTRY')")
     public void delete(@PathVariable Long id) {
         entryService.deleteDraft(id);
     }
 
     @PostMapping("/line-entries/{id}/post")
-    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY')")
+    @PreAuthorize("hasAnyAuthority('GLAZE_ENTRY', 'KILN_ENTRY', 'POLISH_ENTRY')")
     public LineEntryResponse post(@PathVariable Long id) {
         return entryService.post(id);
     }

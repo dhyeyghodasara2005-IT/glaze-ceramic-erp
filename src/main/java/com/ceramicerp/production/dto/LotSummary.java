@@ -16,6 +16,8 @@ public record LotSummary(
         String sizeCode,
         String finishName,
         BigDecimal sqmPerTile,
+        /** from the size master: 2 for 600 x 1200 */
+        Integer pcsPerBox,
         Long pressId,
         String pressCode,
         LotStatus status,

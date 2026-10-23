@@ -4,13 +4,14 @@ import com.ceramicerp.master.MachineType;
 import com.ceramicerp.user.Permission;
 
 /**
- * The stages that share the line_entries table. Each one knows its machine type, its document
+ * The stages that share the line_entries table (in process order). Each one knows its machine type, its document
  * number prefix and the permission its supervisor needs - so the service never has to write
  * "if GLAZE ... else if KILN ...".
  */
 public enum LineStage {
     GLAZE(MachineType.GLAZE_LINE, ProductionDocType.GLAZE_ENTRY, Permission.GLAZE_ENTRY),
-    KILN(MachineType.KILN, ProductionDocType.KILN_ENTRY, Permission.KILN_ENTRY);
+    KILN(MachineType.KILN, ProductionDocType.KILN_ENTRY, Permission.KILN_ENTRY),
+    POLISH(MachineType.POLISHING_LINE, ProductionDocType.POLISH_ENTRY, Permission.POLISH_ENTRY);
 
     private final MachineType machineType;
     private final ProductionDocType docType;

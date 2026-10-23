@@ -16,7 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/** Global search for production numbers (body batches, spray runs, press entries) and design lots (also by design name). */
+/**
+ * Global search for production numbers (body batches, spray runs, press / glaze / kiln / polish /
+ * pack entries, quality checks) and design lots (also by design name).
+ */
 @Component
 @RequiredArgsConstructor
 class ProductionSearchProvider implements SearchProvider {
@@ -84,10 +87,40 @@ class ProductionSearchProvider implements SearchProvider {
                 .filter(e -> user.canAccessPlant(e.getPlant().getId()))
                 .toList();
         term.best(lineEntries, limit, LineEntry::getEntryNo, LineEntry::getEntryNo).forEach(e -> hits.add(new SearchHit(
-                e.getStage() == LineStage.GLAZE ? "glaze-entry" : "kiln-entry", e.getId(), e.getEntryNo(),
-                (e.getStage() == LineStage.GLAZE ? "Glaze entry · " : "Kiln entry · ") + e.getLot().getDesign().getName(),
+                switch (e.getStage()) {
+                    case GLAZE -> "glaze-entry";
+                    case KILN -> "kiln-entry";
+                    case POLISH -> "polish-entry";
+                }, e.getId(), e.getEntryNo(),
+                switch (e.getStage()) {
+                    case GLAZE -> "Glaze entry · ";
+                    case KILN -> "Kiln entry · ";
+                    case POLISH -> "Polish entry · ";
+                } + e.getLot().getDesign().getName(),
                 e.getProdDate().format(DATE) + " · " + e.tilesOut() + " tiles out",
                 e.getStatus() != DocStatus.CANCELLED)));
+
+        List<PackEntry> packEntries = SearchQueries.find(em, """
+                select e from PackEntry e join fetch e.lot l join fetch l.design
+                where lower(e.entryNo) like :q
+                order by e.id desc""", PackEntry.class, term, limit).stream()
+                .filter(e -> user.canAccessPlant(e.getPlant().getId()))
+                .toList();
+        term.best(packEntries, limit, PackEntry::getEntryNo, PackEntry::getEntryNo).forEach(e -> hits.add(new SearchHit(
+                "pack-entry", e.getId(), e.getEntryNo(), "Pack entry · " + e.getLot().getDesign().getName(),
+                e.getProdDate().format(DATE) + " · " + e.getBoxes() + " boxes",
+                e.getStatus() != DocStatus.CANCELLED)));
+
+        List<LotCheck> checks = SearchQueries.find(em, """
+                select c from LotCheck c join fetch c.lot l join fetch l.design
+                where lower(c.checkNo) like :q
+                order by c.id desc""", LotCheck.class, term, limit).stream()
+                .filter(c -> user.canAccessPlant(c.getPlant().getId()))
+                .toList();
+        term.best(checks, limit, LotCheck::getCheckNo, LotCheck::getCheckNo).forEach(c -> hits.add(new SearchHit(
+                "quality-check", c.getId(), c.getCheckNo(), "Quality check · " + c.getLot().getDesign().getName(),
+                c.getCheckDate().format(DATE) + " · " + c.getVerdict().name().toLowerCase(Locale.ROOT),
+                c.getStatus() != DocStatus.CANCELLED)));
         return hits;
     }
 }

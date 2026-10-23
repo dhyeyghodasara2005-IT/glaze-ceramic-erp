@@ -1895,6 +1895,121 @@ body {
   gap: 8px 24px;
   margin-top: 12px;
 }
+/* ---------------------------------------------------------------------
+   Production: finishing - quality check strip, grade split, pack rows
+   --------------------------------------------------------------------- */
+.status-pill.verdict-good {
+  color: #166534;
+  background: #eaf6ee;
+}
+.status-pill.verdict-watch {
+  color: #8a5a00;
+  background: #fdf3dc;
+}
+.status-pill.verdict-problem {
+  color: #9b2c2c;
+  background: #fbeaea;
+}
+.check-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 10px;
+}
+.check-actual {
+  margin-left: auto;
+  font-weight: 650;
+  color: var(--brand-700);
+}
+.verdict-picker {
+  display: flex;
+}
+.verdict-picker .ant-radio-button-wrapper {
+  flex: 1;
+  text-align: center;
+}
+/* A plain-text note beside an upper-case section title. */
+.form-section-hint {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-soft);
+}
+.stat-suffix {
+  margin-left: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.grade-split {
+  display: grid;
+  gap: 10px;
+}
+.grade-bar {
+  display: flex;
+  gap: 3px;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.grade-bar > span {
+  min-width: 4px;
+  transform-origin: left;
+  animation: grade-grow 0.6s var(--ease) both;
+}
+@keyframes grade-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+.grade-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 13px;
+}
+.grade-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: baseline;
+}
+.cols-pack {
+  --line-cols: 24px minmax(140px, 1.6fr) minmax(90px, 1fr) minmax(90px, 1fr) minmax(90px, 1fr) minmax(70px, 0.7fr)
+    minmax(80px, 0.8fr) 28px;
+}
+
+/* The whole journey (lot page): five stages. The funnel measures its own width, so it stacks
+   whenever five boxes would be too narrow - with or without the sidebar. */
+.funnel.wide {
+  container-type: inline-size;
+}
+.funnel-row.s5 {
+  grid-template-columns:
+    minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 6px;
+}
+.funnel.wide .funnel-wait {
+  min-width: 56px;
+}
+.funnel.wide .funnel-stage {
+  padding: 10px 12px;
+}
+@container (max-width: 860px) {
+  .funnel-row.s5 {
+    grid-template-columns: 1fr;
+  }
+  .funnel.wide .funnel-wait {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .funnel.wide .funnel-wait span {
+    transform: rotate(90deg);
+  }
+}
 /* Phones: the stages stack, the arrows point down. */
 @media (max-width: 640px) {
   .funnel-row {

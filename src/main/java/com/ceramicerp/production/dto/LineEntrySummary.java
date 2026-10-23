@@ -21,12 +21,13 @@ public record LineEntrySummary(
         int rejects,
         int tilesOut,
         BigDecimal gasScm,
+        BigDecimal powerKwh,
         DocStatus status
 ) {
     /** Needs lot, lot.design, shift and machine loaded. */
     public static LineEntrySummary from(LineEntry e) {
         return new LineEntrySummary(e.getId(), e.getStage(), e.getEntryNo(), e.getLot().getId(), e.getLot().getLotNo(),
                 e.getLot().getDesign().getName(), e.getProdDate(), e.getShift().getCode(), e.getMachine().getCode(),
-                e.getTilesIn(), e.getRejects(), e.tilesOut(), e.getGasScm(), e.getStatus());
+                e.getTilesIn(), e.getRejects(), e.tilesOut(), e.getGasScm(), e.getPowerKwh(), e.getStatus());
     }
 }

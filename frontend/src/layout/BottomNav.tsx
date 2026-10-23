@@ -8,6 +8,7 @@ import { MENU, isActivePath, isGroup, type MenuEntry } from './menu'
 /**
  * Floating bar at the bottom of phone screens: the most-used pages within thumb reach.
  * Entries marked `mobile: true` in menu.tsx appear here (max 3 besides Home); "More" opens the full menu.
+ * A supervisor's own division comes first (`worksIn`), so the packing supervisor finds Finishing here.
  */
 export default function BottomNav({ onMore }: { onMore: () => void }) {
   const { t } = useTranslation()
@@ -16,7 +17,11 @@ export default function BottomNav({ onMore }: { onMore: () => void }) {
 
   const all: MenuEntry[] = MENU.flatMap((e) => (isGroup(e) ? e.items : [e]))
   const home = all.find((e) => e.path === '/')
-  const quick = all.filter((e) => e.mobile && (!e.permission || can(e.permission))).slice(0, 3)
+  const mine = (e: MenuEntry) => (e.worksIn?.some((p) => can(p)) ? 0 : 1)
+  const quick = all
+    .filter((e) => e.mobile && (!e.permission || can(e.permission)))
+    .sort((a, b) => mine(a) - mine(b)) // stable: otherwise the menu order stays
+    .slice(0, 3)
   const items = [...(home ? [home] : []), ...quick]
 
   return (

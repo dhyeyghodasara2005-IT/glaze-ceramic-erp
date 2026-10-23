@@ -45,8 +45,8 @@ class CategoryAndGradeIntegrationTest extends IntegrationTestBase {
     void gradesAreListedBestFirstAndRejectIsNotSellable() throws Exception {
         getAs(adminToken(), "/api/masters/grades")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].code", contains("PREMIUM", "STANDARD", "COMMERCIAL", "REJECT")))
-                .andExpect(jsonPath("$[3].sellable").value(false));
+                .andExpect(jsonPath("$[*].code", contains("PREMIUM", "STANDARD", "COMMERCIAL", "ECO", "REJECT")))
+                .andExpect(jsonPath("$[4].sellable").value(false));
     }
 
     @Test
