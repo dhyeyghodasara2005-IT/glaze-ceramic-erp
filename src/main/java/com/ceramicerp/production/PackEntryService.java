@@ -4,6 +4,7 @@ import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.common.Text;
 import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
+import com.ceramicerp.fg.FgCodes;
 import com.ceramicerp.fg.FgPillar;
 import com.ceramicerp.fg.FgPillarRepository;
 import com.ceramicerp.fg.FgSource;
@@ -39,7 +40,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.ceramicerp.production.ProductionRules.pct;
@@ -60,8 +60,6 @@ import static com.ceramicerp.production.ProductionRules.sqmPerTile;
 public class PackEntryService {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
-    /** Shade and caliber as printed on the stickers: 01, A3, C-2, 9.5 ... */
-    private static final Pattern CODE = Pattern.compile("[A-Z0-9][A-Z0-9./-]{0,9}");
 
     private final PackEntryRepository entryRepository;
     private final ProductionLotRepository lotRepository;
@@ -198,15 +196,6 @@ public class PackEntryService {
         return pillar;
     }
 
-    /** " a3 " -> "A3". Letters, digits and . / - only, so the stickers and the records always match. */
-    private static String code(String value, String what) {
-        String code = value.trim().toUpperCase(Locale.ROOT);
-        if (!CODE.matcher(code).matches()) {
-            throw new BusinessException(what + " \"" + value.trim() + "\" can only use letters, digits and . / - (up to 10)");
-        }
-        return code;
-    }
-
     /** One stock movement per row: +boxes when posting (sign 1), -boxes when cancelling (sign -1). */
     private static List<FgStockService.Movement> movements(PackEntry entry, int sign) {
         ProductionLot lot = entry.getLot();
@@ -277,8 +266,8 @@ public class PackEntryService {
             if (!grade.isActive() && !gradesBefore.contains(grade.getId())) {
                 throw new BusinessException("Grade " + grade.getName() + " is inactive. Choose an active one.");
             }
-            String shade = code(row.shade(), "Shade");
-            String caliber = code(row.caliber(), "Caliber");
+            String shade = FgCodes.shadeOrCaliber(row.shade(), "Shade");
+            String caliber = FgCodes.shadeOrCaliber(row.caliber(), "Caliber");
             FgPillar pillar = requirePillar(pillars.get(row.pillarId()), row.pillarId(), entry, pillarsBefore);
             if (!seen.add(grade.getId() + "|" + shade + "|" + caliber + "|" + pillar.getId())) {
                 throw new BusinessException(grade.getName() + ", shade " + shade + ", caliber " + caliber + " at pillar "

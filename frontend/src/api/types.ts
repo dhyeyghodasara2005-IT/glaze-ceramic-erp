@@ -80,6 +80,7 @@ export type Permission =
   | 'PRODUCTION_CANCEL'
   | 'FG_VIEW'
   | 'FG_ENTRY'
+  | 'FG_CANCEL'
 
 export interface PermissionInfo {
   code: Permission
@@ -1437,7 +1438,7 @@ export interface FgMove {
   moveDate: string
   boxes: number
   balanceBoxes: number
-  source: 'PACK'
+  source: FgSource
   sourceId: number
   sourceNo: string
   reversal: boolean
@@ -1478,4 +1479,95 @@ export interface PillarOption {
   palletsUnknown: boolean
   mainDesign?: string
   mainShade?: string
+}
+
+/** What moved finished-goods boxes (the ledger's "document"). */
+export type FgSource = 'PACK' | 'OPENING' | 'BREAKAGE' | 'REGRADE'
+
+// ---- finished goods: the warehouse's documents (step 5b) ----
+
+export type FgDocType = 'OPENING' | 'BREAKAGE' | 'REGRADE'
+export type BreakageReason = 'HANDLING' | 'LOADING' | 'STORAGE' | 'OTHER'
+export const BREAKAGE_REASONS: BreakageReason[] = ['HANDLING', 'LOADING', 'STORAGE', 'OTHER']
+
+export interface FgDocumentLine {
+  id: number
+  lineNo: number
+  fromStockId?: number
+  /** the stock row the boxes were taken from, as it is now */
+  from?: FgStockRow
+  pillarId?: number
+  pillarCode?: string
+  godownCode?: string
+  designId?: number
+  designName?: string
+  batchCode?: string
+  gradeId?: number
+  gradeName?: string
+  shade?: string
+  caliber?: string
+  boxes: number
+  sqm?: number
+  reason?: BreakageReason
+  remarks?: string
+}
+
+export interface FgDocument {
+  id: number
+  plantId: number
+  plantCode: string
+  docType: FgDocType
+  docNo?: string
+  docDate: string
+  status: DocStatus
+  remarks?: string
+  lines: FgDocumentLine[]
+  boxes: number
+  postedAt?: string
+  postedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy: string
+  version: number
+}
+
+export interface FgDocumentRequest {
+  plantId: number
+  docType: FgDocType
+  docDate: string
+  remarks?: string
+  lines: {
+    fromStockId?: number
+    pillarId?: number
+    designId?: number
+    batchCode?: string
+    gradeId?: number
+    shade?: string
+    caliber?: string
+    boxes: number
+    reason?: BreakageReason
+    remarks?: string
+  }[]
+}
+
+export interface FgDocumentSummary {
+  id: number
+  docType: FgDocType
+  docNo?: string
+  docDate: string
+  status: DocStatus
+  lines: number
+  boxes: number
+  remarks?: string
+  createdBy: string
+}
+
+/** A design or grade for the warehouse's dropdowns. extra = size code for designs. */
+export interface FgOption {
+  id: number
+  code: string
+  name: string
+  extra?: string
 }

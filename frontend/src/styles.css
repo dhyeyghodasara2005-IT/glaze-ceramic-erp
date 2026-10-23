@@ -1977,6 +1977,32 @@ body {
   border-radius: 3px;
   vertical-align: baseline;
 }
+/* The warehouse documents (step 5b): each type has its own row columns. */
+.cols-fg-opening {
+  --line-cols: 24px minmax(110px, 0.9fr) minmax(150px, 1.6fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(64px, 0.6fr)
+    minmax(64px, 0.6fr) minmax(80px, 0.8fr) 28px;
+}
+.cols-fg-breakage {
+  --line-cols: 24px minmax(220px, 2.4fr) minmax(90px, 0.8fr) minmax(130px, 1fr) minmax(140px, 1.4fr) 28px;
+}
+.cols-fg-regrade {
+  --line-cols: 24px minmax(200px, 2fr) minmax(80px, 0.6fr) 20px minmax(100px, 0.9fr) minmax(64px, 0.6fr) minmax(64px, 0.6fr)
+    minmax(110px, 1fr) 28px;
+}
+.line-arrow {
+  align-self: center;
+  color: var(--brand-600);
+}
+.fg-doc-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+@container (max-width: 880px) {
+  .line-arrow {
+    display: none;
+  }
+}
 .cols-pack {
   --line-cols: 24px minmax(130px, 1.4fr) minmax(80px, 0.9fr) minmax(80px, 0.9fr) minmax(100px, 1fr) minmax(84px, 0.9fr)
     minmax(64px, 0.6fr) minmax(76px, 0.7fr) 28px;

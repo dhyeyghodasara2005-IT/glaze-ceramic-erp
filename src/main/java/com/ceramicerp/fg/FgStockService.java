@@ -10,7 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The finished-goods stock engine. The ONLY place that changes fg_stock: it updates the boxes and
@@ -36,6 +38,11 @@ public class FgStockService {
     /** What identifies a stock row: which boxes, standing where. */
     public record Batch(FgPillar pillar, Design design, Long lotId, String batchCode, Grade grade, String shade,
                         String caliber) {
+
+        /** The stock row's unique key, by ids (entity objects aren't compared reliably). */
+        String key() {
+            return pillar.getId() + "|" + design.getId() + "|" + batchCode + "|" + grade.getId() + "|" + shade + "|" + caliber;
+        }
     }
 
     /**
@@ -50,10 +57,21 @@ public class FgStockService {
     public record Source(FgSource type, Long id, String no, LocalDate date, boolean reversal) {
     }
 
-    /** Applies several movements of one document, in lock order. */
+    /**
+     * Applies several movements of one document. Movements of the same stock row are added up first, so the
+     * ledger gets one line per stock row per document, and what is checked is the document's end result
+     * (two rows taking 100 boxes each from a row of 150 are refused together). Then they are applied in lock order.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void applyAll(List<Movement> movements, Source source) {
-        movements.stream().sorted(LOCK_ORDER).forEach(m -> apply(m, source));
+        Map<String, Movement> net = new LinkedHashMap<>();
+        for (Movement m : movements) {
+            net.merge(m.batch().key(), m, (a, b) -> new Movement(a.batch(), a.boxes() + b.boxes()));
+        }
+        net.values().stream()
+                .filter(m -> m.boxes() != 0)
+                .sorted(LOCK_ORDER)
+                .forEach(m -> apply(m, source));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

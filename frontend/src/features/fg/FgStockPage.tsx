@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Button, Card, Input, Select, Table, Tag, type TableColumnsType } from 'antd'
+import { Button, Card, Input, Select, Space, Table, Tag, type TableColumnsType } from 'antd'
 import { AppstoreOutlined, BlockOutlined, GoldOutlined, TableOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +14,7 @@ import { qty } from '../store/format'
 import GradeSplit from '../production/GradeSplit'
 import { useFgGodowns, useFgStock } from './fgApi'
 import FgLedgerDrawer from './FgLedgerDrawer'
+import { FG_DOC_TYPES } from './fgDocTypes'
 
 /** One design with all its batches: the table's top-level row. */
 interface DesignGroup {
@@ -34,7 +35,7 @@ const n = (v: number) => v.toLocaleString('en-IN')
 export default function FgStockPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { currentPlant } = useAuth()
+  const { can, currentPlant } = useAuth()
   const { data, isLoading } = useFgStock(currentPlant ? { plantId: currentPlant.id } : null)
   const godowns = useFgGodowns(currentPlant?.id)
   const [search, setSearch] = useState('')
@@ -143,7 +144,16 @@ export default function FgStockPage() {
   return (
     <>
       <PageHeader title={t('fg.stockTitle')} subtitle={t('fg.stockSubtitle', { plant: currentPlant.name })} icon={<GoldOutlined />}
-        extra={<Button icon={<TableOutlined />} onClick={() => navigate('/fg/godowns')}>{t('menu.fgGodowns')}</Button>} />
+        extra={(
+          <Space wrap>
+            <Button icon={<TableOutlined />} onClick={() => navigate('/fg/godowns')}>{t('menu.fgGodowns')}</Button>
+            {can('FG_ENTRY') && (['OPENING', 'BREAKAGE', 'REGRADE'] as const).map((type) => (
+              <Button key={type} icon={FG_DOC_TYPES[type].icon} onClick={() => navigate(`${FG_DOC_TYPES[type].path}/new`)}>
+                {t(`fg.doc.short.${type}`)}
+              </Button>
+            ))}
+          </Space>
+        )} />
 
       <Stagger className="stat-grid">
         {tiles.map((tile) => (

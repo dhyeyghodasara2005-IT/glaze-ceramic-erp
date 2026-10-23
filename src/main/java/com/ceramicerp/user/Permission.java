@@ -41,7 +41,8 @@ public enum Permission {
     PRODUCTION_CANCEL("Production", "Cancel posted production entries (reverses their stock)"),
 
     FG_VIEW("Finished goods", "View finished-goods stock, godowns and pillars"),
-    FG_ENTRY("Finished goods", "Warehouse: set up finished-goods godowns and pillars");
+    FG_ENTRY("Finished goods", "Warehouse: godowns and pillars, opening stock, breakage and regrading"),
+    FG_CANCEL("Finished goods", "Cancel posted finished-goods documents (reverses their stock)");
 
     private final String group;
     private final String description;

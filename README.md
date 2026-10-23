@@ -97,8 +97,8 @@ Every feature module has the same layers:
 | 4c | Glaze & print and kiln shift entries; lot funnel (pressed → glazed → fired, yield); gas per m² | ✅ Done |
 | 4d | Cooling-area quality checks (bend, size, expected Premium %), polishing, sorting & packing by grade / shade / caliber; funnel press → box | ✅ Done |
 | 5a | Finished goods: godowns & pillars (A1, A2 …), packed boxes into stock by pillar × batch × grade × shade × caliber, godown map, ledger | ✅ Done |
-| 5b | Opening FG stock, breakage write-off, regrading | ⏭ Next |
-| 6 | Sales orders, dispatch, Tally Prime sync | |
+| 5b | Warehouse documents: opening FG stock (batch on the box), breakage write-off by reason, regrading (grade / shade / caliber / pillar) | ✅ Done |
+| 6 | Sales orders, dispatch, Tally Prime sync | ⏭ Next |
 | 7 | Owner dashboard | |
 | 8 | QC, maintenance, gas/power meters | |
 | 9 | Costing, labour | |

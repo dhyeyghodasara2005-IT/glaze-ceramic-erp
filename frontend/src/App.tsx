@@ -46,6 +46,8 @@ import PackEntryPage from './features/production/PackEntryPage'
 import FgStockPage from './features/fg/FgStockPage'
 import FgGodownsPage from './features/fg/FgGodownsPage'
 import GodownMapPage from './features/fg/GodownMapPage'
+import FgDocumentsPage from './features/fg/FgDocumentsPage'
+import FgDocumentPage from './features/fg/FgDocumentPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -125,6 +127,13 @@ export default function App() {
         <Route path="fg/stock" element={<RequirePermission permission="FG_VIEW"><FgStockPage /></RequirePermission>} />
         <Route path="fg/godowns" element={<RequirePermission permission="FG_VIEW"><FgGodownsPage /></RequirePermission>} />
         <Route path="fg/godowns/:id" element={<RequirePermission permission="FG_VIEW"><GodownMapPage /></RequirePermission>} />
+        {/* one list + one editor for the three warehouse documents */}
+        <Route path="fg/opening" element={<RequirePermission permission="FG_VIEW"><FgDocumentsPage key="OPENING" type="OPENING" /></RequirePermission>} />
+        <Route path="fg/opening/:id" element={<RequirePermission permission="FG_VIEW"><FgDocumentPage key="OPENING" type="OPENING" /></RequirePermission>} />
+        <Route path="fg/breakage" element={<RequirePermission permission="FG_VIEW"><FgDocumentsPage key="BREAKAGE" type="BREAKAGE" /></RequirePermission>} />
+        <Route path="fg/breakage/:id" element={<RequirePermission permission="FG_VIEW"><FgDocumentPage key="BREAKAGE" type="BREAKAGE" /></RequirePermission>} />
+        <Route path="fg/regrading" element={<RequirePermission permission="FG_VIEW"><FgDocumentsPage key="REGRADE" type="REGRADE" /></RequirePermission>} />
+        <Route path="fg/regrading/:id" element={<RequirePermission permission="FG_VIEW"><FgDocumentPage key="REGRADE" type="REGRADE" /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

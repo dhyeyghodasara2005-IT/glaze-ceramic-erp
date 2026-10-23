@@ -3,6 +3,9 @@ import {
   ApartmentOutlined,
   AppstoreOutlined,
   AuditOutlined,
+  DownloadOutlined,
+  SwapOutlined,
+  WarningOutlined,
   GoldOutlined,
   HddOutlined,
   SketchOutlined,
@@ -207,6 +210,18 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         worksIn: ['FG_ENTRY'],
       },
       { path: '/fg/godowns', labelKey: 'menu.fgGodowns', icon: <TableOutlined />, permission: 'FG_VIEW' },
+      {
+        path: '/fg/opening', labelKey: 'menu.fgOpening', icon: <DownloadOutlined />, permission: 'FG_VIEW',
+        searchType: 'fg-opening', create: { labelKey: 'fg.doc.new.OPENING', permission: 'FG_ENTRY' },
+      },
+      {
+        path: '/fg/breakage', labelKey: 'menu.fgBreakage', icon: <WarningOutlined />, permission: 'FG_VIEW',
+        searchType: 'fg-breakage', create: { labelKey: 'fg.doc.new.BREAKAGE', permission: 'FG_ENTRY' },
+      },
+      {
+        path: '/fg/regrading', labelKey: 'menu.fgRegrading', icon: <SwapOutlined />, permission: 'FG_VIEW',
+        searchType: 'fg-regrade', create: { labelKey: 'fg.doc.new.REGRADE', permission: 'FG_ENTRY' },
+      },
     ],
   },
   {
