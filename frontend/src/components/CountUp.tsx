@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { animate, useReducedMotion } from 'motion/react'
 
-/** A number that counts up from 0 when it appears (e.g. dashboard totals). */
-export default function CountUp({ value, duration = 1.1 }: { value: number; duration?: number }) {
+/** A number that counts up from 0 when it appears (e.g. dashboard totals), with up to `decimals` decimals. */
+export default function CountUp({ value, duration = 1.1, decimals = 0 }: { value: number; duration?: number; decimals?: number }) {
   const ref = useRef<HTMLSpanElement>(null)
   const reduce = useReducedMotion()
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const format = (n: number) => Math.round(n).toLocaleString('en-IN')
+    const format = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: decimals, minimumFractionDigits: 0 })
     if (reduce) {
       el.textContent = format(value)
       return
@@ -23,7 +23,7 @@ export default function CountUp({ value, duration = 1.1 }: { value: number; dura
       },
     })
     return () => controls.stop()
-  }, [value, duration, reduce])
+  }, [value, duration, reduce, decimals])
 
   return <span ref={ref}>0</span>
 }

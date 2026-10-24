@@ -102,7 +102,7 @@ Every feature module has the same layers:
 | 6b | Sales orders from loading slips: dealer or **jobwork principal** (new party type), product names matched to designs and remembered, stock / slip-total / weight / credit checks | ✅ Done (slip PDF reader waits for sample PDFs) |
 | 6c | Loading plan (pillars picked by rules: in front, clears a pillar, oldest, most boxes, nearest) with kept boxes; phone loading checklist; confirm loading → stock out, dispatch no., packing list + gate pass; undo dispatch | ✅ Done |
 | 6d–6f | Bill + e-way bill on loading, Tally Prime sync, busy-day staging ([plan](docs/plans/06-dispatch-and-smart-storage.md), [backlog](docs/plans/BACKLOG.md)) | 6d waits on answers |
-| 7 | Owner dashboard | |
+| 7 | Owner dashboard: m² packed with the change on the period before, Premium share, yield, gas per m², dispatched, orders waiting; packed vs dispatched per day; grade split; stage funnel; godown fill; needs-a-look list (each block by permission) | ✅ Done |
 | 8 | QC, maintenance, gas/power meters | |
 | 9 | Costing, labour | |
 | 10 | Analytics & predictions (Python service) | |

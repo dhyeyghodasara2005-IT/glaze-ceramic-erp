@@ -1834,3 +1834,60 @@ export interface TruckRequest {
   driverMobile?: string
   lrNo?: string
 }
+
+// ---- owner dashboard (step 7, must match dashboard/dto/DashboardResponse.java) ----
+
+export interface GradeShare {
+  code: string
+  name: string
+  sortOrder: number
+  boxes: number
+  sqm?: number
+  pct?: number
+}
+
+export type FunnelStage = 'PRESSED' | 'DRIED' | 'GLAZED' | 'FIRED' | 'POLISHED' | 'PACKED'
+
+export interface DashboardResponse {
+  from: string
+  to: string
+  /** each section is missing when the user may not see that module */
+  production?: {
+    boxesPacked: number
+    sqmPacked: number
+    /** m² packed in the same number of days just before */
+    sqmPackedBefore: number
+    topGradeName?: string
+    topGradePct?: number
+    grades: GradeShare[]
+    stages: { key: FunnelStage; pieces: number; recorded: boolean }[]
+    yieldPct?: number
+    gasScm?: number
+    sqmFired?: number
+    gasPerSqm?: number
+    powerKwh?: number
+    powerPerSqm?: number
+  }
+  finishedGoods?: {
+    boxes: number
+    sqm: number
+    keptBoxes: number
+    grades: GradeShare[]
+    topDesigns: { code: string; name: string; boxes: number; sqm?: number }[]
+    palletsUsed: number
+    palletsCapacity?: number
+    pillarsUsed: number
+    pillarsTotal: number
+  }
+  dispatch?: {
+    ordersDispatched: number
+    boxesDispatched: number
+    sqmDispatched: number
+    ordersWaiting: number
+    boxesWaiting: number
+    boxesNotPlanned: number
+  }
+  store?: { stockValue: number; lowMaterials: number }
+  days: { date: string; packedSqm?: number; dispatchedSqm?: number }[]
+  attention: { kind: 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'; what?: string; count?: number; boxes?: number }[]
+}

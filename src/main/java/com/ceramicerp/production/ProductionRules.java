@@ -96,14 +96,8 @@ final class ProductionRules {
      * for a size entered without length and width. null if neither is known.
      */
     static BigDecimal sqmPerTile(TileSize size) {
-        if (size.getLengthMm() != null && size.getWidthMm() != null) {
-            return BigDecimal.valueOf((long) size.getLengthMm() * size.getWidthMm())
-                    .divide(BigDecimal.valueOf(1_000_000), 4, RoundingMode.HALF_UP);
-        }
-        if (size.getSqmPerBox() != null && size.getPcsPerBox() != null && size.getPcsPerBox() > 0) {
-            return size.getSqmPerBox().divide(BigDecimal.valueOf(size.getPcsPerBox()), 4, RoundingMode.HALF_UP);
-        }
-        return null;
+        // the rule lives with the size since step 7 (the dashboard needs it too)
+        return size.sqmPerTile();
     }
 
     /** tiles x sq m per tile, or null when the size is unknown. */

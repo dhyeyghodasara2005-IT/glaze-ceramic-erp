@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * A tile size, e.g. 600 x 1200 mm, 9 mm thick, 2 pieces per box.
@@ -47,4 +48,18 @@ public class TileSize extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    /**
+     * Square metres of one tile: 600 x 1200 mm -> 0.72. Falls back to sq m per box / pieces per box for a size
+     * entered without length and width. null if neither is known. (Not a getter, so it is not a column.)
+     */
+    public BigDecimal sqmPerTile() {
+        if (lengthMm != null && widthMm != null) {
+            return BigDecimal.valueOf((long) lengthMm * widthMm).divide(BigDecimal.valueOf(1_000_000), 4, RoundingMode.HALF_UP);
+        }
+        if (sqmPerBox != null && pcsPerBox != null && pcsPerBox > 0) {
+            return sqmPerBox.divide(BigDecimal.valueOf(pcsPerBox), 4, RoundingMode.HALF_UP);
+        }
+        return null;
+    }
 }
