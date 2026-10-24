@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Card, Input, Select, Space, Table, Tag, type TableColumnsType } from 'antd'
-import { AppstoreOutlined, BlockOutlined, GoldOutlined, TableOutlined } from '@ant-design/icons'
+import { AppstoreOutlined, BlockOutlined, GoldOutlined, StarFilled, TableOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../components/PageHeader'
@@ -12,13 +12,14 @@ import type { FgStockRow } from '../../api/types'
 import NoPlant from '../store/NoPlant'
 import { qty } from '../store/format'
 import GradeSplit from '../production/GradeSplit'
-import { useFgGodowns, useFgStock } from './fgApi'
+import { useFastMovers, useFgGodowns, useFgStock, useSetFastMover } from './fgApi'
 import FgLedgerDrawer from './FgLedgerDrawer'
 import { FG_DOC_TYPES } from './fgDocTypes'
 
 /** One design with all its batches: the table's top-level row. */
 interface DesignGroup {
   key: string
+  designId: number
   designName: string
   designCode: string
   sizeCode: string
@@ -42,6 +43,8 @@ export default function FgStockPage() {
   const [godownId, setGodownId] = useState<number>()
   const [gradeId, setGradeId] = useState<number>()
   const [ledgerRow, setLedgerRow] = useState<FgStockRow | null>(null)
+  const fastMovers = useFastMovers()
+  const setFastMover = useSetFastMover()
 
   // Filtering happens in the browser, like the store's stock page: one plant's stock is a few thousand rows at most.
   const rows = useMemo(() => {
@@ -57,7 +60,7 @@ export default function FgStockPage() {
   const groups = useMemo(() => {
     const map = new Map<number, DesignGroup>()
     for (const r of rows) {
-      const g = map.get(r.designId) ?? { key: String(r.designId), designName: r.designName, designCode: r.designCode,
+      const g = map.get(r.designId) ?? { key: String(r.designId), designId: r.designId, designName: r.designName, designCode: r.designCode,
         sizeCode: r.sizeCode, boxes: 0, sqm: 0, grades: [], rows: [] }
       g.boxes += r.boxes
       g.sqm += r.sqm ?? 0
@@ -121,6 +124,25 @@ export default function FgStockPage() {
   ]
 
   const columns: TableColumnsType<DesignGroup> = [
+    {
+      key: 'fast',
+      width: 44,
+      title: <StarFilled aria-label={t('fg.fastMover')} title={t('fg.fastMoverHint')} />,
+      render: (_, g) => {
+        const on = fastMovers.data?.includes(g.designId) ?? false
+        return (
+          // a best seller's new pallets are suggested next to the loading point (step 6a)
+          <button type="button" className={`star-toggle${on ? ' on' : ''}`} disabled={!can('FG_ENTRY')}
+            aria-label={t('fg.fastMover')} aria-pressed={on} title={t('fg.fastMoverHint')}
+            onClick={(e) => {
+              e.stopPropagation()
+              setFastMover.mutate({ designId: g.designId, fastMover: !on })
+            }}>
+            <StarFilled />
+          </button>
+        )
+      },
+    },
     {
       title: t('fg.design'),
       dataIndex: 'designName',

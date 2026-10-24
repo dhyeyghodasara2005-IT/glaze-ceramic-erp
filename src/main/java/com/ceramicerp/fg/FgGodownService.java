@@ -8,6 +8,7 @@ import com.ceramicerp.fg.dto.FgGodownResponse;
 import com.ceramicerp.fg.dto.FgStockRow;
 import com.ceramicerp.fg.dto.GodownMap;
 import com.ceramicerp.fg.dto.PillarBulkRequest;
+import com.ceramicerp.fg.dto.PillarLayoutRequest;
 import com.ceramicerp.fg.dto.PillarOption;
 import com.ceramicerp.fg.dto.PillarUpdateRequest;
 import com.ceramicerp.organization.Plant;
@@ -116,7 +117,49 @@ public class FgGodownService {
         }
         pillar.setCapacityPallets(req.capacityPallets());
         pillar.setActive(req.active());
+        pillar.setWalkOrder(req.walkOrder());
+        if (req.zone() != null) {
+            pillar.setZone(req.zone());
+        }
+        if (req.kind() != null) {
+            pillar.setKind(req.kind());
+        }
         return map(pillar.getGodown().getId());
+    }
+
+    /**
+     * Lay out a run of pillars at once, e.g. the left wing "A1 to A8, walk order 8 down to 1, zone SLOW".
+     * Only the pillars that exist are changed; empty fields are left as they are.
+     */
+    @Transactional
+    public GodownMap setLayout(Long godownId, PillarLayoutRequest req) {
+        find(godownId);
+        if (req.to() < req.from()) {
+            throw new BusinessException("The last number can't be smaller than the first");
+        }
+        int step = req.step() == null || req.step() == 0 ? 1 : req.step();
+        if (req.firstWalkOrder() != null && req.firstWalkOrder() + (req.to() - req.from()) * step < 1) {
+            throw new BusinessException("The walk order would go below 1. Start higher, or count up instead of down.");
+        }
+        String prefix = req.prefix().trim().toUpperCase(Locale.ROOT);
+        Map<String, FgPillar> byCode = new HashMap<>();
+        pillarRepository.findByGodownId(godownId).forEach(p -> byCode.put(p.getCode(), p));
+        for (int n = req.from(); n <= req.to(); n++) {
+            FgPillar pillar = byCode.get(prefix + n);
+            if (pillar == null) {
+                continue;
+            }
+            if (req.zone() != null) {
+                pillar.setZone(req.zone());
+            }
+            if (req.kind() != null) {
+                pillar.setKind(req.kind());
+            }
+            if (req.firstWalkOrder() != null) {
+                pillar.setWalkOrder(req.firstWalkOrder() + (n - req.from()) * step);
+            }
+        }
+        return map(godownId);
     }
 
     @Transactional(readOnly = true)
@@ -132,8 +175,9 @@ public class FgGodownService {
         List<GodownMap.Pillar> cells = pillars.stream().map(p -> {
             List<FgStockRow> rows = new ArrayList<>(byPillar.getOrDefault(p.getId(), List.of()));
             rows.sort(Comparator.comparingInt(FgStockRow::boxes).reversed());
-            return new GodownMap.Pillar(p.getId(), p.getCode(), p.getCapacityPallets(), p.isActive(),
-                    rows.stream().mapToInt(FgStockRow::boxes).sum(), pallets(rows), palletsUnknown(rows), rows);
+            return new GodownMap.Pillar(p.getId(), p.getCode(), p.getZone(), p.getWalkOrder(), p.getKind(),
+                    p.getCapacityPallets(), p.isActive(), rows.stream().mapToInt(FgStockRow::boxes).sum(), pallets(rows),
+                    palletsUnknown(rows), rows);
         }).toList();
         long boxes = cells.stream().mapToLong(GodownMap.Pillar::boxes).sum();
         return new GodownMap(FgGodownResponse.from(godown, pillars.size(), boxes), cells);
@@ -155,8 +199,9 @@ public class FgGodownService {
                     List<FgStockRow> rows = byPillar.getOrDefault(p.getId(), List.of());
                     FgStockRow main = rows.stream().max(Comparator.comparingInt(FgStockRow::boxes)).orElse(null);
                     return new PillarOption(p.getId(), p.getCode(), p.getGodown().getId(), p.getGodown().getCode(),
-                            p.getCapacityPallets(), rows.stream().mapToInt(FgStockRow::boxes).sum(), pallets(rows),
-                            palletsUnknown(rows), main == null ? null : main.designName(), main == null ? null : main.shade());
+                            p.getZone(), p.getWalkOrder(), p.getKind(), p.getCapacityPallets(),
+                            rows.stream().mapToInt(FgStockRow::boxes).sum(), pallets(rows), palletsUnknown(rows),
+                            main == null ? null : main.designName(), main == null ? null : main.shade(), rows);
                 })
                 .toList();
     }
@@ -175,11 +220,11 @@ public class FgGodownService {
         }
     }
 
-    private static int pallets(List<FgStockRow> rows) {
+    static int pallets(List<FgStockRow> rows) {
         return rows.stream().mapToInt(r -> r.pallets() == null ? 0 : r.pallets()).sum();
     }
 
-    private static boolean palletsUnknown(List<FgStockRow> rows) {
+    static boolean palletsUnknown(List<FgStockRow> rows) {
         return rows.stream().anyMatch(r -> r.pallets() == null);
     }
 }

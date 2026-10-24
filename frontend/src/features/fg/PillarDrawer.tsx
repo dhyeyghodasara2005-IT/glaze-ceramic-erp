@@ -1,17 +1,20 @@
 import { useEffect } from 'react'
-import { App, Button, Drawer, Form, InputNumber, Switch, Table, type TableColumnsType } from 'antd'
+import { App, Button, Drawer, Form, InputNumber, Segmented, Select, Switch, Table, type TableColumnsType } from 'antd'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useDrawerSize } from '../../components/useDrawerSize'
 import { useAuth } from '../../auth/AuthContext'
 import { errorMessage } from '../../api/errors'
-import type { FgStockRow, GodownMapPillar } from '../../api/types'
+import { PILLAR_KINDS, PILLAR_ZONES, type FgStockRow, type GodownMapPillar, type PillarKind, type PillarZone } from '../../api/types'
 import { qty } from '../store/format'
 import { useUpdatePillar } from './fgApi'
 
 interface Values {
   capacityPallets?: number
   active: boolean
+  zone: PillarZone
+  walkOrder?: number
+  kind: PillarKind
 }
 
 /** One pillar: what stands under it, and (warehouse) its capacity and open / closed. */
@@ -28,12 +31,19 @@ export default function PillarDrawer({ pillar, godownCode, onClose }: {
   const [form] = Form.useForm<Values>()
 
   useEffect(() => {
-    if (pillar) form.setFieldsValue({ capacityPallets: pillar.capacityPallets, active: pillar.active })
+    if (pillar) {
+      form.setFieldsValue({
+        capacityPallets: pillar.capacityPallets, active: pillar.active, zone: pillar.zone, walkOrder: pillar.walkOrder, kind: pillar.kind,
+      })
+    }
   }, [pillar, form])
 
   const onSave = async (v: Values) => {
     try {
-      await update.mutateAsync({ id: pillar!.id, body: { capacityPallets: v.capacityPallets ?? undefined, active: v.active } })
+      await update.mutateAsync({
+        id: pillar!.id,
+        body: { capacityPallets: v.capacityPallets ?? undefined, active: v.active, zone: v.zone, walkOrder: v.walkOrder ?? undefined, kind: v.kind },
+      })
       message.success(t('common.saved'))
       onClose()
     } catch (err) {
@@ -76,6 +86,15 @@ export default function PillarDrawer({ pillar, godownCode, onClose }: {
           {can('FG_ENTRY') && (
             <Form<Values> form={form} layout="vertical" onFinish={onSave} style={{ marginTop: 20 }}>
               <div className="form-section">{t('fg.pillarSettings')}</div>
+              <Form.Item name="zone" label={t('fg.zoneLabel')}>
+                <Segmented<PillarZone> options={PILLAR_ZONES.map((z) => ({ value: z, label: t(`fg.zone.${z}`) }))} />
+              </Form.Item>
+              <Form.Item name="walkOrder" label={t('fg.walkOrder')} tooltip={t('fg.walkOrderHint')}>
+                <InputNumber<number> min={1} max={9999} precision={0} style={{ width: 200 }} />
+              </Form.Item>
+              <Form.Item name="kind" label={t('fg.kindLabel')}>
+                <Select style={{ width: 200 }} options={PILLAR_KINDS.map((k) => ({ value: k, label: t(`fg.kind.${k}`) }))} />
+              </Form.Item>
               <Form.Item name="capacityPallets" label={t('fg.capacity')} tooltip={t('fg.capacityHint')}>
                 <InputNumber<number> min={1} max={9999} precision={0} suffix={t('fg.palletsShort')} style={{ width: 200 }} />
               </Form.Item>

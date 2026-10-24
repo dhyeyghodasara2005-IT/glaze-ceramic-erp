@@ -1451,9 +1451,20 @@ export interface FgLedger {
   moves: FgMove[]
 }
 
+/** How near a pillar is to the loading point (step 6a). */
+export type PillarZone = 'FAST' | 'NORMAL' | 'SLOW'
+export const PILLAR_ZONES: PillarZone[] = ['FAST', 'NORMAL', 'SLOW']
+/** STORAGE = one kind of box, REMAINDER = small leftovers, STAGING = a truck's lane at the loading point. */
+export type PillarKind = 'STORAGE' | 'REMAINDER' | 'STAGING'
+export const PILLAR_KINDS: PillarKind[] = ['STORAGE', 'REMAINDER', 'STAGING']
+
 export interface GodownMapPillar {
   id: number
   code: string
+  zone: PillarZone
+  /** distance from the loading point in pillars (1 = next to it) */
+  walkOrder?: number
+  kind: PillarKind
   capacityPallets?: number
   active: boolean
   boxes: number
@@ -1473,12 +1484,29 @@ export interface PillarOption {
   code: string
   godownId: number
   godownCode: string
+  zone: PillarZone
+  walkOrder?: number
+  kind: PillarKind
   capacityPallets?: number
   boxes: number
   pallets: number
   palletsUnknown: boolean
   mainDesign?: string
   mainShade?: string
+  /** what stands there now (to warn before mixing boxes) */
+  stock: FgStockRow[]
+}
+
+/** A suggested pillar for new pallets, best first (step 6a). */
+export interface PutAwaySuggestion {
+  pillarId: number
+  code: string
+  godownCode: string
+  zone: PillarZone
+  walkOrder?: number
+  reason: 'SAME_BOX' | 'REMAINDER' | 'NEXT_TO_DESIGN' | 'EMPTY_IN_ZONE' | 'EMPTY_ELSEWHERE'
+  /** pallets that still fit; missing when unknown */
+  freePallets?: number
 }
 
 /** What moved finished-goods boxes (the ledger's "document"). */

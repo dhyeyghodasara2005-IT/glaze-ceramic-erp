@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Space, Spin } from 'antd'
-import { ArrowLeftOutlined, EditOutlined, PlusOutlined, TableOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, EditOutlined, NodeIndexOutlined, PlusOutlined, TableOutlined } from '@ant-design/icons'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../components/PageHeader'
@@ -11,6 +11,7 @@ import type { GodownMapPillar } from '../../api/types'
 import { useGodownMap } from './fgApi'
 import AddPillarsModal from './AddPillarsModal'
 import FgGodownDrawer from './FgGodownDrawer'
+import LayoutModal from './LayoutModal'
 import PillarDrawer from './PillarDrawer'
 
 /** How full a pillar is: empty, has room, nearly full, full - or just "in use" when its capacity isn't set. */
@@ -34,6 +35,7 @@ export default function GodownMapPage() {
   const { data, isLoading } = useGodownMap(Number(id))
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [laying, setLaying] = useState(false)
   const [openId, setOpenId] = useState<number>()
 
   // A1 A2 … under "A", B1 B2 … under "B": the letters are the rows of pillars on the floor
@@ -63,6 +65,9 @@ export default function GodownMapPage() {
           <Space wrap>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/fg/godowns')}>{t('common.back')}</Button>
             {canEntry && <Button icon={<EditOutlined />} onClick={() => setEditing(true)}>{t('common.edit')}</Button>}
+            {canEntry && data.pillars.length > 0 && (
+              <Button icon={<NodeIndexOutlined />} onClick={() => setLaying(true)}>{t('fg.setLayout')}</Button>
+            )}
             {canEntry && <Button type="primary" icon={<PlusOutlined />} onClick={() => setAdding(true)}>{t('fg.addPillars')}</Button>}
           </Space>
         )}
@@ -92,7 +97,14 @@ export default function GodownMapPage() {
               return (
                 <button key={p.id} type="button" className={`pillar-tile ${f}`} onClick={() => setOpenId(p.id)}
                   aria-label={`${t('fg.pillar')} ${p.code}`}>
-                  <span className="pillar-code">{p.code}</span>
+                  <span className="pillar-head">
+                    <span className="pillar-code">{p.code}</span>
+                    {p.walkOrder != null && <span className="pillar-walk">{t('fg.walkShort', { n: p.walkOrder })}</span>}
+                    {/* the zone only when it isn't the default; the use when it isn't plain storage */}
+                    {(p.kind !== 'STORAGE' || p.zone !== 'NORMAL') && (
+                      <span className="pillar-tag">{p.kind !== 'STORAGE' ? t(`fg.kind.${p.kind}`) : t(`fg.zone.${p.zone}`)}</span>
+                    )}
+                  </span>
                   {f === 'closed' ? (
                     <span className="cell-sub">{t('fg.closed')}</span>
                   ) : p.boxes === 0 ? (
@@ -117,6 +129,7 @@ export default function GodownMapPage() {
       <PillarDrawer pillar={open} godownCode={g.code} onClose={() => setOpenId(undefined)} />
       {currentPlant && <AddPillarsModal open={adding} godownId={g.id} onClose={() => setAdding(false)} />}
       {currentPlant && <FgGodownDrawer open={editing} plantId={g.plantId} godown={g} onClose={() => setEditing(false)} />}
+      {currentPlant && <LayoutModal open={laying} godownId={g.id} onClose={() => setLaying(false)} />}
     </>
   )
 }

@@ -98,7 +98,8 @@ Every feature module has the same layers:
 | 4d | Cooling-area quality checks (bend, size, expected Premium %), polishing, sorting & packing by grade / shade / caliber; funnel press → box | ✅ Done |
 | 5a | Finished goods: godowns & pillars (A1, A2 …), packed boxes into stock by pillar × batch × grade × shade × caliber, godown map, ledger | ✅ Done |
 | 5b | Warehouse documents: opening FG stock (batch on the box), breakage write-off by reason, regrading (grade / shade / caliber / pillar) | ✅ Done |
-| 6 | Sales orders, dispatch, Tally Prime sync | ⏭ Next |
+| 6a | Smart put-away: pillar zones, walk order from the loading point, remainder / staging pillars, best sellers, pillar suggestion + mixing warning in the pack entry | ✅ Done |
+| 6b–6f | Sales orders / DO upload, automatic pillar picking, bill + e-way bill on loading, Tally Prime sync, busy-day staging ([plan](docs/plans/06-dispatch-and-smart-storage.md), [backlog](docs/plans/BACKLOG.md)) | waiting on answers |
 | 7 | Owner dashboard | |
 | 8 | QC, maintenance, gas/power meters | |
 | 9 | Costing, labour | |

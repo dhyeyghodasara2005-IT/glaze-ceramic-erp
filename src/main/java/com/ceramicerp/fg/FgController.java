@@ -6,6 +6,7 @@ import com.ceramicerp.fg.dto.FgLedger;
 import com.ceramicerp.fg.dto.FgStockRow;
 import com.ceramicerp.fg.dto.GodownMap;
 import com.ceramicerp.fg.dto.PillarBulkRequest;
+import com.ceramicerp.fg.dto.PillarLayoutRequest;
 import com.ceramicerp.fg.dto.PillarUpdateRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,6 +34,7 @@ public class FgController {
 
     private final FgGodownService godownService;
     private final FgStockQueryService stockService;
+    private final FgDesignSettingService designSettingService;
 
     @GetMapping("/godowns")
     @PreAuthorize("hasAuthority('FG_VIEW')")
@@ -63,6 +65,30 @@ public class FgController {
     @PreAuthorize("hasAuthority('FG_ENTRY')")
     public GodownMap addPillars(@PathVariable Long id, @Valid @RequestBody PillarBulkRequest req) {
         return godownService.addPillars(id, req);
+    }
+
+    /** Zone, walk order and kind for a run of pillars at once. */
+    @PutMapping("/godowns/{id}/layout")
+    @PreAuthorize("hasAuthority('FG_ENTRY')")
+    public GodownMap setLayout(@PathVariable Long id, @Valid @RequestBody PillarLayoutRequest req) {
+        return godownService.setLayout(id, req);
+    }
+
+    /** Ids of the designs marked as best sellers. */
+    @GetMapping("/designs/fast-movers")
+    @PreAuthorize("hasAuthority('FG_VIEW')")
+    public List<Long> fastMovers() {
+        return designSettingService.fastMovers();
+    }
+
+    @PutMapping("/designs/{designId}/fast-mover")
+    @PreAuthorize("hasAuthority('FG_ENTRY')")
+    public List<Long> setFastMover(@PathVariable Long designId, @RequestBody FastMoverRequest req) {
+        designSettingService.setFastMover(designId, req.fastMover());
+        return designSettingService.fastMovers();
+    }
+
+    public record FastMoverRequest(boolean fastMover) {
     }
 
     @PutMapping("/pillars/{id}")

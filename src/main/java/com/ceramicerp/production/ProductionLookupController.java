@@ -1,7 +1,10 @@
 package com.ceramicerp.production;
 
+import com.ceramicerp.common.exception.NotFoundException;
 import com.ceramicerp.fg.FgGodownService;
+import com.ceramicerp.fg.PutAwayService;
 import com.ceramicerp.fg.dto.PillarOption;
+import com.ceramicerp.fg.dto.PutAwaySuggestion;
 import com.ceramicerp.master.BodyRecipeService;
 import com.ceramicerp.master.DesignRepository;
 import com.ceramicerp.master.GradeRepository;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Everything the production screens need for their dropdowns, with only PRODUCTION_VIEW.
@@ -53,6 +57,8 @@ public class ProductionLookupController {
     private final DesignRepository designRepository;
     private final GradeRepository gradeRepository;
     private final FgGodownService fgGodownService;
+    private final PutAwayService putAwayService;
+    private final ProductionLotRepository lotRepository;
 
     @GetMapping("/body/overview")
     @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
@@ -149,5 +155,26 @@ public class ProductionLookupController {
     @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
     public List<PillarOption> pillars(@RequestParam Long plantId) {
         return fgGodownService.pillarOptions(plantId);
+    }
+
+    /**
+     * Where the packing supervisor should put a row of boxes, best first (step 6a). Shade, caliber and boxes
+     * may still be empty while the row is being typed.
+     */
+    @GetMapping("/lookups/put-away")
+    @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
+    @Transactional(readOnly = true)
+    public List<PutAwaySuggestion> putAway(@RequestParam Long plantId, @RequestParam Long lotId, @RequestParam Long gradeId,
+                                           @RequestParam(required = false) String shade,
+                                           @RequestParam(required = false) String caliber,
+                                           @RequestParam(required = false) Integer boxes) {
+        ProductionLot lot = lotRepository.findWithDetailsById(lotId).orElseThrow(() -> new NotFoundException("Design lot", lotId));
+        return putAwayService.suggest(new PutAwayService.Request(plantId, lot.getDesign(), lot.getLotNo(), gradeId,
+                tidy(shade), tidy(caliber), boxes));
+    }
+
+    /** Codes are compared the way they are stored ("c1" is C1); a half-typed code just won't match anything. */
+    private static String tidy(String code) {
+        return code == null || code.isBlank() ? null : code.replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
     }
 }

@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from '../../api/client'
 import type {
   DocStatus, FinishingOverview, GradeOption, LotCheck, LotCheckRequest, PackCodes, PackEntry, PackEntryRequest,
-  PackEntrySummary, PageResponse, PillarOption,
+  PackEntrySummary, PageResponse, PillarOption, PutAwaySuggestion,
 } from '../../api/types'
 import { useProdMutation } from './api'
 
@@ -36,6 +36,20 @@ export function usePillarOptions(plantId?: number) {
     queryKey: ['pillar-options', plantId],
     queryFn: async () => (await api.get<PillarOption[]>('/production/lookups/pillars', { params: { plantId } })).data,
     enabled: plantId !== undefined,
+  })
+}
+
+/**
+ * Where a row of boxes should go, best first (step 6a). Waits until the row has a lot and a grade;
+ * shade, caliber and boxes make the suggestion better as they are typed.
+ */
+export function usePutAway(params: { plantId?: number; lotId?: number; gradeId?: number; shade?: string; caliber?: string; boxes?: number }) {
+  const ready = params.plantId !== undefined && params.lotId !== undefined && params.gradeId !== undefined
+  return useQuery({
+    queryKey: ['put-away', params],
+    queryFn: async () => (await api.get<PutAwaySuggestion[]>('/production/lookups/put-away', { params })).data,
+    enabled: ready,
+    placeholderData: keepPreviousData,
   })
 }
 

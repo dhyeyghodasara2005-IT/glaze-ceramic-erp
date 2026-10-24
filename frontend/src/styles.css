@@ -1977,6 +1977,69 @@ body {
   border-radius: 3px;
   vertical-align: baseline;
 }
+/* Step 6a: suggested pillars under a pack entry row (a full-width line inside the row's grid). */
+.line-extra {
+  grid-column: 2 / -1;
+  display: grid;
+  gap: 4px;
+}
+.pillar-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.hint-chip {
+  padding: 2px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--brand-700);
+  cursor: pointer;
+  background: var(--brand-50);
+  border: 1px solid var(--brand-200);
+  border-radius: 999px;
+  transition: background 0.15s var(--ease);
+}
+.hint-chip:hover,
+.hint-chip.on {
+  background: var(--brand-100);
+}
+.hint-chip.on {
+  border-color: var(--brand-600);
+}
+.pillar-tag {
+  margin-left: auto;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 650;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--ink-soft);
+}
+.pillar-head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pillar-walk {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.star-toggle {
+  padding: 0 4px;
+  font-size: 16px;
+  color: #c9bfb6;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+.star-toggle.on {
+  color: #d4a017;
+}
+.star-toggle:disabled {
+  cursor: default;
+}
+
 /* The warehouse documents (step 5b): each type has its own row columns. */
 .cols-fg-opening {
   --line-cols: 24px minmax(110px, 0.9fr) minmax(150px, 1.6fr) minmax(100px, 1fr) minmax(100px, 1fr) minmax(64px, 0.6fr)

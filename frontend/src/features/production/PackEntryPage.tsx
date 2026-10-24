@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Alert, App, AutoComplete, Button, Col, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin } from 'antd'
 import { ArrowLeftOutlined, CheckCircleOutlined, DeleteOutlined, GoldOutlined, MinusCircleOutlined, PlusOutlined, SaveOutlined, StopOutlined } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -9,14 +9,15 @@ import EmptyState from '../../components/EmptyState'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import { applyFieldErrors, errorMessage } from '../../api/errors'
-import type { PackEntry, PackEntryRequest } from '../../api/types'
+import type { LotSummary, PackEntry, PackEntryRequest, PillarOption } from '../../api/types'
+import { useDebounced } from '../../components/useDebounced'
 import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
 import { useCurrentShift, useProdMachines, useProdShifts } from './api'
 import {
   PACK_PATH, useCancelPackEntry, useDeletePackEntry, useFinishingOverview, useGradeOptions, usePackCodes, usePackEntry,
-  usePillarOptions, usePostPackEntry, useSavePackEntry,
+  usePillarOptions, usePostPackEntry, usePutAway, useSavePackEntry,
 } from './finishApi'
 import { useSelectableLots } from './pressApi'
 import ReasonModal from './ReasonModal'
@@ -45,6 +46,64 @@ function Cell({ label, className, children }: { label: string; className?: strin
       {children}
     </div>
   )
+}
+
+/**
+ * Step 6a: the suggested pillars for one row of boxes, as one-tap chips. While the supervisor hasn't chosen a pillar
+ * by hand, the best suggestion fills the pillar by itself (and follows as shade, caliber and boxes are typed).
+ */
+function PillarHint({ plantId, lot, row, chosenByHand, onAuto, onChoose }: {
+  plantId?: number
+  lot?: LotSummary
+  row?: RowValues
+  /** the supervisor chose this row's pillar (dropdown or chip): never overwrite it */
+  chosenByHand: boolean
+  /** fill in the best suggestion (not a choice) */
+  onAuto: (pillarId: number) => void
+  /** the supervisor tapped a chip */
+  onChoose: (pillarId: number) => void
+}) {
+  const { t } = useTranslation()
+  // wait until typing pauses before asking the server (each value on its own: they are simple values)
+  const shade = useDebounced(row?.shade, 400)
+  const caliber = useDebounced(row?.caliber, 400)
+  const boxes = useDebounced(row?.boxes, 400)
+  const { data } = usePutAway({ plantId, lotId: lot?.id, gradeId: row?.gradeId, shade, caliber, boxes })
+  const autoFilled = useRef<number>(undefined)
+  const best = data?.[0]
+
+  // Follow the best suggestion while the pillar is empty or still the one we filled in ourselves.
+  // (antd's "touched" can't tell us this: setting a field from code marks it touched too.)
+  useEffect(() => {
+    if (!best || chosenByHand) return
+    const current = row?.pillarId
+    if (current === undefined || current === autoFilled.current) {
+      autoFilled.current = best.pillarId
+      if (current !== best.pillarId) onAuto(best.pillarId)
+    }
+  }, [best, chosenByHand, row?.pillarId, onAuto])
+
+  if (!data) return null
+  if (data.length === 0) return <span className="cell-sub">{t('fg.noSuggestion')}</span>
+  return (
+    <span className="pillar-hint">
+      <span className="cell-sub">{t('fg.suggested')}:</span>
+      {data.slice(0, 3).map((s) => (
+        <button key={s.pillarId} type="button" className={`hint-chip${row?.pillarId === s.pillarId ? ' on' : ''}`}
+          onClick={() => onChoose(s.pillarId)}>
+          <b>{s.code}</b> · {t(`fg.reason.${s.reason}`)}
+          {s.freePallets != null && <> · {t('fg.freeN', { n: s.freePallets })}</>}
+        </button>
+      ))}
+    </span>
+  )
+}
+
+/** "A5 already holds Onyx 05 Premium": a storage pillar should hold one kind of box. */
+function mixWarning(pillar: PillarOption | undefined, lot: LotSummary | undefined, row: RowValues | undefined) {
+  if (!pillar || !lot || !row || pillar.kind !== 'STORAGE') return undefined
+  return pillar.stock.find((s) => !(s.designId === lot.designId && s.batchCode === lot.lotNo && s.gradeId === row.gradeId
+    && s.shade === row.shade && s.caliber === row.caliber))
 }
 
 /** /production/pack-entries/new and /production/pack-entries/12 - the packing supervisor's shift entry. */
@@ -82,6 +141,9 @@ function PackEditor({ entryId }: { entryId?: number }) {
   const remove = useDeletePackEntry()
   const [confirmPost, setConfirmPost] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  // rows (by their list key) whose pillar the supervisor chose: suggestions no longer change them
+  const [chosenByHand, setChosenByHand] = useState<Set<number>>(new Set())
+  const markChosen = (key: number) => setChosenByHand((s) => (s.has(key) ? s : new Set(s).add(key)))
 
   const [form] = Form.useForm<FormValues>()
   const lotId = Form.useWatch('lotId', form) as number | undefined
@@ -364,6 +426,8 @@ function PackEditor({ entryId }: { entryId?: number }) {
                   </div>
                   {fields.map((field, index) => {
                     const pieces = piecesOf(rows?.[index])
+                    const row = rows?.[index]
+                    const mixed = editable ? mixWarning(pillars.data?.find((p) => p.id === row?.pillarId), lot, row) : undefined
                     return (
                       <div key={field.key} className="doc-line">
                         <span className="line-no">{index + 1}</span>
@@ -392,6 +456,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
                           <Form.Item name={[field.name, 'pillarId']} rules={[required]}>
                             <Select options={pillarOptions} loading={pillars.isLoading} aria-label={t('fg.pillar')}
                               showSearch={{ optionFilterProp: 'label' }} popupMatchSelectWidth={false}
+                              onChange={() => markChosen(field.key)}
                               optionRender={(o) => (
                                 <div>
                                   <b>{o.label}</b>
@@ -418,6 +483,23 @@ function PackEditor({ entryId }: { entryId?: number }) {
                               onClick={() => removeRow(field.name)} />
                           )}
                         </div>
+                        {editable && (
+                          <div className="line-extra">
+                            <PillarHint plantId={plantId} lot={lot} row={row}
+                              chosenByHand={chosenByHand.has(field.key)}
+                              onAuto={(id) => form.setFieldValue(['lines', field.name, 'pillarId'], id)}
+                              onChoose={(id) => {
+                                markChosen(field.key)
+                                form.setFieldValue(['lines', field.name, 'pillarId'], id)
+                              }} />
+                            {mixed && (
+                              <div className="line-hint short">
+                                {t('fg.mixWarning', { pillar: pillars.data?.find((p) => p.id === row?.pillarId)?.code,
+                                  what: `${mixed.designName} ${mixed.gradeName} ${mixed.shade}/${mixed.caliber}` })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   })}

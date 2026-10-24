@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '../../api/client'
 import type {
   DocStatus, FgDocType, FgDocument, FgDocumentRequest, FgDocumentSummary, FgGodown, FgGodownRequest, FgLedger, FgOption,
-  FgStockRow, GodownMap, PageResponse, PillarOption,
+  FgStockRow, GodownMap, PageResponse, PillarKind, PillarOption, PillarZone,
 } from '../../api/types'
 
 // Step 5: /api/fg - finished-goods godowns, pillars, stock and the warehouse's documents
@@ -71,9 +71,35 @@ export const useAddPillars = () =>
   )
 
 export const useUpdatePillar = () =>
-  useFgMutation(async ({ id, body }: { id: number; body: { capacityPallets?: number; active: boolean } }) =>
-    (await api.put<GodownMap>(`/fg/pillars/${id}`, body)).data,
-  )
+  useFgMutation(async ({ id, body }: {
+    id: number
+    body: { capacityPallets?: number; active: boolean; zone?: PillarZone; walkOrder?: number; kind?: PillarKind }
+  }) => (await api.put<GodownMap>(`/fg/pillars/${id}`, body)).data)
+
+/** Zone, walk order and kind for a run of pillars at once (step 6a). */
+export const useSetLayout = () =>
+  useFgMutation(async ({ godownId, body }: {
+    godownId: number
+    body: { prefix: string; from: number; to: number; zone?: PillarZone; kind?: PillarKind; firstWalkOrder?: number; step?: number }
+  }) => (await api.put<GodownMap>(`/fg/godowns/${godownId}/layout`, body)).data)
+
+/** Ids of the designs the warehouse marked as best sellers. */
+export function useFastMovers(enabled = true) {
+  return useQuery({
+    queryKey: ['fast-movers'],
+    queryFn: async () => (await api.get<number[]>('/fg/designs/fast-movers')).data,
+    enabled,
+  })
+}
+
+export function useSetFastMover() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ designId, fastMover }: { designId: number; fastMover: boolean }) =>
+      (await api.put<number[]>(`/fg/designs/${designId}/fast-mover`, { fastMover })).data,
+    onSuccess: (ids) => queryClient.setQueryData(['fast-movers'], ids),
+  })
+}
 
 // ---- step 5b: the warehouse's documents and their dropdowns ----
 
