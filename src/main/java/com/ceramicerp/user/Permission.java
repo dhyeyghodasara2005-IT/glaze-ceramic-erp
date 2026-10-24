@@ -46,7 +46,8 @@ public enum Permission {
 
     SALES_VIEW("Sales", "View sales orders (loading slips)"),
     SALES_ENTRY("Sales", "Enter, match and confirm sales orders from loading slips"),
-    SALES_CANCEL("Sales", "Cancel confirmed sales orders");
+    SALES_CANCEL("Sales", "Cancel confirmed sales orders, undo a dispatch"),
+    LOADING_ENTRY("Sales", "Loading supervisor: truck details, tick what is loaded, confirm the loading");
 
     private final String group;
     private final String description;

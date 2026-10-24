@@ -11,4 +11,6 @@ export const FG_DOC_TYPES: Record<FgDocType, { path: string; icon: ReactNode }> 
 
 /** The page of the document behind a ledger line. */
 export const sourcePath = (source: FgSource, id: number) =>
-  source === 'PACK' ? `/production/pack-entries/${id}` : `${FG_DOC_TYPES[source].path}/${id}`
+  source === 'PACK' ? `/production/pack-entries/${id}`
+    : source === 'DISPATCH' ? `/sales/orders/${id}`
+      : `${FG_DOC_TYPES[source].path}/${id}`

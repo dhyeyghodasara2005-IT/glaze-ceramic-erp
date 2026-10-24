@@ -163,8 +163,7 @@ public class FgDocumentService {
     }
 
     private static FgStockService.Batch batchOf(FgStock s) {
-        return new FgStockService.Batch(s.getPillar(), s.getDesign(), s.getLotId(), s.getBatchCode(), s.getGrade(),
-                s.getShade(), s.getCaliber());
+        return FgStockService.Batch.of(s);
     }
 
     // ------------------------------------------------------------------ checking a draft

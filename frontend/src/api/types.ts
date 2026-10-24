@@ -84,6 +84,7 @@ export type Permission =
   | 'SALES_VIEW'
   | 'SALES_ENTRY'
   | 'SALES_CANCEL'
+  | 'LOADING_ENTRY'
 
 export interface PermissionInfo {
   code: Permission
@@ -1516,7 +1517,7 @@ export interface PutAwaySuggestion {
 }
 
 /** What moved finished-goods boxes (the ledger's "document"). */
-export type FgSource = 'PACK' | 'OPENING' | 'BREAKAGE' | 'REGRADE'
+export type FgSource = 'PACK' | 'OPENING' | 'BREAKAGE' | 'REGRADE' | 'DISPATCH'
 
 // ---- finished goods: the warehouse's documents (step 5b) ----
 
@@ -1609,7 +1610,7 @@ export interface FgOption {
 // ---- sales orders (step 6b, must match sales/*.java) ----
 
 export type SalesOrderType = 'SALE' | 'JOBWORK'
-export const SALES_ORDER_STATUSES = ['DRAFT', 'CONFIRMED', 'CANCELLED'] as const
+export const SALES_ORDER_STATUSES = ['DRAFT', 'CONFIRMED', 'DISPATCHED', 'CANCELLED'] as const
 export type SalesOrderStatus = (typeof SALES_ORDER_STATUSES)[number]
 /** Who each kind of order is billed to (SalesOrderType.partyType()). */
 export const BILLED_TO: Record<SalesOrderType, PartyType> = { SALE: 'DEALER', JOBWORK: 'JOBWORK' }
@@ -1669,6 +1670,10 @@ export interface SalesOrderSummary {
   boxes: number
   /** every line has its design and grade */
   matched: boolean
+  plannedBoxes: number
+  loadedBoxes: number
+  truckNo?: string
+  dispatchNo?: string
   createdBy?: string
 }
 
@@ -1684,9 +1689,15 @@ export interface SalesOrderLine {
   batchRef?: string
   sqm?: number
   weightKg?: number
-  /** boxes of this design + grade in the plant (any batch); missing while unmatched or once cancelled */
+  /** boxes of this design + grade in the plant (any batch); missing while unmatched, dispatched or cancelled */
   inStock?: number
+  /** of those, boxes kept for other confirmed orders */
+  keptElsewhere?: number
   shortBy?: number
+  /** boxes in this line's loading plan (missing while a draft) */
+  planned?: number
+  /** boxes ticked as loaded (missing until something is ticked) */
+  loaded?: number
   /** this description is already remembered as exactly this design + grade */
   remembered: boolean
 }
@@ -1700,6 +1711,55 @@ export interface SalesOrderTotals {
   weightOk?: boolean
   unmatchedLines: number
   shortLines: number
+  plannedBoxes: number
+  loadedBoxes: number
+  /** loading plan rows not ticked yet */
+  picksToTick: number
+}
+
+/** Why the loading plan took boxes from a stock row (LoadingPlanner). */
+export type PickReason = 'ONLY_STOCK' | 'IN_FRONT' | 'CLEARS_PILLAR' | 'WHOLE_STOCK' | 'OLDEST' | 'MOST_BOXES' | 'NEAREST' | 'ADDED'
+
+/** One row of the loading plan, in walk order. */
+export interface SalesPick {
+  id: number
+  lineId: number
+  lineNo: number
+  stockId: number
+  godownCode: string
+  pillarCode: string
+  zone: PillarZone
+  walkOrder?: number
+  pillarKind: PillarKind
+  designName: string
+  gradeName: string
+  batchCode: string
+  shade: string
+  caliber: string
+  plannedBoxes: number
+  /** what the loader ticked; missing until ticked */
+  loadedBoxes?: number
+  reason: PickReason
+  boxesPerPallet?: number
+  boxesThere: number
+  /** fewer boxes there now than the confirmed orders keep: plan again */
+  tooFew: boolean
+  loadedAt?: string
+  loadedBy?: string
+}
+
+/** A stock row the loader may take a line's boxes from instead. */
+export interface PickOption {
+  stockId: number
+  godownCode: string
+  pillarCode: string
+  zone: PillarZone
+  walkOrder?: number
+  batchCode: string
+  shade: string
+  caliber: string
+  boxes: number
+  free: number
 }
 
 export interface SalesOrder {
@@ -1715,13 +1775,26 @@ export interface SalesOrder {
   source: 'TYPED' | 'PDF'
   party: SalesParty
   transporter?: SalesOption
+  truckNo?: string
+  driverName?: string
+  driverMobile?: string
+  lrNo?: string
   slipBoxes?: number
   slipWeightKg?: number
   remarks?: string
   lines: SalesOrderLine[]
+  picks: SalesPick[]
   totals: SalesOrderTotals
   confirmedAt?: string
   confirmedBy?: string
+  plannedAt?: string
+  dispatchNo?: string
+  dispatchDate?: string
+  dispatchedAt?: string
+  dispatchedBy?: string
+  undoneAt?: string
+  undoneBy?: string
+  undoReason?: string
   cancelledAt?: string
   cancelledBy?: string
   cancelReason?: string
@@ -1753,4 +1826,11 @@ export interface SalesOrderRequest {
   slipWeightKg?: number
   remarks?: string
   lines: SalesLineRequest[]
+}
+
+export interface TruckRequest {
+  truckNo?: string
+  driverName?: string
+  driverMobile?: string
+  lrNo?: string
 }

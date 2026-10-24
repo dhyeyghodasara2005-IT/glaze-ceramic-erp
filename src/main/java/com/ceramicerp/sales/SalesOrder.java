@@ -64,6 +64,20 @@ public class SalesOrder extends BaseEntity {
     @JoinColumn(name = "transporter_id")
     private Party transporter;
 
+    /** Truck details, noted at loading (step 6c). */
+    @Column(length = 20)
+    private String truckNo;
+
+    @Column(length = 100)
+    private String driverName;
+
+    @Column(length = 15)
+    private String driverMobile;
+
+    /** The transporter's lorry receipt no. */
+    @Column(length = 30)
+    private String lrNo;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 20)
@@ -89,6 +103,28 @@ public class SalesOrder extends BaseEntity {
     @Column(length = 100)
     private String confirmedBy;
 
+    /** When the boxes were last picked for this order. */
+    private Instant plannedAt;
+
+    /** The dispatch / gate pass no., given when the loading is first confirmed (kept if it is undone and redone). */
+    @Column(length = 40)
+    private String dispatchNo;
+
+    private LocalDate dispatchDate;
+
+    private Instant dispatchedAt;
+
+    @Column(length = 100)
+    private String dispatchedBy;
+
+    /** The last "undo dispatch", if any. */
+    private Instant undoneAt;
+
+    @Column(length = 100)
+    private String undoneBy;
+
+    private String undoReason;
+
     private Instant cancelledAt;
 
     @Column(length = 100)
@@ -101,4 +137,9 @@ public class SalesOrder extends BaseEntity {
     @OrderBy("lineNo ASC")
     @BatchSize(size = 50)
     private List<SalesOrderLine> lines = new ArrayList<>();
+
+    /** The loading plan (empty while a draft). */
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 50)
+    private List<SalesOrderPick> picks = new ArrayList<>();
 }

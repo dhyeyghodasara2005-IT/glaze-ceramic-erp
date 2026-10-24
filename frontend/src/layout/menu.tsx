@@ -238,6 +238,10 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         path: '/sales/orders', labelKey: 'menu.salesOrders', icon: <FileDoneOutlined />, permission: 'SALES_VIEW',
         worksIn: ['SALES_ENTRY'], searchType: 'sales-order', create: { labelKey: 'sales.new', permission: 'SALES_ENTRY' },
       },
+      {
+        path: '/sales/loading', labelKey: 'menu.loading', icon: <CarOutlined />, permission: 'SALES_VIEW', mobile: true,
+        worksIn: ['LOADING_ENTRY'],
+      },
     ],
   },
   {

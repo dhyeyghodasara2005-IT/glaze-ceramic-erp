@@ -50,6 +50,9 @@ import FgDocumentsPage from './features/fg/FgDocumentsPage'
 import FgDocumentPage from './features/fg/FgDocumentPage'
 import SalesOrdersPage from './features/sales/SalesOrdersPage'
 import SalesOrderPage from './features/sales/SalesOrderPage'
+import LoadingPage from './features/sales/LoadingPage'
+import LoadingListPage from './features/sales/LoadingListPage'
+import PackingListPage from './features/sales/PackingListPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -64,6 +67,15 @@ export default function App() {
         element={
           <RequireAuth>
             <ChangePasswordPage />
+          </RequireAuth>
+        }
+      />
+      {/* printouts: a page of their own, without the app's frame */}
+      <Route
+        path="/print/sales-orders/:id"
+        element={
+          <RequireAuth>
+            <RequirePermission permission="SALES_VIEW"><PackingListPage /></RequirePermission>
           </RequireAuth>
         }
       />
@@ -139,6 +151,8 @@ export default function App() {
         <Route path="fg/regrading/:id" element={<RequirePermission permission="FG_VIEW"><FgDocumentPage key="REGRADE" type="REGRADE" /></RequirePermission>} />
         <Route path="sales/orders" element={<RequirePermission permission="SALES_VIEW"><SalesOrdersPage /></RequirePermission>} />
         <Route path="sales/orders/:id" element={<RequirePermission permission="SALES_VIEW"><SalesOrderPage /></RequirePermission>} />
+        <Route path="sales/orders/:id/loading" element={<RequirePermission permission="SALES_VIEW"><LoadingPage /></RequirePermission>} />
+        <Route path="sales/loading" element={<RequirePermission permission="SALES_VIEW"><LoadingListPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

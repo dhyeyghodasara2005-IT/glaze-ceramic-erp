@@ -125,7 +125,10 @@ class SalesOrderIntegrationTest extends IntegrationTestBase {
         assertThat(first.get("source").asText()).isEqualTo("TYPED");
         postAs(admin, ORDERS, order("460143", "SALE", dealer, line(FLAVOUR, flavour, premium, 5)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Loading slip 460143 is already entered in plant SO-1"));
+                .andExpect(jsonPath("$.message").value("Loading slip 460143 of Shree Tiles is already entered in plant SO-1"));
+        // each principal's own system numbers its slips: the same number from another party is another slip
+        postAs(admin, ORDERS, order("460143", "JOBWORK", principal, line(FLAVOUR, flavour, premium, 5)))
+                .andExpect(status().isCreated());
 
         // the same number in another plant is another slip
         long other = createPlant(admin, createCompany(admin, "SOCO2"), "SO-2");

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Alert, App, Button, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Segmented, Select, Space, Spin, Tooltip } from 'antd'
 import {
-  ArrowLeftOutlined, CheckCircleOutlined, DeleteOutlined, EditOutlined, FileDoneOutlined, MinusCircleOutlined, PlusOutlined,
-  QuestionCircleOutlined, SaveOutlined, StopOutlined, ThunderboltOutlined, WarningOutlined,
+  ArrowLeftOutlined, CarOutlined, CheckCircleOutlined, DeleteOutlined, EditOutlined, FileDoneOutlined, MinusCircleOutlined,
+  PlusOutlined, PrinterOutlined, QuestionCircleOutlined, ReloadOutlined, RollbackOutlined, SaveOutlined, StopOutlined,
+  ThunderboltOutlined, WarningOutlined,
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -19,10 +20,11 @@ import NoPlant from '../store/NoPlant'
 import { dateTime, qty, shortDate } from '../store/format'
 import ReasonModal from '../production/ReasonModal'
 import {
-  matchProducts, useCancelSalesOrder, useConfirmSalesOrder, useDeleteSalesOrder, useReopenSalesOrder, useSalesDesigns,
-  useSalesGrades, useSalesOrder, useSalesParties, useSaveSalesOrder,
+  matchProducts, useCancelSalesOrder, useConfirmSalesOrder, useDeleteSalesOrder, useReopenSalesOrder, useReplanSalesOrder,
+  useSalesDesigns, useSalesGrades, useSalesOrder, useSalesOrders, useSalesParties, useSaveSalesOrder, useUndoDispatch,
 } from './salesApi'
 import { OrderTypeTag, SalesStatusTag } from './SalesStatusTag'
+import { LoadProgress, PickList } from './loadingParts'
 
 const BASE = '/sales/orders'
 
@@ -116,6 +118,10 @@ function OrderEditor({ orderId }: { orderId?: number }) {
   const reopen = useReopenSalesOrder()
   const cancel = useCancelSalesOrder()
   const remove = useDeleteSalesOrder()
+  const replan = useReplanSalesOrder()
+  const undoDispatch = useUndoDispatch()
+  const [undoing, setUndoing] = useState(false)
+  const loadingStarted = order?.picks.some((p) => p.loadedBoxes != null) ?? false
   const [matching, setMatching] = useState(false)
   /** The freshly saved order whose checks the confirm dialog shows. */
   const [confirming, setConfirming] = useState<SalesOrder>()
@@ -147,9 +153,19 @@ function OrderEditor({ orderId }: { orderId?: number }) {
 
   useEffect(() => {
     if (isNew && !form.getFieldValue('lines')?.length) {
-      form.setFieldsValue({ orderType: 'SALE', slipDate: dayjs(), lines: [{}] })
+      form.setFieldsValue({ orderType: 'JOBWORK', slipDate: dayjs(), lines: [{}] })
     }
   }, [isNew, form])
+
+  // A new order is of the same kind as this plant's latest one; with none yet, jobwork (the plant's work for now).
+  const latest = useSalesOrders(isNew && currentPlant ? { plantId: currentPlant.id, page: 0, size: 1 } : null)
+  const typeChosen = useRef(false)
+  useEffect(() => {
+    const last = latest.data?.content[0]?.orderType
+    if (isNew && last && !typeChosen.current && form.getFieldValue('orderType') !== last) {
+      form.setFieldsValue({ orderType: last, partyId: undefined })
+    }
+  }, [isNew, latest.data, form])
 
   // ---- dropdowns (a saved order's own party / design may be inactive by now: keep it in the list) ----
   const partyList: SalesParty[] = useMemo(() => {
@@ -158,6 +174,10 @@ function OrderEditor({ orderId }: { orderId?: number }) {
     return list
   }, [parties.data, order, orderType])
   const party = partyList.find((p) => p.id === partyId) ?? (order?.party.id === partyId ? order?.party : undefined)
+  // only one dealer / principal to choose from: choose it
+  useEffect(() => {
+    if (isNew && partyId === undefined && parties.data?.length === 1) form.setFieldValue('partyId', parties.data[0].id)
+  }, [isNew, partyId, parties.data, form])
   const partyOptions = partyList.map((p) => ({ value: p.id, label: `${p.name} · ${p.code}${p.city ? ` · ${p.city}` : ''}` }))
   const transporterOptions = (transporters.data ?? []).map((p) => ({ value: p.id, label: `${p.name} · ${p.code}` }))
   if (order?.transporter && !transporterOptions.some((o) => o.value === order.transporter!.id)) {
@@ -234,7 +254,8 @@ function OrderEditor({ orderId }: { orderId?: number }) {
   const boxesDiff = slipBoxes ? totals.boxes - slipBoxes : undefined
   const weightDiff = slipWeight && totals.weight !== undefined ? totals.weight - slipWeight : undefined
   const weightOk = weightDiff === undefined ? undefined : Math.abs(weightDiff) <= slipWeight! * WEIGHT_TOLERANCE
-  const stockKnown = order && !dirty && order.status !== 'CANCELLED'
+  // the stock checks of the last save (a dispatched or cancelled order has nothing left to check)
+  const stockKnown = order && !dirty && (order.status === 'DRAFT' || order.status === 'CONFIRMED')
 
   // ---- saving ----
 
@@ -348,6 +369,25 @@ function OrderEditor({ orderId }: { orderId?: number }) {
     }
   }
 
+  const onReplan = async () => {
+    try {
+      const planned = await replan.mutateAsync(orderId!)
+      message.success(t('loading.replannedOk', { n: planned.totals.plannedBoxes.toLocaleString('en-IN') }))
+    } catch (err) {
+      message.error(errorMessage(err, t('common.somethingWrong')))
+    }
+  }
+
+  const onUndoDispatch = async (reason: string) => {
+    try {
+      await undoDispatch.mutateAsync({ id: orderId!, reason })
+      message.success(t('loading.undoneOk', { no: order?.dispatchNo }))
+      setUndoing(false)
+    } catch (err) {
+      message.error(errorMessage(err, t('common.somethingWrong')))
+    }
+  }
+
   const onCancel = async (reason: string) => {
     try {
       await cancel.mutateAsync({ id: orderId!, reason })
@@ -391,7 +431,7 @@ function OrderEditor({ orderId }: { orderId?: number }) {
                 {t('sales.confirm')}
               </Button>
             )}
-            {order?.status === 'CONFIRMED' && can('SALES_ENTRY') && (
+            {order?.status === 'CONFIRMED' && can('SALES_ENTRY') && !loadingStarted && (
               <Popconfirm title={t('sales.reopenTitle')} description={t('sales.reopenHint')} okText={t('sales.reopen')}
                 cancelText={t('common.cancel')} onConfirm={onReopen}>
                 <Button icon={<EditOutlined />} loading={reopen.isPending}>{t('sales.reopen')}</Button>
@@ -399,6 +439,19 @@ function OrderEditor({ orderId }: { orderId?: number }) {
             )}
             {order?.status === 'CONFIRMED' && can('SALES_CANCEL') && (
               <Button danger icon={<StopOutlined />} onClick={() => setCancelling(true)}>{t('sales.cancel')}</Button>
+            )}
+            {order?.status === 'DISPATCHED' && can('SALES_CANCEL') && (
+              <Button danger icon={<RollbackOutlined />} onClick={() => setUndoing(true)}>{t('loading.undo')}</Button>
+            )}
+            {order?.status === 'DISPATCHED' && (
+              <Button icon={<PrinterOutlined />} onClick={() => window.open(`/print/sales-orders/${order.id}`, '_blank')}>
+                {t('loading.print')}
+              </Button>
+            )}
+            {order?.status === 'CONFIRMED' && can('LOADING_ENTRY') && (
+              <Button type="primary" icon={<CarOutlined />} onClick={() => navigate(`${BASE}/${order.id}/loading`)}>
+                {t('loading.open')}
+              </Button>
             )}
           </Space>
         )}
@@ -409,6 +462,14 @@ function OrderEditor({ orderId }: { orderId?: number }) {
         {order?.status === 'CONFIRMED' && (
           <Alert className="doc-alert" type="success" showIcon
             title={t('sales.confirmedInfo', { by: order.confirmedBy, at: dateTime(order.confirmedAt) })} />
+        )}
+        {order?.status === 'CONFIRMED' && order.undoReason && (
+          <Alert className="doc-alert" type="warning" showIcon
+            title={t('loading.undoneInfo', { no: order.dispatchNo, by: order.undoneBy, at: dateTime(order.undoneAt), reason: order.undoReason })} />
+        )}
+        {order?.status === 'DISPATCHED' && (
+          <Alert className="doc-alert" type="success" showIcon
+            title={t('loading.dispatchedInfo', { no: order.dispatchNo, truck: order.truckNo, by: order.dispatchedBy, at: dateTime(order.dispatchedAt) })} />
         )}
         {order?.status === 'CANCELLED' && (
           <Alert className="doc-alert" type="error" showIcon
@@ -423,11 +484,14 @@ function OrderEditor({ orderId }: { orderId?: number }) {
           <Form.Item name="orderType" className="sales-type">
             <Segmented<SalesOrderType>
               options={[
-                { value: 'SALE', label: t('sales.typeLong.SALE') },
                 { value: 'JOBWORK', label: t('sales.typeLong.JOBWORK') },
+                { value: 'SALE', label: t('sales.typeLong.SALE') },
               ]}
               // another kind of order is billed to another kind of party
-              onChange={() => form.setFieldValue('partyId', undefined)}
+              onChange={() => {
+                typeChosen.current = true
+                form.setFieldValue('partyId', undefined)
+              }}
             />
           </Form.Item>
           <div className="sales-head">
@@ -574,15 +638,42 @@ function OrderEditor({ orderId }: { orderId?: number }) {
             <Check label={t('sales.stock')}
               value={!stockKnown ? '–' : order!.totals.shortLines ? t('sales.shortLinesN', { count: order!.totals.shortLines }) : t('sales.allInStock')}
               tone={!stockKnown ? undefined : order!.totals.shortLines ? 'warn' : 'ok'}
-              note={!stockKnown && order?.status !== 'CANCELLED' ? t('sales.saveToCheck') : undefined} />
+              note={!stockKnown && editable ? t('sales.saveToCheck') : undefined} />
           </div>
         </FadeIn>
       </Form>
+
+      {order && (order.status === 'CONFIRMED' || order.status === 'DISPATCHED') && (
+        <FadeIn delay={0.12} className="panel doc-panel">
+          <div className="sales-lines-title">
+            <div className="form-section">
+              {t('loading.planTitle')}
+              {order.plannedAt && <span className="form-section-hint"> · {t('loading.plannedAt', { at: dateTime(order.plannedAt) })}</span>}
+            </div>
+            {order.status === 'CONFIRMED' && can('SALES_ENTRY') && !loadingStarted && (
+              <Tooltip title={t('loading.replanHint')}>
+                <Button icon={<ReloadOutlined />} loading={replan.isPending} onClick={onReplan}>{t('loading.replan')}</Button>
+              </Tooltip>
+            )}
+          </div>
+          <LoadProgress order={order} />
+          <PickList order={order} />
+        </FadeIn>
+      )}
 
       <Modal open={confirming !== undefined} title={t('sales.confirmTitle', { no: confirming?.slipNo })} okText={t('sales.confirm')}
         cancelText={t('common.cancel')} confirmLoading={confirm.isPending} onOk={onConfirmed} onCancel={() => setConfirming(undefined)}>
         {confirming && <ConfirmChecks order={confirming} />}
       </Modal>
+      <ReasonModal
+        open={undoing}
+        title={t('loading.undoTitle', { no: order?.dispatchNo })}
+        hint={t('loading.undoHint')}
+        okText={t('loading.undo')}
+        loading={undoDispatch.isPending}
+        onOk={onUndoDispatch}
+        onClose={() => setUndoing(false)}
+      />
       <ReasonModal
         open={cancelling}
         title={t('sales.cancelTitle', { no: order?.slipNo })}
@@ -634,13 +725,17 @@ function MatchBadge({ how, candidates }: { how: RowHow; candidates?: SalesOption
     : badge
 }
 
-/** Under the boxes: what the plant has of this design and grade (as of the last save). */
+/** Under the boxes: what the plant has of this design and grade, and what other orders keep (as of the last save). */
 function StockHint({ line }: { line: SalesOrderLine }) {
   const { t } = useTranslation()
-  const inStock = line.inStock!.toLocaleString('en-IN')
+  const n = (v?: number) => (v ?? 0).toLocaleString('en-IN')
+  const kept = line.keptElsewhere ? ` · ${t('sales.keptElsewhere', { n: n(line.keptElsewhere) })}` : ''
+  if (line.planned != null && line.planned < line.boxes) {
+    return <div className="line-hint short">{t('sales.plannedOnly', { n: n(line.planned), missing: n(line.boxes - line.planned) })}</div>
+  }
   return line.shortBy
-    ? <div className="line-hint short">{t('sales.shortBy', { n: line.shortBy.toLocaleString('en-IN'), stock: inStock })}</div>
-    : <div className="line-hint">{t('sales.inStock', { n: inStock })}</div>
+    ? <div className="line-hint short">{t('sales.shortBy', { n: n(line.shortBy), stock: n(line.inStock) })}{kept}</div>
+    : <div className="line-hint">{t('sales.inStock', { n: n(line.inStock) })}{kept}</div>
 }
 
 /** City, GSTIN and credit terms of the party the bill goes to. */

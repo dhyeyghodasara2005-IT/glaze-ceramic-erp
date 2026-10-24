@@ -59,6 +59,13 @@ public interface FgStockRepository extends JpaRepository<FgStock, Long> {
 
     boolean existsByPillarIdAndBoxesGreaterThan(Long pillarId, int boxes);
 
+    /** The boxes of some designs in a plant, with everything a loading plan shows. */
+    @EntityGraph(attributePaths = {"pillar", "pillar.godown", "design", "design.tileSize", "grade"})
+    List<FgStock> findByPlantIdAndDesignIdInAndBoxesGreaterThan(Long plantId, Collection<Long> designIds, int boxes);
+
+    /** Everything standing at some pillars (to know what stands in front of what). */
+    List<FgStock> findByPillarIdInAndBoxesGreaterThan(Collection<Long> pillarIds, int boxes);
+
     /**
      * Boxes in stock per design and grade (a sales order can be loaded from any batch, shade or caliber).
      * "select new" builds the small record straight from the grouped query.

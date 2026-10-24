@@ -100,7 +100,8 @@ Every feature module has the same layers:
 | 5b | Warehouse documents: opening FG stock (batch on the box), breakage write-off by reason, regrading (grade / shade / caliber / pillar) | ✅ Done |
 | 6a | Smart put-away: pillar zones, walk order from the loading point, remainder / staging pillars, best sellers, pillar suggestion + mixing warning in the pack entry | ✅ Done |
 | 6b | Sales orders from loading slips: dealer or **jobwork principal** (new party type), product names matched to designs and remembered, stock / slip-total / weight / credit checks | ✅ Done (slip PDF reader waits for sample PDFs) |
-| 6c–6f | Automatic pillar picking + loading checklist, bill + e-way bill on loading, Tally Prime sync, busy-day staging ([plan](docs/plans/06-dispatch-and-smart-storage.md), [backlog](docs/plans/BACKLOG.md)) | 6c next; 6d waits on answers |
+| 6c | Loading plan (pillars picked by rules: in front, clears a pillar, oldest, most boxes, nearest) with kept boxes; phone loading checklist; confirm loading → stock out, dispatch no., packing list + gate pass; undo dispatch | ✅ Done |
+| 6d–6f | Bill + e-way bill on loading, Tally Prime sync, busy-day staging ([plan](docs/plans/06-dispatch-and-smart-storage.md), [backlog](docs/plans/BACKLOG.md)) | 6d waits on answers |
 | 7 | Owner dashboard | |
 | 8 | QC, maintenance, gas/power meters | |
 | 9 | Costing, labour | |

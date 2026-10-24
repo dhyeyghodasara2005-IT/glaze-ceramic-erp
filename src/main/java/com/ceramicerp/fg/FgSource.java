@@ -1,6 +1,6 @@
 package com.ceramicerp.fg;
 
-/** What made a finished-goods stock movement. Step 6 will add dispatch. */
+/** What made a finished-goods stock movement. */
 public enum FgSource {
     /** A posted pack entry (in), or its cancellation (out). */
     PACK,
@@ -9,5 +9,7 @@ public enum FgSource {
     /** Boxes damaged in the godown (out). */
     BREAKAGE,
     /** Boxes re-checked: out of the old grade / shade / caliber / pillar, into the new one. */
-    REGRADE
+    REGRADE,
+    /** Boxes loaded on a truck for a sales order (out), or that loading undone (in). */
+    DISPATCH
 }

@@ -103,6 +103,13 @@ public class SalesOrderController {
         return orderService.reopen(id);
     }
 
+    /** Picks the boxes again (more were packed, or some broke). Only until loading starts. */
+    @PostMapping("/orders/{id}/plan")
+    @PreAuthorize("hasAuthority('SALES_ENTRY')")
+    public SalesOrderResponse replan(@PathVariable Long id) {
+        return orderService.replan(id);
+    }
+
     @PostMapping("/orders/{id}/cancel")
     @PreAuthorize("hasAuthority('SALES_CANCEL')")
     public SalesOrderResponse cancel(@PathVariable Long id, @Valid @RequestBody CancelRequest req) {

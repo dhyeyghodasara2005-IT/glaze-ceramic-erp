@@ -39,6 +39,12 @@ public class FgStockService {
     public record Batch(FgPillar pillar, Design design, Long lotId, String batchCode, Grade grade, String shade,
                         String caliber) {
 
+        /** The batch of an existing stock row. */
+        public static Batch of(FgStock s) {
+            return new Batch(s.getPillar(), s.getDesign(), s.getLotId(), s.getBatchCode(), s.getGrade(), s.getShade(),
+                    s.getCaliber());
+        }
+
         /** The stock row's unique key, by ids (entity objects aren't compared reliably). */
         String key() {
             return pillar.getId() + "|" + design.getId() + "|" + batchCode + "|" + grade.getId() + "|" + shade + "|" + caliber;

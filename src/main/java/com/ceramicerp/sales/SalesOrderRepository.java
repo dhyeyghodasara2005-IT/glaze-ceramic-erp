@@ -34,7 +34,7 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     @EntityGraph(attributePaths = {"plant", "party", "transporter"})
     Optional<SalesOrder> findWithDetailsById(Long id);
 
-    boolean existsByPlantIdAndSlipNo(Long plantId, String slipNo);
+    boolean existsByPlantIdAndPartyIdAndSlipNo(Long plantId, Long partyId, String slipNo);
 
-    boolean existsByPlantIdAndSlipNoAndIdNot(Long plantId, String slipNo, Long id);
+    boolean existsByPlantIdAndPartyIdAndSlipNoAndIdNot(Long plantId, Long partyId, String slipNo, Long id);
 }

@@ -4,25 +4,19 @@ import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.common.Text;
 import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
-import com.ceramicerp.fg.FgStockRepository;
-import com.ceramicerp.fg.dto.DesignGradeStock;
-import com.ceramicerp.fg.dto.FgStockRow;
 import com.ceramicerp.master.Design;
 import com.ceramicerp.master.DesignRepository;
 import com.ceramicerp.master.Grade;
 import com.ceramicerp.master.GradeRepository;
-import com.ceramicerp.master.TileSize;
 import com.ceramicerp.organization.Plant;
 import com.ceramicerp.organization.PlantService;
 import com.ceramicerp.party.Party;
 import com.ceramicerp.party.PartyRepository;
 import com.ceramicerp.party.PartyType;
 import com.ceramicerp.sales.dto.SalesLineRequest;
-import com.ceramicerp.sales.dto.SalesOption;
 import com.ceramicerp.sales.dto.SalesOrderRequest;
 import com.ceramicerp.sales.dto.SalesOrderResponse;
 import com.ceramicerp.sales.dto.SalesOrderSummary;
-import com.ceramicerp.sales.dto.SalesParty;
 import com.ceramicerp.security.CurrentUser;
 import com.ceramicerp.security.PlantAccess;
 import lombok.RequiredArgsConstructor;
@@ -31,12 +25,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -50,10 +41,10 @@ import java.util.stream.Collectors;
 
 /**
  * Sales orders from loading slips. A draft can be changed freely; confirming checks that every line is matched to a
- * design and grade and remembers those matches for the next slip. Until loading starts (step 6c) a confirmed order
- * can be reopened; cancelling needs SALES_CANCEL.
+ * design and grade, remembers those matches for the next slip, and picks the boxes to load (LoadingPlanner). Until
+ * loading starts a confirmed order can be reopened or planned again; cancelling needs SALES_CANCEL.
  * <p>
- * Nothing here moves stock: the boxes leave the godown when the truck is loaded (6c).
+ * Nothing here moves stock: the boxes leave the godown when the loading is confirmed (LoadingService).
  */
 @Service
 @RequiredArgsConstructor
@@ -62,16 +53,14 @@ public class SalesOrderService {
     /** The plants are in India: "today" is Indian time, whatever zone the server runs in. */
     private static final ZoneId PLANT_ZONE = ZoneId.of("Asia/Kolkata");
 
-    /** Glaze's weight may differ this much from the slip's before it is flagged (2%): box weights differ a little. */
-    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.02");
-
     private final SalesOrderRepository orderRepository;
     private final ProductAliasRepository aliasRepository;
     private final PartyRepository partyRepository;
     private final DesignRepository designRepository;
     private final GradeRepository gradeRepository;
-    private final FgStockRepository stockRepository;
     private final PlantService plantService;
+    private final LoadingPlanner planner;
+    private final SalesOrderView view;
 
     @Transactional(readOnly = true)
     public PageResponse<SalesOrderSummary> search(Long plantId, SalesOrderStatus status, SalesOrderType type,
@@ -86,7 +75,7 @@ public class SalesOrderService {
 
     @Transactional(readOnly = true)
     public SalesOrderResponse get(Long id) {
-        return toResponse(find(id));
+        return view.of(find(id));
     }
 
     @Transactional
@@ -97,7 +86,7 @@ public class SalesOrderService {
         order.setPlant(plant);
         order.setSource(OrderSource.TYPED);
         apply(order, req);
-        return toResponse(orderRepository.saveAndFlush(order));
+        return view.of(orderRepository.saveAndFlush(order));
     }
 
     @Transactional
@@ -108,7 +97,7 @@ public class SalesOrderService {
             throw new BusinessException("An order can't be moved to another plant");
         }
         apply(order, req);
-        return toResponse(orderRepository.saveAndFlush(order));
+        return view.of(orderRepository.saveAndFlush(order));
     }
 
     @Transactional
@@ -138,21 +127,38 @@ public class SalesOrderService {
         order.setConfirmedAt(Instant.now());
         order.setConfirmedBy(CurrentUser.get().getUsername());
         remember(order.getLines());
-        return toResponse(order);
+        planner.plan(order);
+        return view.of(order);
     }
 
-    /** Back to draft, to correct a confirmed order. From step 6c only until loading starts. */
+    /** Back to draft, to correct a confirmed order: its boxes are no longer kept. Only until loading starts. */
     @Transactional
     public SalesOrderResponse reopen(Long id) {
         SalesOrder order = find(id);
         requireStatus(order, SalesOrderStatus.CONFIRMED, "reopened");
+        requireLoadingNotStarted(order);
         order.setStatus(SalesOrderStatus.DRAFT);
         order.setConfirmedAt(null);
         order.setConfirmedBy(null);
-        return toResponse(order);
+        order.setPlannedAt(null);
+        order.getPicks().clear();
+        return view.of(order);
     }
 
-    /** Needs SALES_CANCEL (checked by the controller). A draft is deleted instead. */
+    /**
+     * Picks the boxes again, e.g. after more boxes were packed for a short line, or after boxes kept for it broke.
+     * Only until loading starts.
+     */
+    @Transactional
+    public SalesOrderResponse replan(Long id) {
+        SalesOrder order = find(id);
+        requireStatus(order, SalesOrderStatus.CONFIRMED, "planned again");
+        requireLoadingNotStarted(order);
+        planner.plan(order);
+        return view.of(order);
+    }
+
+    /** Needs SALES_CANCEL (checked by the controller). A draft is deleted instead. The kept boxes are free again. */
     @Transactional
     public SalesOrderResponse cancel(Long id, String reason) {
         SalesOrder order = find(id);
@@ -163,7 +169,7 @@ public class SalesOrderService {
         order.setCancelledAt(Instant.now());
         order.setCancelledBy(CurrentUser.get().getUsername());
         order.setCancelReason(reason.trim());
-        return toResponse(order);
+        return view.of(order);
     }
 
     // ------------------------------------------------------------------ remembering matches
@@ -194,12 +200,14 @@ public class SalesOrderService {
     private void apply(SalesOrder order, SalesOrderRequest req) {
         String slipNo = Text.upperOrNull(req.slipNo());
         Long plantId = order.getPlant().getId();
+        // the same slip entered (or uploaded) twice would be loaded twice. Per party: each principal's own
+        // system numbers its slips, so two principals may print the same number.
+        Party party = requireParty(req.partyId(), req.orderType().partyType(), order.getParty());
         boolean taken = order.getId() == null
-                ? orderRepository.existsByPlantIdAndSlipNo(plantId, slipNo)
-                : orderRepository.existsByPlantIdAndSlipNoAndIdNot(plantId, slipNo, order.getId());
+                ? orderRepository.existsByPlantIdAndPartyIdAndSlipNo(plantId, party.getId(), slipNo)
+                : orderRepository.existsByPlantIdAndPartyIdAndSlipNoAndIdNot(plantId, party.getId(), slipNo, order.getId());
         if (taken) {
-            // the same slip entered (or uploaded) twice would be loaded twice
-            throw new BusinessException("Loading slip " + slipNo + " is already entered in plant "
+            throw new BusinessException("Loading slip " + slipNo + " of " + party.getName() + " is already entered in plant "
                     + order.getPlant().getCode());
         }
         requireNotFuture(req.slipDate(), "slip date");
@@ -214,7 +222,7 @@ public class SalesOrderService {
         order.setOrderRef(Text.upperOrNull(req.orderRef()));
         order.setOrderDate(req.orderDate());
         order.setOrderType(req.orderType());
-        order.setParty(requireParty(req.partyId(), req.orderType().partyType(), order.getParty()));
+        order.setParty(party);
         order.setTransporter(req.transporterId() == null ? null
                 : requireParty(req.transporterId(), PartyType.TRANSPORTER, order.getTransporter()));
         order.setSlipBoxes(req.slipBoxes());
@@ -282,94 +290,6 @@ public class SalesOrderService {
         return party;
     }
 
-    // ------------------------------------------------------------------ the response, with its checks
-
-    private record DesignGrade(Long designId, Long gradeId) {
-    }
-
-    /** Needs the plant, party and transporter loaded; lines, designs (with sizes) and grades are loaded as needed. */
-    private SalesOrderResponse toResponse(SalesOrder o) {
-        List<SalesOrderLine> lines = o.getLines();
-        boolean cancelled = o.getStatus() == SalesOrderStatus.CANCELLED;
-
-        // Boxes in stock per design + grade, for all lines in one query. Nothing to check once cancelled.
-        Map<DesignGrade, Long> stock = new HashMap<>();
-        List<Long> designIds = lines.stream().map(SalesOrderLine::getDesign).filter(Objects::nonNull)
-                .map(Design::getId).distinct().toList();
-        if (!cancelled && !designIds.isEmpty()) {
-            for (DesignGradeStock s : stockRepository.totalsByDesignAndGrade(o.getPlant().getId(), designIds)) {
-                stock.put(new DesignGrade(s.designId(), s.gradeId()), s.boxes());
-            }
-        }
-        Map<String, ProductAlias> aliases = aliasRepository.findByNameKeyIn(lines.stream()
-                        .map(l -> ProductMatcher.key(l.getDescription())).distinct().toList()).stream()
-                .collect(Collectors.toMap(ProductAlias::getNameKey, Function.identity()));
-
-        // Two lines of the same design and grade share its stock: the first line is served first.
-        Map<DesignGrade, Long> left = new HashMap<>(stock);
-        List<SalesOrderResponse.Line> out = new ArrayList<>();
-        for (SalesOrderLine l : lines) {
-            Design design = l.getDesign();
-            Grade grade = l.getGrade();
-            TileSize size = design == null ? null : design.getTileSize();
-            Long inStock = null;
-            Integer shortBy = null;
-            if (design != null && grade != null && !cancelled) {
-                DesignGrade dg = new DesignGrade(design.getId(), grade.getId());
-                inStock = stock.getOrDefault(dg, 0L);
-                long available = left.getOrDefault(dg, 0L);
-                shortBy = (int) Math.max(0, l.getBoxes() - available);
-                left.put(dg, Math.max(0, available - l.getBoxes()));
-            }
-            ProductAlias alias = aliases.get(ProductMatcher.key(l.getDescription()));
-            boolean remembered = alias != null && design != null && grade != null
-                    && alias.getDesign().getId().equals(design.getId()) && alias.getGrade().getId().equals(grade.getId());
-            out.add(new SalesOrderResponse.Line(l.getId(), l.getLineNo(), l.getDescription(),
-                    design == null ? null : ProductMatcher.option(design),
-                    grade == null ? null : ProductMatcher.option(grade), l.getBoxes(), l.getMrpBox(), l.getMrpPiece(),
-                    l.getBatchRef(), size == null ? null : FgStockRow.sqm(l.getBoxes(), size), weight(l.getBoxes(), size),
-                    inStock, shortBy, remembered));
-        }
-
-        Party t = o.getTransporter();
-        return new SalesOrderResponse(o.getId(), o.getPlant().getId(), o.getPlant().getCode(), o.getSlipNo(),
-                o.getSlipDate(), o.getOrderRef(), o.getOrderDate(), o.getOrderType(), o.getStatus(), o.getSource(),
-                SalesParty.from(o.getParty()),
-                t == null ? null : new SalesOption(t.getId(), t.getCode(), t.getName(), t.getCity()),
-                o.getSlipBoxes(), o.getSlipWeightKg(), o.getRemarks(), out, totals(o, out), o.getConfirmedAt(),
-                o.getConfirmedBy(), o.getCancelledAt(), o.getCancelledBy(), o.getCancelReason(), o.getCreatedAt(),
-                o.getCreatedBy(), o.getVersion());
-    }
-
-    /** Glaze's own totals, and how far they are from what the slip prints. */
-    private static SalesOrderResponse.Totals totals(SalesOrder o, List<SalesOrderResponse.Line> lines) {
-        int boxes = lines.stream().mapToInt(SalesOrderResponse.Line::boxes).sum();
-        // a total is only shown when every line has its part (a partial total would look like a wrong slip)
-        BigDecimal sqm = sumOrNull(lines.stream().map(SalesOrderResponse.Line::sqm).toList());
-        BigDecimal weight = sumOrNull(lines.stream().map(SalesOrderResponse.Line::weightKg).toList());
-        Integer boxesDiff = o.getSlipBoxes() == null ? null : boxes - o.getSlipBoxes();
-        BigDecimal weightDiff = weight == null || o.getSlipWeightKg() == null ? null
-                : weight.subtract(o.getSlipWeightKg());
-        Boolean weightOk = weightDiff == null ? null
-                : weightDiff.abs().compareTo(o.getSlipWeightKg().multiply(WEIGHT_TOLERANCE)) <= 0;
-        int unmatched = (int) lines.stream().filter(l -> l.design() == null || l.grade() == null).count();
-        int shortLines = (int) lines.stream().filter(l -> l.shortBy() != null && l.shortBy() > 0).count();
-        return new SalesOrderResponse.Totals(boxes, sqm, weight, boxesDiff, weightDiff, weightOk, unmatched, shortLines);
-    }
-
-    /** boxes x box weight of the size, or null when the size has no box weight. */
-    private static BigDecimal weight(int boxes, TileSize size) {
-        return size == null || size.getBoxWeightKg() == null ? null
-                : size.getBoxWeightKg().multiply(BigDecimal.valueOf(boxes)).setScale(1, RoundingMode.HALF_UP);
-    }
-
-    private static BigDecimal sumOrNull(List<BigDecimal> values) {
-        if (values.isEmpty() || values.stream().anyMatch(Objects::isNull)) {
-            return null;
-        }
-        return values.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
     // ------------------------------------------------------------------ small helpers
 
     private SalesOrder find(Long id) {
@@ -382,6 +302,14 @@ public class SalesOrderService {
         if (order.getStatus() != needed) {
             throw new BusinessException("Only a " + needed.name().toLowerCase(Locale.ROOT) + " order can be " + action
                     + ". Slip " + order.getSlipNo() + " is " + order.getStatus().name().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    /** Once the loader has ticked something, the plan is what is on the truck: it can't be thrown away. */
+    static void requireLoadingNotStarted(SalesOrder order) {
+        if (order.getPicks().stream().anyMatch(p -> p.getLoadedBoxes() != null)) {
+            throw new BusinessException("Loading has started for slip " + order.getSlipNo()
+                    + ". Untick the loaded boxes first.");
         }
     }
 

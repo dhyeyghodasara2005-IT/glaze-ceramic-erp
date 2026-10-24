@@ -2,7 +2,7 @@ import { Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
 import type { SalesOrderStatus, SalesOrderType } from '../../api/types'
 
-/** Draft = amber, Confirmed = green, Cancelled = red: the same pills as the store documents. */
+/** Draft = amber, Confirmed = green, Dispatched = brand, Cancelled = red: the same pills as the store documents. */
 export function SalesStatusTag({ status }: { status: SalesOrderStatus }) {
   const { t } = useTranslation()
   const pill = status === 'CONFIRMED' ? 'doc-posted' : `doc-${status.toLowerCase()}`
