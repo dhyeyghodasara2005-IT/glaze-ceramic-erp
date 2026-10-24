@@ -42,7 +42,11 @@ public enum Permission {
 
     FG_VIEW("Finished goods", "View finished-goods stock, godowns and pillars"),
     FG_ENTRY("Finished goods", "Warehouse: godowns and pillars, opening stock, breakage and regrading"),
-    FG_CANCEL("Finished goods", "Cancel posted finished-goods documents (reverses their stock)");
+    FG_CANCEL("Finished goods", "Cancel posted finished-goods documents (reverses their stock)"),
+
+    SALES_VIEW("Sales", "View sales orders (loading slips)"),
+    SALES_ENTRY("Sales", "Enter, match and confirm sales orders from loading slips"),
+    SALES_CANCEL("Sales", "Cancel confirmed sales orders");
 
     private final String group;
     private final String description;

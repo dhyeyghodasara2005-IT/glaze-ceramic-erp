@@ -65,8 +65,8 @@ public class PartyService {
     public PartyResponse update(Long id, PartyRequest req) {
         Party party = find(id);
         if (req.partyType() != party.getPartyType()) {
-            throw new BusinessException("A " + party.getPartyType().name().toLowerCase(Locale.ROOT)
-                    + " can't be changed into a " + req.partyType().name().toLowerCase(Locale.ROOT));
+            throw new BusinessException("A " + party.getPartyType().label() + " can't be changed into a "
+                    + req.partyType().label());
         }
         String code = Text.upperOrNull(req.code());
         if (code != null) {
@@ -142,8 +142,7 @@ public class PartyService {
                         ? partyRepository.existsByPartyTypeAndGstinIgnoreCase(p.getPartyType(), gstin)
                         : partyRepository.existsByPartyTypeAndGstinIgnoreCaseAndIdNot(p.getPartyType(), gstin, p.getId());
                 if (duplicate) {
-                    throw new BusinessException("Another " + p.getPartyType().name().toLowerCase(Locale.ROOT)
-                            + " already has GSTIN " + gstin);
+                    throw new BusinessException("Another " + p.getPartyType().label() + " already has GSTIN " + gstin);
                 }
             }
             if (stateCode != null && !IndianStates.isValid(stateCode)) {
@@ -169,8 +168,8 @@ public class PartyService {
         p.setMobile(Text.trimToNull(req.mobile()));
         p.setEmail(Text.trimToNull(req.email()));
         p.setRegion(Text.trimToNull(req.region()));
-        // Credit limit only means something for dealers (how much they may owe you).
-        p.setCreditLimit(p.getPartyType() == PartyType.DEALER ? req.creditLimit() : null);
+        // Credit limit only means something for parties you bill (how much they may owe you).
+        p.setCreditLimit(p.getPartyType().isCustomer() ? req.creditLimit() : null);
         p.setCreditDays(req.creditDays());
         p.setBankName(Text.trimToNull(req.bankName()));
         p.setBankAccountNo(Text.trimToNull(req.bankAccountNo()));

@@ -2295,6 +2295,141 @@ body {
   }
 }
 
+/* ---------------------------------------------------------------------
+   Sales orders from loading slips (step 6b)
+   --------------------------------------------------------------------- */
+.cols-sales {
+  --line-cols: 24px minmax(200px, 2fr) minmax(170px, 1.6fr) minmax(110px, 0.9fr) minmax(84px, 0.7fr) minmax(100px, 0.8fr)
+    minmax(80px, 0.7fr) 28px;
+}
+.sales-type {
+  margin-bottom: 14px;
+}
+.sales-head {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 16px;
+}
+.sales-head .span-2 {
+  grid-column: span 2;
+}
+.party-facts {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.sales-lines-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.sales-lines-title .form-section {
+  flex: 1;
+  margin: 0;
+}
+/* Under each product name: how Glaze matched it. */
+.match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  animation: row-in 0.3s var(--ease) both;
+}
+.match-remembered {
+  color: #166534;
+  background: #eaf6ee;
+}
+.match-chosen,
+.match-saved {
+  color: #1d4ed8;
+  background: #eaf0fd;
+}
+.match-guessed {
+  color: #8a5a00;
+  background: #fdf3dc;
+}
+.match-several {
+  color: #b45309;
+  background: #fdecdc;
+}
+.match-none {
+  color: #9b2c2c;
+  background: #fbeaea;
+}
+/* Glaze's totals next to the slip's: green when they agree, amber when something needs a look. */
+.sales-checks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+.sales-check {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fcfaf8;
+  border: 1px solid var(--line);
+  transition:
+    border-color 0.25s var(--ease),
+    background 0.25s var(--ease);
+}
+.sales-check.ok {
+  border-color: #cfe9d8;
+  background: #f4fbf6;
+}
+.sales-check.warn {
+  border-color: #f5d9a8;
+  background: #fffaf0;
+}
+.sales-check-value {
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.sales-check-note {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.sales-check.warn .sales-check-note {
+  color: #8a5a00;
+  font-weight: 600;
+}
+.confirm-checks {
+  display: grid;
+  gap: 10px;
+}
+.confirm-checks p {
+  margin: 0;
+}
+.confirm-checks ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+@container (max-width: 880px) {
+  .sales-head,
+  .sales-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (max-width: 480px) {
+  .sales-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sales-head .span-2 {
+    grid-column: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

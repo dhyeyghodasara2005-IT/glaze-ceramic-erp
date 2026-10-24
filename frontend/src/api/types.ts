@@ -81,6 +81,9 @@ export type Permission =
   | 'FG_VIEW'
   | 'FG_ENTRY'
   | 'FG_CANCEL'
+  | 'SALES_VIEW'
+  | 'SALES_ENTRY'
+  | 'SALES_CANCEL'
 
 export interface PermissionInfo {
   code: Permission
@@ -371,7 +374,10 @@ export interface MachineRequest {
 
 // ---- parties (must match party/*.java) ----
 
-export type PartyType = 'DEALER' | 'SUPPLIER' | 'TRANSPORTER'
+export type PartyType = 'DEALER' | 'SUPPLIER' | 'TRANSPORTER' | 'JOBWORK'
+
+/** Parties you bill (dealers and jobwork principals): they have a credit limit. Same rule as PartyType.isCustomer(). */
+export const isCustomer = (type: PartyType) => type === 'DEALER' || type === 'JOBWORK'
 
 export const GST_REGISTRATIONS = ['REGULAR', 'COMPOSITION', 'UNREGISTERED', 'CONSUMER', 'OVERSEAS'] as const
 export type GstRegistration = (typeof GST_REGISTRATIONS)[number]
@@ -1598,4 +1604,153 @@ export interface FgOption {
   code: string
   name: string
   extra?: string
+}
+
+// ---- sales orders (step 6b, must match sales/*.java) ----
+
+export type SalesOrderType = 'SALE' | 'JOBWORK'
+export const SALES_ORDER_STATUSES = ['DRAFT', 'CONFIRMED', 'CANCELLED'] as const
+export type SalesOrderStatus = (typeof SALES_ORDER_STATUSES)[number]
+/** Who each kind of order is billed to (SalesOrderType.partyType()). */
+export const BILLED_TO: Record<SalesOrderType, PartyType> = { SALE: 'DEALER', JOBWORK: 'JOBWORK' }
+
+export interface SalesOption {
+  id: number
+  code: string
+  name: string
+  /** design: its size code; transporter: city */
+  extra?: string
+}
+
+export interface SalesDesign {
+  id: number
+  code: string
+  name: string
+  sizeCode: string
+  sqmPerBox?: number
+  boxWeightKg?: number
+}
+
+export interface SalesParty {
+  id: number
+  code: string
+  name: string
+  city?: string
+  state?: string
+  gstin?: string
+  creditLimit?: number
+  creditDays?: number
+  active: boolean
+}
+
+export type MatchHow = 'REMEMBERED' | 'GUESSED' | 'SEVERAL' | 'NONE'
+
+export interface ProductMatch {
+  description: string
+  how: MatchHow
+  design?: SalesOption
+  grade?: SalesOption
+  /** SEVERAL: the designs that fit equally well */
+  candidates?: SalesOption[]
+}
+
+export interface SalesOrderSummary {
+  id: number
+  slipNo: string
+  slipDate: string
+  orderRef?: string
+  orderType: SalesOrderType
+  status: SalesOrderStatus
+  partyId: number
+  partyCode: string
+  partyName: string
+  partyCity?: string
+  lines: number
+  boxes: number
+  /** every line has its design and grade */
+  matched: boolean
+  createdBy?: string
+}
+
+export interface SalesOrderLine {
+  id: number
+  lineNo: number
+  description: string
+  design?: SalesOption
+  grade?: SalesOption
+  boxes: number
+  mrpBox?: number
+  mrpPiece?: number
+  batchRef?: string
+  sqm?: number
+  weightKg?: number
+  /** boxes of this design + grade in the plant (any batch); missing while unmatched or once cancelled */
+  inStock?: number
+  shortBy?: number
+  /** this description is already remembered as exactly this design + grade */
+  remembered: boolean
+}
+
+export interface SalesOrderTotals {
+  boxes: number
+  sqm?: number
+  weightKg?: number
+  boxesDiff?: number
+  weightDiffKg?: number
+  weightOk?: boolean
+  unmatchedLines: number
+  shortLines: number
+}
+
+export interface SalesOrder {
+  id: number
+  plantId: number
+  plantCode: string
+  slipNo: string
+  slipDate: string
+  orderRef?: string
+  orderDate?: string
+  orderType: SalesOrderType
+  status: SalesOrderStatus
+  source: 'TYPED' | 'PDF'
+  party: SalesParty
+  transporter?: SalesOption
+  slipBoxes?: number
+  slipWeightKg?: number
+  remarks?: string
+  lines: SalesOrderLine[]
+  totals: SalesOrderTotals
+  confirmedAt?: string
+  confirmedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  createdAt: string
+  createdBy?: string
+  version: number
+}
+
+export interface SalesLineRequest {
+  description: string
+  designId?: number
+  gradeId?: number
+  boxes: number
+  mrpBox?: number
+  mrpPiece?: number
+  batchRef?: string
+}
+
+export interface SalesOrderRequest {
+  plantId: number
+  slipNo: string
+  slipDate: string
+  orderRef?: string
+  orderDate?: string
+  orderType: SalesOrderType
+  partyId: number
+  transporterId?: number
+  slipBoxes?: number
+  slipWeightKg?: number
+  remarks?: string
+  lines: SalesLineRequest[]
 }

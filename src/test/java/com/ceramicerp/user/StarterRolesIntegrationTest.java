@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** V9, V10 and V11 seed one ready-made role per job. They must be ordinary, editable roles - and never touch the user's own. */
+/** V9, V10, V11 and V14 seed one ready-made role per job. They must be ordinary, editable roles - and never touch the user's own. */
 class StarterRolesIntegrationTest extends IntegrationTestBase {
 
     @Autowired
@@ -37,10 +37,13 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
         assertThat(permissionsOf(admin, "Packing supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "PACKING_ENTRY", "FG_VIEW");
         assertThat(permissionsOf(admin, "FG warehouse keeper")).containsExactlyInAnyOrder("FG_VIEW", "FG_ENTRY");
         assertThat(permissionsOf(admin, "Quality checker")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "QUALITY_CHECK");
+        // V14: the dispatch office enters slips and sees the stock and parties it checks them against
+        assertThat(permissionsOf(admin, "Dispatch office")).containsExactlyInAnyOrder("SALES_VIEW", "SALES_ENTRY", "FG_VIEW",
+                "PARTY_VIEW");
         // V10 gave the starter manager the new divisions too
         assertThat(permissionsOf(admin, "Production manager")).contains("PRODUCTION_CANCEL", "KILN_ENTRY", "BODY_PREP_ENTRY",
                 "POLISH_ENTRY", "PACKING_ENTRY", "QUALITY_CHECK");
-        assertThat(permissionsOf(admin, "Viewer (read only)")).allMatch(p -> p.endsWith("_VIEW"));
+        assertThat(permissionsOf(admin, "Viewer (read only)")).allMatch(p -> p.endsWith("_VIEW")).contains("SALES_VIEW");
     }
 
     @Test

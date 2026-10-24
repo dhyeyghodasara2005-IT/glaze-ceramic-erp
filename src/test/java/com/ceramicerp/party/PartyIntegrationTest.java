@@ -111,6 +111,26 @@ class PartyIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    void jobworkPrincipalsAreBilledLikeDealers() throws Exception {
+        String admin = adminToken();
+        Map<String, Object> principal = party("JOBWORK", "Orient Vitrified");
+        principal.put("creditLimit", 900000);
+        postAs(admin, URL, principal)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value("JWP-0001"))
+                .andExpect(jsonPath("$.creditLimit").value(900000));
+
+        principal.put("name", "Orient again");
+        principal.put("gstRegistration", "REGULAR");
+        principal.put("gstin", GSTIN_GJ);
+        postAs(admin, URL, principal).andExpect(status().isCreated());
+        postAs(admin, URL, principal)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Another jobwork principal already has GSTIN " + GSTIN_GJ));
+        getAs(admin, URL + "?type=JOBWORK").andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
     void formatChecks() throws Exception {
         Map<String, Object> body = party("SUPPLIER", "Bad Data");
         body.put("bankIfsc", "SBIN1234567");   // 5th character must be 0

@@ -48,6 +48,8 @@ import FgGodownsPage from './features/fg/FgGodownsPage'
 import GodownMapPage from './features/fg/GodownMapPage'
 import FgDocumentsPage from './features/fg/FgDocumentsPage'
 import FgDocumentPage from './features/fg/FgDocumentPage'
+import SalesOrdersPage from './features/sales/SalesOrdersPage'
+import SalesOrderPage from './features/sales/SalesOrderPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -90,6 +92,7 @@ export default function App() {
         <Route path="parties/dealers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="DEALER" type="DEALER" /></RequirePermission>} />
         <Route path="parties/suppliers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="SUPPLIER" type="SUPPLIER" /></RequirePermission>} />
         <Route path="parties/transporters" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="TRANSPORTER" type="TRANSPORTER" /></RequirePermission>} />
+        <Route path="parties/principals" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="JOBWORK" type="JOBWORK" /></RequirePermission>} />
         <Route path="store/stock" element={<RequirePermission permission="STORE_VIEW"><StockPage /></RequirePermission>} />
         <Route path="store/godowns" element={<RequirePermission permission="STORE_VIEW"><GodownsPage /></RequirePermission>} />
         {/* list + document page for each type: /store/grn, /store/grn/new, /store/grn/12 */}
@@ -134,6 +137,8 @@ export default function App() {
         <Route path="fg/breakage/:id" element={<RequirePermission permission="FG_VIEW"><FgDocumentPage key="BREAKAGE" type="BREAKAGE" /></RequirePermission>} />
         <Route path="fg/regrading" element={<RequirePermission permission="FG_VIEW"><FgDocumentsPage key="REGRADE" type="REGRADE" /></RequirePermission>} />
         <Route path="fg/regrading/:id" element={<RequirePermission permission="FG_VIEW"><FgDocumentPage key="REGRADE" type="REGRADE" /></RequirePermission>} />
+        <Route path="sales/orders" element={<RequirePermission permission="SALES_VIEW"><SalesOrdersPage /></RequirePermission>} />
+        <Route path="sales/orders/:id" element={<RequirePermission permission="SALES_VIEW"><SalesOrderPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

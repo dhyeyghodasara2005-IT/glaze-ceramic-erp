@@ -3,7 +3,7 @@ import { App, Button, Col, Drawer, Form, Input, InputNumber, Row, Select, Space,
 import { useTranslation } from 'react-i18next'
 import { applyFieldErrors, errorMessage } from '../../api/errors'
 import { STATE_OPTIONS } from '../../api/indianStates'
-import { GST_REGISTRATIONS, type Party, type PartyRequest, type PartyType } from '../../api/types'
+import { GST_REGISTRATIONS, isCustomer, type Party, type PartyRequest, type PartyType } from '../../api/types'
 import { blankToUndefined, patterns, toUpper } from '../../api/validation'
 import { useDrawerSize } from '../../components/useDrawerSize'
 import { useSaveParty } from './api'
@@ -28,7 +28,7 @@ export default function PartyFormDrawer({ open, type, party, onClose }: Props) {
   const save = useSaveParty()
   const registration = Form.useWatch('gstRegistration', form)
   const overseas = registration === 'OVERSEAS'
-  const isDealer = type === 'DEALER'
+  const billed = isCustomer(type)     // dealers and jobwork principals: credit limit, no bank details
   const isTransporter = type === 'TRANSPORTER'
 
   useEffect(() => {
@@ -188,7 +188,7 @@ export default function PartyFormDrawer({ open, type, party, onClose }: Props) {
 
         <Section>{t('party.sectionCommercial')}</Section>
         <Row gutter={16}>
-          {isDealer && (
+          {billed && (
             <Col xs={24} sm={12}>
               <Form.Item name="creditLimit" label={t('party.creditLimit')} tooltip={t('party.creditLimitHint')}>
                 {/* Shows 5,00,000 (Indian grouping) while typing; the form value stays a plain number. */}
@@ -208,13 +208,13 @@ export default function PartyFormDrawer({ open, type, party, onClose }: Props) {
             </Col>
           )}
           <Col xs={24} sm={12}>
-            <Form.Item name="creditDays" label={isDealer ? t('party.creditDays') : t('party.paymentDays')}>
+            <Form.Item name="creditDays" label={billed ? t('party.creditDays') : t('party.paymentDays')}>
               <InputNumber min={0} max={365} precision={0} suffix={t('party.days')} style={{ width: '100%' }} />
             </Form.Item>
           </Col>
         </Row>
 
-        {!isDealer && (
+        {!billed && (
           <>
             <Section>{t('party.sectionBank')}</Section>
             <Row gutter={16}>

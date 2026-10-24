@@ -1,5 +1,6 @@
 package com.ceramicerp.fg;
 
+import com.ceramicerp.fg.dto.DesignGradeStock;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,4 +58,17 @@ public interface FgStockRepository extends JpaRepository<FgStock, Long> {
     Optional<FgStock> findWithDetailsById(Long id);
 
     boolean existsByPillarIdAndBoxesGreaterThan(Long pillarId, int boxes);
+
+    /**
+     * Boxes in stock per design and grade (a sales order can be loaded from any batch, shade or caliber).
+     * "select new" builds the small record straight from the grouped query.
+     */
+    @Query("""
+            select new com.ceramicerp.fg.dto.DesignGradeStock(s.design.id, s.grade.id, sum(s.boxes))
+            from FgStock s
+            where s.plant.id = :plantId and s.boxes > 0 and s.design.id in :designIds
+            group by s.design.id, s.grade.id
+            """)
+    List<DesignGradeStock> totalsByDesignAndGrade(@Param("plantId") Long plantId,
+                                                  @Param("designIds") Collection<Long> designIds);
 }

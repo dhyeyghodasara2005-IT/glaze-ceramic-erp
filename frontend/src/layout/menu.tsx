@@ -34,6 +34,8 @@ import {
   DashboardOutlined,
   DatabaseOutlined,
   DiffOutlined,
+  FileDoneOutlined,
+  ReconciliationOutlined,
   ExportOutlined,
   HomeOutlined,
   ImportOutlined,
@@ -111,6 +113,10 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/parties/transporters', labelKey: 'menu.transporters', icon: <CarOutlined />, permission: 'PARTY_VIEW',
         searchType: 'transporter', create: { labelKey: 'party.new.TRANSPORTER', permission: 'PARTY_MANAGE' },
+      },
+      {
+        path: '/parties/principals', labelKey: 'menu.principals', icon: <ReconciliationOutlined />, permission: 'PARTY_VIEW',
+        searchType: 'jobwork', create: { labelKey: 'party.new.JOBWORK', permission: 'PARTY_MANAGE' },
       },
     ],
   },
@@ -221,6 +227,16 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/fg/regrading', labelKey: 'menu.fgRegrading', icon: <SwapOutlined />, permission: 'FG_VIEW',
         searchType: 'fg-regrade', create: { labelKey: 'fg.doc.new.REGRADE', permission: 'FG_ENTRY' },
+      },
+    ],
+  },
+  {
+    // Step 6: loading slips from the sales system, and (6c) the loading itself.
+    labelKey: 'menu.sales',
+    items: [
+      {
+        path: '/sales/orders', labelKey: 'menu.salesOrders', icon: <FileDoneOutlined />, permission: 'SALES_VIEW',
+        worksIn: ['SALES_ENTRY'], searchType: 'sales-order', create: { labelKey: 'sales.new', permission: 'SALES_ENTRY' },
       },
     ],
   },

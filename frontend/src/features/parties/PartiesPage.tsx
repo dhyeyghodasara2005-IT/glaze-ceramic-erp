@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Button, Card, Input, Segmented, Select, Table, Tag, type TableColumnsType } from 'antd'
-import { CarOutlined, EditOutlined, PlusOutlined, ShopOutlined, ShoppingCartOutlined } from '@ant-design/icons'
+import { CarOutlined, EditOutlined, PlusOutlined, ReconciliationOutlined, ShopOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../components/PageHeader'
 import StatusTag from '../../components/StatusTag'
@@ -9,7 +9,7 @@ import { FadeIn } from '../../components/motion'
 import { useOpenFromUrl } from '../../components/useOpenFromUrl'
 import { useAuth } from '../../auth/AuthContext'
 import { STATE_OPTIONS } from '../../api/indianStates'
-import type { Party, PartyType } from '../../api/types'
+import { isCustomer, type Party, type PartyType } from '../../api/types'
 import { fetchParty, useParties, type PartySearch } from './api'
 import PartyFormDrawer from './PartyFormDrawer'
 
@@ -19,17 +19,18 @@ const ICONS: Record<PartyType, React.ReactNode> = {
   DEALER: <ShopOutlined />,
   SUPPLIER: <ShoppingCartOutlined />,
   TRANSPORTER: <CarOutlined />,
+  JOBWORK: <ReconciliationOutlined />,
 }
 
 /**
- * One screen for all three party types. App.tsx mounts it three times:
- * /parties/dealers, /parties/suppliers, /parties/transporters.
+ * One screen for every party type. App.tsx mounts it once per type:
+ * /parties/dealers, /parties/suppliers, /parties/transporters, /parties/principals.
  */
 export default function PartiesPage({ type }: { type: PartyType }) {
   const { t } = useTranslation()
   const { can } = useAuth()
   const canManage = can('PARTY_MANAGE')
-  const isDealer = type === 'DEALER'
+  const billed = isCustomer(type)     // dealers and jobwork principals have a credit limit
 
   const [search, setSearch] = useState<string>()
   const [stateCode, setStateCode] = useState<string>()
@@ -78,7 +79,7 @@ export default function PartiesPage({ type }: { type: PartyType }) {
       render: (v: string | undefined, p) => v ?? <Tag>{t(`gstReg.${p.gstRegistration}`)}</Tag>,
     },
     { title: t('party.mobile'), dataIndex: 'mobile', width: 140, responsive: ['lg'], render: (v?: string) => v ?? '-' },
-    ...(isDealer
+    ...(billed
       ? [{
           title: t('party.creditLimit'),
           key: 'credit',
