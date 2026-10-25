@@ -1,45 +1,81 @@
 # Glaze · Ceramic ERP
 
-**Glaze** is an ERP for ceramic tile manufacturing (built first for a GVT 600×1200 plant in Morbi).
-It supports many companies, many plants, and users and roles that can be added or removed at any time.
+**Glaze** is an ERP for ceramic tile manufacturing, built first for a glazed vitrified tile (GVT) plant in Morbi,
+Gujarat, that makes 600×1200 mm tiles. The plant ran on Tally, Excel and paper registers; Glaze brings the store,
+production, finished goods, dispatch, maintenance, energy and the lab into one system that works on office PCs and on
+supervisors' phones, in English and Gujarati.
 
-**Stack:** Java 17 · Spring Boot 3.5 · MySQL · Flyway · JWT · React 19 + TypeScript + Vite + Ant Design 6 + motion
+**Status:** ongoing. Steps 1 to 8 are done (see the roadmap below); costing and analytics come next.
+
+**Stack:** Java 17 · Spring Boot 3.5 · Spring Security (JWT) · Spring Data JPA / Hibernate · MySQL · Flyway ·
+React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
+
+---
+
+## What it does
+
+| Area | What it covers |
+|---|---|
+| **Organisation & access** | Companies, plants, users and roles; 39 permissions; every user sees only their plants. Starter roles for each job (store keeper, press supervisor, lab chemist …) |
+| **Masters** | Sizes, finishes, categories, grades, designs, materials, machines and lines, dealers, suppliers, transporters, jobwork principals |
+| **Raw-material store** | Godowns, GRNs, issues and adjustments; stock and ledger at weighted average cost |
+| **Production** | Shifts, body recipes, ball mill charges, slip tests, spray dryer runs, silos (powder traced oldest first back to its batches), design lots, press, glaze, kiln, quality checks, polishing, sorting and packing by grade, shade and caliber |
+| **Finished goods** | Godowns and pillars, stock by pillar and batch, opening stock, breakage, regrading, smart put-away (which pillar a new pallet should go to) |
+| **Sales & dispatch** | Sales orders from loading slips, product names matched to designs and remembered, a loading plan that picks pillars by rules, a phone checklist for loading, packing list and gate pass |
+| **Owner dashboard** | m² packed, Premium share, yield, gas and power per m², dispatches, godown fill, and a "needs a look" list |
+| **Maintenance** | Breakdown log (downtime, MTTR, MTBF, availability), preventive jobs with a due list, spares issued from the store |
+| **Energy** | Gas and power meters (main and per section), coal, LPG and DG diesel; reading rounds on the phone; use per m² fired and packed |
+| **Lab** | Raw-material tests at the GRN: tests and ranges per material, the GRN waits for the lab, rejected material never enters stock, supplier rejection % |
+| **Search** | Ctrl+K across every module: document numbers, designs, parties, materials |
+
+---
+
+## How it is built
+
+- **Package by feature.** Each module (`store`, `production`, `sales`, `maintenance`, `energy`, `lab` …) has the same
+  layers: **Controller** (HTTP) → **Service** (business rules) → **Repository** (database) → **Entity** (table).
+- **The database is versioned** with Flyway: 19 migrations, from the first tables to the lab tests. Hibernate only
+  validates the schema.
+- **Rules live in the database too** where two requests could race: a unique key on a generated column allows one open
+  breakdown per machine; row locks keep two people from posting stock or planning a truck from the same pillar at once.
+- **Stock is never edited, only moved.** Posting a document writes ledger rows and updates balances in one transaction;
+  cancelling writes the opposite rows.
+- **Modules plug into each other through small interfaces.** The store asks every `GrnCheck` before posting a GRN, and
+  the lab is one of them; global search asks every `SearchProvider`. Neither side depends on the other's code.
+- **Tests run against MySQL**, not an in-memory stand-in: 182 integration tests (JUnit 5, MockMvc) on a separate test
+  database that is rebuilt on every run.
 
 ---
 
 ## Run it on your computer
 
-**Needs:** Java 17, MySQL running locally (`brew services start mysql`).
+**Needs:** Java 17, Node 20+, MySQL running locally.
 
-1. **One-time setup:** create `config/application-local.yml` from the template:
+1. **One-time setup:** create `config/application-local.yml` from the template and fill in the database password,
+   a JWT secret (`openssl rand -base64 48`) and the first admin's password:
    ```bash
    cp config/application-local.example.yml config/application-local.yml
    ```
-   Then fill in the DB password, a JWT secret (`openssl rand -base64 48`) and the first admin password.
-   *(On this computer the file already exists.)*
+   This file is git-ignored, so no password ever reaches the repository.
 
-2. **Start the backend:**
+2. **Backend:**
    ```bash
    ./mvnw spring-boot:run
    ```
-   It is ready when the log says `Started CeramicErpApplication`.
+   It is ready when the log says `Started CeramicErpApplication`. The API is documented at
+   http://localhost:8080/swagger-ui.html (log in with `POST /api/auth/login`, then **Authorize** with the token).
 
-3. **Try the API** in the browser at http://localhost:8080/swagger-ui.html
-   - Open `POST /api/auth/login` → *Try it out* → log in with the admin from `config/application-local.yml`
-   - Copy the `token`, click **Authorize** (top right), paste it
-   - Now every endpoint can be called from the page
-
-4. **Start the frontend** (second terminal; first time run `npm install` inside `frontend/`):
+3. **Frontend** (first time: `npm install` inside `frontend/`):
    ```bash
    cd frontend && npm run dev
    ```
-   Open http://localhost:5173. On your phone (same Wi-Fi), use the "Network" address it prints.
+   Open http://localhost:5173. On a phone on the same Wi-Fi, use the "Network" address it prints.
 
-5. **Run the tests** (uses a separate `ceramic_erp_test` database that is wiped on each run):
+4. **Tests** (they use a separate `ceramic_erp_test` database):
    ```bash
    ./mvnw test
+   cd frontend && npm run typecheck
    ```
-   Frontend type-check: `cd frontend && npm run typecheck`
 
 ---
 
@@ -47,36 +83,26 @@ It supports many companies, many plants, and users and roles that can be added o
 
 ```
 src/main/java/com/ceramicerp/
-├── common/          shared pieces: BaseEntity (audit columns), errors, paging
-├── security/        JWT tokens, login filter, who-can-call-what
-├── auth/            login, "who am I", change password
-├── organization/    companies and plants
-├── user/            users, roles, permissions, first-admin bootstrap
-├── master/          sizes, designs, materials, machines …
-├── party/           dealers, suppliers, transporters
-├── search/          global search (each module plugs in a SearchProvider)
-├── numbering/       document numbers per plant, type and financial year
+├── common/          base entity (audit columns), errors, paging
+├── security/        JWT, login filter, plant access
+├── auth/  user/  organization/   login, users, roles, permissions, companies, plants
+├── master/  party/  numbering/   masters, parties, document numbers per plant and financial year
 ├── store/           godowns, GRN / issue / adjustment, stock engine and ledger
-└── production/      body batches, spray dryer runs, silos, design lots, press entries
+├── production/      body preparation, press, glaze, kiln, quality, finishing, packing
+├── fg/              finished-goods godowns, pillars, stock, warehouse documents
+├── sales/           sales orders, loading plan, dispatch
+├── dashboard/       the owner's dashboard
+├── maintenance/     breakdowns, downtime, preventive jobs
+├── energy/          meters, reading rounds, energy use
+├── lab/             raw-material lab tests
+└── search/          global search
 
-src/main/resources/
-├── application.yml          settings for every environment
-├── application-dev.yml      settings for your laptop
-└── db/migration/V1__*.sql   database tables (Flyway)
+src/main/resources/db/migration/   V1 … V19 (Flyway)
 
 frontend/src/
-├── api/             HTTP client, TypeScript copies of the DTOs, error handling
-├── auth/            login state, login/change-password pages, route guards
-├── layout/          sidebar, top bar, plant switcher, language switch
-├── i18n/            English + Gujarati texts
-└── features/        one folder per module (companies, plants, masters, parties, store …)
-
-config/application-local.yml   YOUR secrets - git-ignored, never commit
-docs/learning/                 explanations of how each step works
+├── api/  auth/  layout/  i18n/   HTTP client and types, login, sidebar and phone bar, English + Gujarati
+└── features/        one folder per module
 ```
-
-Every feature module has the same layers:
-**Controller** (HTTP) → **Service** (business rules) → **Repository** (database) → **Entity** (table).
 
 ---
 
@@ -84,28 +110,13 @@ Every feature module has the same layers:
 
 | Step | Module | Status |
 |---|---|---|
-| 1 | Foundation: companies, plants, users, roles, login | ✅ Done |
-| 1b | Frontend: login, layout (PC + phone), EN/ગુ, company/plant/role/user screens | ✅ Done |
-| 1c | Design: Glaze name + logo, theme, animations, phone bottom bar | ✅ Done |
-| 2a | Product masters: sizes, finishes, categories, grades, designs | ✅ Done |
-| 2b | Masters: units, material groups, materials, machines/lines | ✅ Done |
-| ★ | Global search / Go To (Ctrl+K, Alt+G, /) across all modules | ✅ Done |
-| 2c | Parties: dealers, suppliers, transporters (GST-aware, auto codes) | ✅ Done |
-| 3 | Raw material store: godowns, GRN, issues, adjustments, stock + ledger (weighted average) | ✅ Done |
-| 4a | Production: shifts, body recipes, ball mill charges (auto store issue), slip tests, spray dryer runs | ✅ Done |
-| 4b | Design lots, press & dryer shift entries, silo powder tracked oldest-first (lot → spray runs → body batches) | ✅ Done |
-| 4c | Glaze & print and kiln shift entries; lot funnel (pressed → glazed → fired, yield); gas per m² | ✅ Done |
-| 4d | Cooling-area quality checks (bend, size, expected Premium %), polishing, sorting & packing by grade / shade / caliber; funnel press → box | ✅ Done |
-| 5a | Finished goods: godowns & pillars (A1, A2 …), packed boxes into stock by pillar × batch × grade × shade × caliber, godown map, ledger | ✅ Done |
-| 5b | Warehouse documents: opening FG stock (batch on the box), breakage write-off by reason, regrading (grade / shade / caliber / pillar) | ✅ Done |
-| 6a | Smart put-away: pillar zones, walk order from the loading point, remainder / staging pillars, best sellers, pillar suggestion + mixing warning in the pack entry | ✅ Done |
-| 6b | Sales orders from loading slips: dealer or **jobwork principal** (new party type), product names matched to designs and remembered, stock / slip-total / weight / credit checks | ✅ Done (slip PDF reader waits for sample PDFs) |
-| 6c | Loading plan (pillars picked by rules: in front, clears a pillar, oldest, most boxes, nearest) with kept boxes; phone loading checklist; confirm loading → stock out, dispatch no., packing list + gate pass; undo dispatch | ✅ Done |
-| 6d–6f | Bill + e-way bill on loading, Tally Prime sync, busy-day staging ([plan](docs/plans/06-dispatch-and-smart-storage.md), [backlog](docs/plans/BACKLOG.md)) | 6d waits on answers |
-| 7 | Owner dashboard: m² packed with the change on the period before, Premium share, yield, gas per m², dispatched, orders waiting; packed vs dispatched per day; grade split; stage funnel; godown fill; needs-a-look list (each block by permission) | ✅ Done |
-| 8a | Breakdown log: supervisors report a stopped machine, maintenance closes it with cause, fix and spares (issued from the store); downtime by machine and fault, MTTR, MTBF, availability; dashboard alert | ✅ Done |
-| 8b | Preventive maintenance: routine jobs per machine (set up for several machines at once, usual jobs suggested), due list (overdue / today / this week), done records with spares from the store, on-time share; dashboard alert | ✅ Done |
-| 8c | Energy: Gujarat Gas and GEB main meters (daily), kiln gas and section power meters (per shift), coal, propane / LNG and DG diesel by amount, DG hours; a phone reading round with instant use and warnings; kiln gas per m² fired, power and gas per m² packed, coal per tonne of powder, power by section; missing readings on the dashboard | ✅ Done |
-| 8d | Raw-material lab tests at the GRN: tests and ranges per material, the GRN waits for the lab, accept or reject (a rejected material never enters stock), supplier rejection %, dashboard alert | ✅ Done |
-| 9 | Costing, labour | |
-| 10 | Analytics & predictions (Python service) | |
+| 1 | Foundation: companies, plants, users, roles, JWT login; React frontend, PC and phone layouts, English / Gujarati | ✅ Done |
+| 2 | Masters: product masters, materials, machines, parties; global search | ✅ Done |
+| 3 | Raw-material store: GRN, issues, adjustments, stock and ledger | ✅ Done |
+| 4 | Production: body preparation to packing, with lots traced end to end | ✅ Done |
+| 5 | Finished goods: godowns, pillars, warehouse documents | ✅ Done |
+| 6 | Smart put-away, sales orders from loading slips, loading and dispatch | ✅ Done (invoicing and Tally sync next) |
+| 7 | Owner dashboard | ✅ Done |
+| 8 | Maintenance, energy, raw-material lab tests | ✅ Done |
+| 9 | Costing and labour | Next |
+| 10 | Analytics and predictions | Planned |

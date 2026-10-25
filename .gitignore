@@ -38,3 +38,6 @@ config/application-local.yml
 
 ### macOS ###
 .DS_Store
+
+### Project documents (learning guide, testing guide, plans): kept on this laptop only ###
+docs/
