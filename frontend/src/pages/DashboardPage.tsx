@@ -81,7 +81,7 @@ export default function DashboardPage() {
   const { user, can, currentPlant } = useAuth()
   const [period, setPeriod] = useState<Period>('week')
   const range = rangeOf(period)
-  const seesFigures = can('PRODUCTION_VIEW') || can('FG_VIEW') || can('SALES_VIEW') || can('STORE_VIEW')
+  const seesFigures = can('PRODUCTION_VIEW') || can('FG_VIEW') || can('SALES_VIEW') || can('STORE_VIEW') || can('MAINTENANCE_VIEW')
   const dash = useDashboard(currentPlant && seesFigures ? { plantId: currentPlant.id, from: range.from, to: range.to } : null)
   const d = dash.data
 
@@ -196,6 +196,11 @@ function Headline({ d, days }: { d: DashboardResponse; days: number }) {
         ? t('dashboard.waitingShort', { boxes: fmt(d.dispatch.boxesWaiting), short: fmt(d.dispatch.boxesNotPlanned) })
         : t('dashboard.waitingSub', { boxes: fmt(d.dispatch.boxesWaiting) }),
       warn: d.dispatch.boxesNotPlanned > 0 })
+  }
+  if (d.maintenance) {
+    const m = d.maintenance
+    tiles.push({ key: 'machines', label: t('dashboard.availability'), value: m.availabilityPct, decimals: 1, suffix: '%',
+      sub: t('dashboard.availabilitySub', { count: m.breakdowns, time: hoursText(m.downtimeMinutes) }), warn: m.machinesDown > 0 })
   }
   if (d.store) {
     tiles.push({ key: 'store', label: t('dashboard.storeValue'), value: d.store.stockValue, suffix: '', sub: t('dashboard.storeSub') })
@@ -317,7 +322,7 @@ function StockCard({ d }: { d: DashboardResponse }) {
 /** What needs a look today, most urgent first, each with where to go. Status colours always come with an icon. */
 function AttentionCard({ d }: { d: DashboardResponse }) {
   const { t } = useTranslation()
-  const LINKS = { SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
+  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
   return (
     <FadeIn delay={0.2}>
       <section className="panel viz-card">
@@ -327,12 +332,12 @@ function AttentionCard({ d }: { d: DashboardResponse }) {
         ) : (
           <ul className="attention">
             {d.attention.map((a, i) => {
-              const critical = a.kind === 'PLAN_TOO_FEW' || a.kind === 'SHORT_FOR_ORDERS'
+              const critical = a.kind === 'MACHINES_DOWN' || a.kind === 'PLAN_TOO_FEW' || a.kind === 'SHORT_FOR_ORDERS'
               return (
                 <li key={i} className={critical ? 'critical' : 'warning'}>
                   {critical ? <ExclamationCircleOutlined /> : <WarningOutlined />}
                   <Link to={LINKS[a.kind]}>
-                    <b>{t(`dashboard.attention.${a.kind}`, { what: a.what, count: a.count ?? 0, boxes: fmt(a.boxes) })}</b>
+                    <b>{t(`dashboard.attention.${a.kind}`, { what: a.what, count: a.count ?? 0, boxes: fmt(a.boxes), time: hoursText(a.boxes ?? 0) })}</b>
                     <span>{t(`dashboard.attentionDo.${a.kind}`)}</span>
                   </Link>
                 </li>
@@ -343,6 +348,13 @@ function AttentionCard({ d }: { d: DashboardResponse }) {
       </section>
     </FadeIn>
   )
+}
+
+/** 95 -> "1 h 35 m" */
+function hoursText(minutes: number) {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h > 0 ? `${h} h ${String(m).padStart(2, '0')} m` : `${m} m`
 }
 
 function Empty() {

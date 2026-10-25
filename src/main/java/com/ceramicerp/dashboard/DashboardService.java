@@ -10,6 +10,8 @@ import com.ceramicerp.fg.FgPillar;
 import com.ceramicerp.fg.FgStock;
 import com.ceramicerp.fg.FgStockRepository;
 import com.ceramicerp.fg.dto.FgStockRow;
+import com.ceramicerp.maintenance.DowntimeService;
+import com.ceramicerp.maintenance.dto.DowntimeResponse;
 import com.ceramicerp.master.Grade;
 import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.production.LineStage;
@@ -51,6 +53,7 @@ public class DashboardService {
     private final DashboardQueries queries;
     private final FgStockRepository stockRepository;
     private final GradeRepository gradeRepository;
+    private final DowntimeService downtimeService;
 
     @Transactional(readOnly = true)
     public DashboardResponse get(Long plantId, LocalDate from, LocalDate to) {
@@ -67,15 +70,18 @@ public class DashboardService {
         boolean fg = may.contains(Permission.FG_VIEW);
         boolean sales = may.contains(Permission.SALES_VIEW);
         boolean store = may.contains(Permission.STORE_VIEW);
+        boolean maintenance = may.contains(Permission.MAINTENANCE_VIEW);
 
         List<Attention> attention = new ArrayList<>();
+        // a machine standing still is the most urgent thing of all: it goes first
+        DashboardResponse.Maintenance maint = maintenance ? maintenance(plantId, from, to, attention) : null;
         DashboardResponse.Production prod = production ? production(plantId, from, to, days) : null;
         DashboardResponse.FinishedGoods goods = fg ? finishedGoods(plantId, attention) : null;
         List<DispatchRow> dispatched = sales ? queries.dispatchedByDay(plantId, from, to) : List.of();
         DashboardResponse.Dispatch dispatch = sales ? dispatch(plantId, dispatched, attention) : null;
         DashboardResponse.Store st = store ? store(plantId, attention) : null;
 
-        return new DashboardResponse(from, to, prod, goods, dispatch, st,
+        return new DashboardResponse(from, to, prod, goods, dispatch, st, maint,
                 days(from, to, production ? queries.packedByDay(plantId, from, to) : null, sales ? dispatched : null),
                 attention);
     }
@@ -221,6 +227,21 @@ public class DashboardService {
                 (int) dispatched.stream().mapToLong(DispatchRow::boxes).sum(),
                 scale(sum(dispatched.stream().map(DispatchRow::sqm).toList())),
                 waitingOrders.size(), lines.stream().mapToInt(DashboardQueries.WaitingLine::boxes).sum(), notPlanned);
+    }
+
+    // ------------------------------------------------------------------ maintenance
+
+    private DashboardResponse.Maintenance maintenance(Long plantId, LocalDate from, LocalDate to, List<Attention> attention) {
+        DowntimeResponse d = downtimeService.downtime(plantId, from, to);
+        if (!d.downNow().isEmpty()) {
+            attention.add(new Attention(Attention.Kind.MACHINES_DOWN,
+                    d.downNow().stream().map(x -> x.machine().name()).collect(Collectors.joining(", ")),
+                    d.downNow().size(), (int) d.downNow().get(0).minutes()));
+        }
+        long possible = d.periodMinutes() * Math.max(1, d.machines().size());
+        BigDecimal availability = d.machines().isEmpty() ? null
+                : BigDecimal.valueOf((possible - d.downtimeMinutes()) * 100).divide(BigDecimal.valueOf(possible), 1, RoundingMode.HALF_UP);
+        return new DashboardResponse.Maintenance(d.breakdowns(), d.downtimeMinutes(), availability, d.downNow().size());
     }
 
     // ------------------------------------------------------------------ store

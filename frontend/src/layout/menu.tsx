@@ -35,6 +35,7 @@ import {
   DatabaseOutlined,
   DiffOutlined,
   FileDoneOutlined,
+  FieldTimeOutlined,
   ReconciliationOutlined,
   ExportOutlined,
   HomeOutlined,
@@ -242,6 +243,17 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         path: '/sales/loading', labelKey: 'menu.loading', icon: <CarOutlined />, permission: 'SALES_VIEW', mobile: true,
         worksIn: ['LOADING_ENTRY'],
       },
+    ],
+  },
+  {
+    // Step 8: machines that stop, and what it costs.
+    labelKey: 'menu.maintenance',
+    items: [
+      {
+        path: '/maintenance/breakdowns', labelKey: 'menu.breakdowns', icon: <ToolOutlined />, permission: 'MAINTENANCE_VIEW', mobile: true,
+        worksIn: ['MAINTENANCE_ENTRY'], searchType: 'breakdown', create: { labelKey: 'maint.report', permission: 'BREAKDOWN_REPORT' },
+      },
+      { path: '/maintenance/downtime', labelKey: 'menu.downtime', icon: <FieldTimeOutlined />, permission: 'MAINTENANCE_VIEW' },
     ],
   },
   {

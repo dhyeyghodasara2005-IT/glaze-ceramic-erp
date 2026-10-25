@@ -103,6 +103,7 @@ Every feature module has the same layers:
 | 6c | Loading plan (pillars picked by rules: in front, clears a pillar, oldest, most boxes, nearest) with kept boxes; phone loading checklist; confirm loading → stock out, dispatch no., packing list + gate pass; undo dispatch | ✅ Done |
 | 6d–6f | Bill + e-way bill on loading, Tally Prime sync, busy-day staging ([plan](docs/plans/06-dispatch-and-smart-storage.md), [backlog](docs/plans/BACKLOG.md)) | 6d waits on answers |
 | 7 | Owner dashboard: m² packed with the change on the period before, Premium share, yield, gas per m², dispatched, orders waiting; packed vs dispatched per day; grade split; stage funnel; godown fill; needs-a-look list (each block by permission) | ✅ Done |
-| 8 | QC, maintenance, gas/power meters | |
+| 8a | Breakdown log: supervisors report a stopped machine, maintenance closes it with cause, fix and spares (issued from the store); downtime by machine and fault, MTTR, MTBF, availability; dashboard alert | ✅ Done |
+| 8b–8d | Preventive maintenance, gas / power meters, quality lab tests | 8b next |
 | 9 | Costing, labour | |
 | 10 | Analytics & predictions (Python service) | |

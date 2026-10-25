@@ -17,6 +17,7 @@ public record DashboardResponse(
         FinishedGoods finishedGoods,
         Dispatch dispatch,
         Store store,
+        Maintenance maintenance,
         List<Day> days,
         List<Attention> attention
 ) {
@@ -62,6 +63,14 @@ public record DashboardResponse(
     public record Store(BigDecimal stockValue, int lowMaterials) {
     }
 
+    /**
+     * Machine downtime in the period (step 8a).
+     *
+     * @param availabilityPct running time of all listed machines / the time they could have run
+     */
+    public record Maintenance(int breakdowns, long downtimeMinutes, BigDecimal availabilityPct, int machinesDown) {
+    }
+
     /** null where the user may not see that module. */
     public record Day(LocalDate date, BigDecimal packedSqm, BigDecimal dispatchedSqm) {
     }
@@ -76,6 +85,8 @@ public record DashboardResponse(
     public record Attention(Kind kind, String what, Integer count, Integer boxes) {
 
         public enum Kind {
+            /** Machines reported down right now (what = their names, count = how many, boxes = longest minutes). */
+            MACHINES_DOWN,
             /** Confirmed orders need boxes that aren't in stock: pack more. */
             SHORT_FOR_ORDERS,
             /** Stock rows hold fewer boxes than the confirmed orders keep from them (broken or moved): plan again. */

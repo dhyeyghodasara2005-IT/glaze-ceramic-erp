@@ -3335,6 +3335,211 @@ body {
   }
 }
 
+/* ---------------------------------------------------------------------
+   Maintenance: breakdowns and downtime (step 8a)
+   --------------------------------------------------------------------- */
+.status-pill.bd-down {
+  color: #a32424;
+  background: #fbeaea;
+}
+.status-pill.bd-down .status-dot {
+  background: var(--status-critical);
+  animation: bd-pulse 1.6s var(--ease) infinite;
+}
+@keyframes bd-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(208, 59, 59, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(208, 59, 59, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(208, 59, 59, 0);
+  }
+}
+/* machines down right now: red cards that keep counting */
+.bd-down-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.bd-down-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid #f3c4c4;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #fff 40%, #fdeeee);
+  box-shadow: var(--shadow-card);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+}
+.bd-down-card:hover,
+.bd-down-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+.bd-pulse {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--status-critical);
+  animation: bd-pulse 1.6s var(--ease) infinite;
+}
+.bd-down-machine {
+  font-size: 16px;
+  font-weight: 700;
+}
+.bd-down-time {
+  font-size: 30px;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+  color: #a32424;
+}
+.bd-down-symptom {
+  font-size: 13px;
+}
+.bd-down-cta {
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--brand-700);
+}
+.bd-all-running {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  font-weight: 650;
+  color: #006300;
+}
+/* the drawer */
+.bd-banner {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f4fbf6;
+  border: 1px solid #cfe9d8;
+}
+.bd-banner.open {
+  background: #fdeeee;
+  border-color: #f3c4c4;
+}
+.bd-banner.cancelled {
+  background: #f5f3f1;
+  border-color: var(--line);
+}
+.bd-banner-machine {
+  font-size: 17px;
+  font-weight: 700;
+}
+.bd-banner-machine span {
+  margin-left: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.bd-banner-time {
+  font-size: 22px;
+  font-weight: 750;
+}
+.bd-banner.open .bd-banner-time {
+  color: #a32424;
+}
+.bd-facts {
+  margin-bottom: 12px;
+}
+.bd-spares {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.bd-spares li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 100px;
+  gap: 10px;
+  align-items: baseline;
+}
+.bd-spares li > :last-child {
+  text-align: right;
+}
+.bd-cost {
+  margin-bottom: 16px;
+  text-align: right;
+}
+.bd-close {
+  margin-top: 8px;
+}
+.bd-close-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+.bd-spare-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 0.8fr) 32px;
+  gap: 8px;
+  align-items: start;
+}
+.bd-spare-row .ant-form-item {
+  margin-bottom: 10px;
+}
+.bd-spare-row .ant-form-item-extra .short {
+  color: #a32424;
+  font-weight: 600;
+}
+.bd-running {
+  margin-top: 18px;
+  height: 50px;
+  font-weight: 700;
+}
+.bd-now-list {
+  margin-bottom: 18px;
+}
+.link-button {
+  display: grid;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.link-button span {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.dash-table {
+  margin-top: 18px;
+}
+@media (max-width: 575px) {
+  .bd-close-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bd-spare-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px;
+  }
+  .bd-spare-row > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

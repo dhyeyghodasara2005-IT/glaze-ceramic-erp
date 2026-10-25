@@ -247,18 +247,23 @@ export interface BarItem {
   muted?: boolean
 }
 
-/** Horizontal bars from one baseline, one colour, the value at each tip. */
-export function BarList({ items, color = 'var(--viz-1)', unit }: { items: BarItem[]; color?: string; unit?: string }) {
+/** Horizontal bars from one baseline, one colour, the value at each tip (written by `format`, e.g. "3 h 54 m"). */
+export function BarList({ items, color = 'var(--viz-1)', unit, format = (v: number) => fmt(v) }: {
+  items: BarItem[]
+  color?: string
+  unit?: string
+  format?: (value: number) => string
+}) {
   const max = useMemo(() => Math.max(1, ...items.map((i) => i.value)), [items])
   return (
     <ul className="bar-list">
       {items.map((item, i) => (
         <li key={item.key} className={item.muted ? 'muted' : undefined}>
           <div className="bar-label">{item.label}</div>
-          <Tooltip title={`${item.label}: ${fmt(item.value)}${unit ? ` ${unit}` : ''}${item.note ? ` · ${item.note}` : ''}`}>
+          <Tooltip title={`${item.label}: ${format(item.value)}${unit ? ` ${unit}` : ''}${item.note ? ` · ${item.note}` : ''}`}>
             <div className="bar-track" tabIndex={0}>
               <span className="bar-fill" style={{ width: `${(item.value / max) * 100}%`, background: color, animationDelay: `${i * 0.05}s` }} />
-              <span className="bar-value">{fmt(item.value)}{item.note && <em>{item.note}</em>}</span>
+              <span className="bar-value">{format(item.value)}{item.note && <em>{item.note}</em>}</span>
             </div>
           </Tooltip>
         </li>

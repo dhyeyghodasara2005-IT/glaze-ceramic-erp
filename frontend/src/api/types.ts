@@ -85,6 +85,10 @@ export type Permission =
   | 'SALES_ENTRY'
   | 'SALES_CANCEL'
   | 'LOADING_ENTRY'
+  | 'MAINTENANCE_VIEW'
+  | 'BREAKDOWN_REPORT'
+  | 'MAINTENANCE_ENTRY'
+  | 'MAINTENANCE_CANCEL'
 
 export interface PermissionInfo {
   code: Permission
@@ -1888,6 +1892,102 @@ export interface DashboardResponse {
     boxesNotPlanned: number
   }
   store?: { stockValue: number; lowMaterials: number }
+  maintenance?: { breakdowns: number; downtimeMinutes: number; availabilityPct?: number; machinesDown: number }
   days: { date: string; packedSqm?: number; dispatchedSqm?: number }[]
-  attention: { kind: 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'; what?: string; count?: number; boxes?: number }[]
+  attention: {
+    kind: 'MACHINES_DOWN' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
+    what?: string
+    count?: number
+    /** boxes short; for MACHINES_DOWN the longest minutes down */
+    boxes?: number
+  }[]
+}
+
+// ---- maintenance: the breakdown log (step 8a, must match maintenance/*.java) ----
+
+export const BREAKDOWN_STATUSES = ['OPEN', 'CLOSED', 'CANCELLED'] as const
+export type BreakdownStatus = (typeof BREAKDOWN_STATUSES)[number]
+export const BREAKDOWN_CATEGORIES = ['MECHANICAL', 'ELECTRICAL', 'HYDRAULIC', 'PNEUMATIC', 'CONTROLS', 'POWER_CUT', 'UTILITY',
+  'PROCESS', 'OTHER'] as const
+export type BreakdownCategory = (typeof BREAKDOWN_CATEGORIES)[number]
+
+export interface MachineRef {
+  id: number
+  code: string
+  name: string
+  type: MachineType
+}
+
+export interface BreakdownSummary {
+  id: number
+  breakdownNo: string
+  machine: MachineRef
+  stoppedAt: string
+  symptom: string
+  status: BreakdownStatus
+  restartedAt?: string
+  /** minutes so far while open */
+  downtimeMinutes: number
+  category?: BreakdownCategory
+  failedPart?: string
+  reportedBy?: string
+}
+
+export interface Breakdown extends BreakdownSummary {
+  plantId: number
+  plantCode: string
+  cause?: string
+  actionTaken?: string
+  fixedBy?: string
+  spares: { lineNo: number; materialId: number; materialCode: string; materialName: string; unit: string; locationId: number;
+    locationCode: string; quantity: number; value?: number }[]
+  issueDocumentId?: number
+  issueDocumentNo?: string
+  spareCost?: number
+  reportedAt: string
+  closedAt?: string
+  closedBy?: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  version: number
+}
+
+export interface BreakdownReportRequest {
+  plantId: number
+  machineId: number
+  stoppedAt: string
+  symptom: string
+}
+
+export interface BreakdownCloseRequest {
+  restartedAt: string
+  category: BreakdownCategory
+  failedPart?: string
+  cause?: string
+  actionTaken: string
+  fixedBy?: string
+  spares: { materialId: number; locationId: number; quantity: number }[]
+}
+
+export interface SpareOption {
+  id: number
+  code: string
+  name: string
+  unit: string
+  decimals: number
+  /** in the store's "Spares & consumables" group */
+  spare: boolean
+}
+
+export interface DowntimeResponse {
+  from: string
+  to: string
+  periodMinutes: number
+  breakdowns: number
+  downtimeMinutes: number
+  machines: { machine: MachineRef; breakdowns: number; downtimeMinutes: number; mttrMinutes?: number; mtbfHours?: number;
+    availabilityPct?: number; downNow: boolean }[]
+  categories: { category: BreakdownCategory; breakdowns: number; minutes: number }[]
+  downNow: { id: number; breakdownNo: string; machine: MachineRef; stoppedAt: string; minutes: number; symptom: string }[]
 }

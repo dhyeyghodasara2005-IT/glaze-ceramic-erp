@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 /**
- * /api/dashboard?plantId=&from=&to= - the owner's dashboard. Anyone who may see production, finished goods, sales
- * or the store gets the sections of what they may see.
+ * /api/dashboard?plantId=&from=&to= - the owner's dashboard. Anyone who may see production, finished goods, sales,
+ * the store or maintenance gets the sections of what they may see.
  */
 @Tag(name = "Dashboard")
 @RestController
@@ -25,7 +25,7 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('PRODUCTION_VIEW', 'FG_VIEW', 'SALES_VIEW', 'STORE_VIEW')")
+    @PreAuthorize("hasAnyAuthority('PRODUCTION_VIEW', 'FG_VIEW', 'SALES_VIEW', 'STORE_VIEW', 'MAINTENANCE_VIEW')")
     public DashboardResponse get(@RequestParam Long plantId,
                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                  @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
