@@ -43,6 +43,17 @@ class AuthIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
+    void requestMistakesAreNotServerErrors() throws Exception {
+        String token = adminToken();
+        mvc.perform(get("/api/no-such-thing").header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+        mvc.perform(get("/api/dashboard").param("plantId", "1").header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Required parameter 'from' is not present."));
+    }
+
+    @Test
     void tamperedTokenIsRejected() throws Exception {
         // Change the first character of the signature part: the signature no longer matches.
         String token = adminToken();

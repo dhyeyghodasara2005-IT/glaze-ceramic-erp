@@ -9,19 +9,15 @@ import com.ceramicerp.maintenance.dto.BreakdownReportRequest;
 import com.ceramicerp.maintenance.dto.BreakdownResponse;
 import com.ceramicerp.maintenance.dto.BreakdownSummary;
 import com.ceramicerp.maintenance.dto.MachineRef;
+import com.ceramicerp.maintenance.dto.SpareUsed;
 import com.ceramicerp.master.Machine;
 import com.ceramicerp.master.MachineRepository;
-import com.ceramicerp.master.Material;
 import com.ceramicerp.numbering.DocumentNumberService;
 import com.ceramicerp.organization.Plant;
 import com.ceramicerp.organization.PlantService;
 import com.ceramicerp.security.CurrentUser;
 import com.ceramicerp.security.PlantAccess;
-import com.ceramicerp.store.StoreDocType;
 import com.ceramicerp.store.StoreDocument;
-import com.ceramicerp.store.StoreDocumentLine;
-import com.ceramicerp.store.StoreDocumentService;
-import com.ceramicerp.store.dto.StoreDocumentRequest;
 import com.ceramicerp.user.Permission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -30,17 +26,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -59,7 +52,7 @@ public class BreakdownService {
 
     private final BreakdownRepository breakdownRepository;
     private final MachineRepository machineRepository;
-    private final StoreDocumentService storeDocumentService;
+    private final SpareIssues spareIssues;
     private final DocumentNumberService numberService;
     private final PlantService plantService;
 
@@ -128,21 +121,19 @@ public class BreakdownService {
         b.setActionTaken(req.actionTaken().trim());
         b.setFixedBy(Text.trimToNull(req.fixedBy()));
 
-        List<BreakdownCloseRequest.Spare> spares = req.spares() == null ? List.of() : req.spares();
-        if (!spares.isEmpty()) {
-            // the store checks the materials, the godowns and that there is enough of each
-            StoreDocument issue = storeDocumentService.postIssueFor(ORIGIN, issueFor(b, spares));
-            b.setIssueDocument(issue);
-            int lineNo = 0;
-            for (StoreDocumentLine l : issue.getLines()) {
-                BreakdownSpare s = new BreakdownSpare();
-                s.setBreakdown(b);
-                s.setLineNo(++lineNo);
-                s.setMaterial(l.getMaterial());
-                s.setLocation(l.getLocation());
-                s.setQuantity(l.getQuantity());
-                b.getSpares().add(s);
-            }
+        // the store checks the materials, the godowns and that there is enough of each
+        StoreDocument issue = spareIssues.issue(ORIGIN, b.getPlant().getId(), b.getMachine().getId(),
+                restarted.toLocalDate(), "Breakdown " + b.getBreakdownNo(), req.spares());
+        b.setIssueDocument(issue);
+        int lineNo = 0;
+        for (SpareIssues.Taken taken : SpareIssues.taken(issue)) {
+            BreakdownSpare s = new BreakdownSpare();
+            s.setBreakdown(b);
+            s.setLineNo(++lineNo);
+            s.setMaterial(taken.material());
+            s.setLocation(taken.location());
+            s.setQuantity(taken.quantity());
+            b.getSpares().add(s);
         }
         b.setStatus(BreakdownStatus.CLOSED);
         b.setClosedAt(Instant.now());
@@ -168,10 +159,7 @@ public class BreakdownService {
                 if (!may.contains(Permission.MAINTENANCE_CANCEL)) {
                     throw new AccessDeniedException("Cancelling closed breakdowns is not allowed");
                 }
-                if (b.getIssueDocument() != null) {
-                    storeDocumentService.cancelFor(b.getIssueDocument(),
-                            "Breakdown " + b.getBreakdownNo() + " cancelled: " + reason.trim());
-                }
+                spareIssues.undo(b.getIssueDocument(), "Breakdown " + b.getBreakdownNo() + " cancelled: " + reason.trim());
             }
             case CANCELLED -> throw new BusinessException(b.getBreakdownNo() + " is already cancelled");
         }
@@ -209,36 +197,15 @@ public class BreakdownService {
         b.setSymptom(req.symptom().trim());
     }
 
-    /** The store issue for the spares: dated the day it ran again, issued to the machine. */
-    private static StoreDocumentRequest issueFor(Breakdown b, List<BreakdownCloseRequest.Spare> spares) {
-        List<StoreDocumentRequest.Line> lines = spares.stream()
-                .map(s -> new StoreDocumentRequest.Line(s.materialId(), s.locationId(), s.quantity(), null, null, null,
-                        null, null))
-                .toList();
-        return new StoreDocumentRequest(b.getPlant().getId(), StoreDocType.ISSUE, b.getRestartedAt().toLocalDate(),
-                null, null, null, null, null,
-                b.getMachine().getId(), "Breakdown " + b.getBreakdownNo(),
-                null, "Spares for breakdown " + b.getBreakdownNo(), lines);
-    }
-
     private BreakdownResponse toResponse(Breakdown b) {
         StoreDocument issue = b.getIssueDocument();
-        List<StoreDocumentLine> issued = issue == null ? List.of() : issue.getLines();
-        List<BreakdownResponse.Spare> spares = new ArrayList<>();
-        for (BreakdownSpare s : b.getSpares()) {
-            // the issue's lines are in the same order as the spares
-            StoreDocumentLine line = s.getLineNo() <= issued.size() ? issued.get(s.getLineNo() - 1) : null;
-            Material m = s.getMaterial();
-            spares.add(new BreakdownResponse.Spare(s.getLineNo(), m.getId(), m.getCode(), m.getName(), m.getUnit().getCode(),
-                    s.getLocation().getId(), s.getLocation().getCode(), s.getQuantity(), line == null ? null : line.getValue()));
-        }
-        BigDecimal cost = spares.stream().map(BreakdownResponse.Spare::value).filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<SpareUsed> spares = SpareIssues.view(b.getSpares().stream()
+                .map(s -> new SpareIssues.Taken(s.getMaterial(), s.getLocation(), s.getQuantity())).toList(), issue);
         return new BreakdownResponse(b.getId(), b.getPlant().getId(), b.getPlant().getCode(), b.getBreakdownNo(),
                 MachineRef.of(b.getMachine()), b.getStoppedAt(), b.getSymptom(), b.getStatus(), b.getRestartedAt(),
                 minutes(b, now()), b.getCategory(), b.getFailedPart(), b.getCause(), b.getActionTaken(), b.getFixedBy(),
                 spares, issue == null ? null : issue.getId(), issue == null ? null : issue.getDocNo(),
-                spares.isEmpty() ? null : cost, b.getCreatedBy(), b.getCreatedAt(), b.getClosedAt(), b.getClosedBy(),
+                SpareIssues.cost(spares), b.getCreatedBy(), b.getCreatedAt(), b.getClosedAt(), b.getClosedBy(),
                 b.getCancelledAt(), b.getCancelledBy(), b.getCancelReason(), b.getVersion());
     }
 

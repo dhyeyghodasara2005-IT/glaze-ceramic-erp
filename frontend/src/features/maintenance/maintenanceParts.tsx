@@ -1,6 +1,6 @@
 import { Tag } from 'antd'
 import { useTranslation } from 'react-i18next'
-import type { BreakdownCategory, BreakdownStatus } from '../../api/types'
+import type { BreakdownCategory, BreakdownStatus, PmTaskSummary } from '../../api/types'
 
 /** Down = red (with a pulsing dot), running again = green, cancelled = gray: the same pills as everywhere else. */
 export function BreakdownStatusTag({ status }: { status: BreakdownStatus }) {
@@ -26,4 +26,14 @@ export function minutesText(minutes?: number | null) {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return h > 0 ? `${h} h ${String(m).padStart(2, '0')} m` : `${m} m`
+}
+
+/** Overdue = red, today = amber, this week = brand, later = gray; switched off = muted. */
+export function DueTag({ task }: { task: PmTaskSummary }) {
+  const { t } = useTranslation()
+  if (!task.active) return <Tag bordered={false}>{t('pm.switchedOff')}</Tag>
+  const color = task.due === 'OVERDUE' ? 'red' : task.due === 'TODAY' ? 'orange' : task.due === 'WEEK' ? 'volcano' : undefined
+  const text = task.due === 'OVERDUE' ? t('pm.overdueBy', { count: task.daysOverdue })
+    : task.due === 'TODAY' ? t('pm.dueToday') : t(`pm.due.${task.due}`)
+  return <Tag color={color} bordered={false}>{text}</Tag>
 }

@@ -64,11 +64,13 @@ public record DashboardResponse(
     }
 
     /**
-     * Machine downtime in the period (step 8a).
+     * Machine downtime in the period (step 8a) and preventive jobs today (step 8b).
      *
      * @param availabilityPct running time of all listed machines / the time they could have run
+     * @param pmOnTimePct     preventive jobs of the last 30 days done by their due date
      */
-    public record Maintenance(int breakdowns, long downtimeMinutes, BigDecimal availabilityPct, int machinesDown) {
+    public record Maintenance(int breakdowns, long downtimeMinutes, BigDecimal availabilityPct, int machinesDown,
+                              int pmOverdue, int pmDueWeek, BigDecimal pmOnTimePct) {
     }
 
     /** null where the user may not see that module. */
@@ -87,6 +89,8 @@ public record DashboardResponse(
         public enum Kind {
             /** Machines reported down right now (what = their names, count = how many, boxes = longest minutes). */
             MACHINES_DOWN,
+            /** Preventive jobs past their due date (what = the oldest, count = how many, boxes = its days overdue). */
+            PM_OVERDUE,
             /** Confirmed orders need boxes that aren't in stock: pack more. */
             SHORT_FOR_ORDERS,
             /** Stock rows hold fewer boxes than the confirmed orders keep from them (broken or moved): plan again. */

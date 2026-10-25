@@ -63,7 +63,7 @@ public class DowntimeService {
         Map<Long, List<Breakdown>> byMachine = breakdowns.stream().collect(Collectors.groupingBy(b -> b.getMachine().getId()));
 
         // every active machine is listed, also those that never stopped (100%), plus inactive ones that did stop
-        List<Machine> machines = new ArrayList<>(machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId).stream()
+        List<Machine> machines = new ArrayList<>(machineRepository.findByPlantIdInProcessOrder(plantId).stream()
                 .filter(m -> m.isActive() || byMachine.containsKey(m.getId())).toList());
 
         List<DowntimeResponse.MachineDowntime> rows = new ArrayList<>();

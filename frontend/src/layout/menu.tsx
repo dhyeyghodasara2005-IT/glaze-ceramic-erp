@@ -37,6 +37,7 @@ import {
   FileDoneOutlined,
   FieldTimeOutlined,
   ReconciliationOutlined,
+  ScheduleOutlined,
   ExportOutlined,
   HomeOutlined,
   ImportOutlined,
@@ -252,6 +253,10 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/maintenance/breakdowns', labelKey: 'menu.breakdowns', icon: <ToolOutlined />, permission: 'MAINTENANCE_VIEW', mobile: true,
         worksIn: ['MAINTENANCE_ENTRY'], searchType: 'breakdown', create: { labelKey: 'maint.report', permission: 'BREAKDOWN_REPORT' },
+      },
+      {
+        path: '/maintenance/preventive', labelKey: 'menu.preventive', icon: <ScheduleOutlined />, permission: 'MAINTENANCE_VIEW',
+        worksIn: ['MAINTENANCE_ENTRY'], searchType: 'pm-job', create: { labelKey: 'pm.new', permission: 'MAINTENANCE_ENTRY' },
       },
       { path: '/maintenance/downtime', labelKey: 'menu.downtime', icon: <FieldTimeOutlined />, permission: 'MAINTENANCE_VIEW' },
     ],

@@ -3,18 +3,35 @@ package com.ceramicerp.master;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
 public interface MachineRepository extends JpaRepository<Machine, Long> {
 
-    /** Machines of one plant, in process order (type) then code. */
-    @EntityGraph(attributePaths = "plant")
-    List<Machine> findByPlantIdOrderByTypeAscCodeAsc(Long plantId);
+    /** Process order: the order of MachineType (mill first, packing last), then code. */
+    Comparator<Machine> PROCESS_ORDER = Comparator.comparing(Machine::getType).thenComparing(Machine::getCode);
 
-    /** All machines; the service filters out plants the user can't access. */
     @EntityGraph(attributePaths = "plant")
-    List<Machine> findAllByOrderByPlantNameAscTypeAscCodeAsc();
+    List<Machine> findByPlantId(Long plantId);
+
+    @EntityGraph(attributePaths = "plant")
+    List<Machine> findAllByOrderByPlantNameAsc();
+
+    /**
+     * Machines of one plant, in process order. The column holds the type's name, so SQL would sort it A-Z
+     * (digital printer before press); Java compares enums by their declared order instead.
+     */
+    default List<Machine> findByPlantIdInProcessOrder(Long plantId) {
+        return findByPlantId(plantId).stream().sorted(PROCESS_ORDER).toList();
+    }
+
+    /** All machines by plant, then in process order; the service filters out plants the user can't access. */
+    default List<Machine> findAllInProcessOrder() {
+        return findAllByOrderByPlantNameAsc().stream()
+                .sorted(Comparator.comparing((Machine m) -> m.getPlant().getName()).thenComparing(PROCESS_ORDER))
+                .toList();
+    }
 
     @EntityGraph(attributePaths = "plant")
     Optional<Machine> findWithPlantById(Long id);

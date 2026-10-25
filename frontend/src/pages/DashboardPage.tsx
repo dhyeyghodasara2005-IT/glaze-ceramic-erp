@@ -201,6 +201,9 @@ function Headline({ d, days }: { d: DashboardResponse; days: number }) {
     const m = d.maintenance
     tiles.push({ key: 'machines', label: t('dashboard.availability'), value: m.availabilityPct, decimals: 1, suffix: '%',
       sub: t('dashboard.availabilitySub', { count: m.breakdowns, time: hoursText(m.downtimeMinutes) }), warn: m.machinesDown > 0 })
+    tiles.push({ key: 'pm', label: t('dashboard.pmOverdue'), value: m.pmOverdue,
+      sub: m.pmOnTimePct == null ? t('dashboard.pmDueWeek', { count: m.pmDueWeek })
+        : t('dashboard.pmSub', { count: m.pmDueWeek, pct: fmt(m.pmOnTimePct, 1) }), warn: m.pmOverdue > 0 })
   }
   if (d.store) {
     tiles.push({ key: 'store', label: t('dashboard.storeValue'), value: d.store.stockValue, suffix: '', sub: t('dashboard.storeSub') })
@@ -322,7 +325,7 @@ function StockCard({ d }: { d: DashboardResponse }) {
 /** What needs a look today, most urgent first, each with where to go. Status colours always come with an icon. */
 function AttentionCard({ d }: { d: DashboardResponse }) {
   const { t } = useTranslation()
-  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
+  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
   return (
     <FadeIn delay={0.2}>
       <section className="panel viz-card">
@@ -333,6 +336,7 @@ function AttentionCard({ d }: { d: DashboardResponse }) {
           <ul className="attention">
             {d.attention.map((a, i) => {
               const critical = a.kind === 'MACHINES_DOWN' || a.kind === 'PLAN_TOO_FEW' || a.kind === 'SHORT_FOR_ORDERS'
+              // PM_OVERDUE stays a warning: a job a few days late is not a stopped line
               return (
                 <li key={i} className={critical ? 'critical' : 'warning'}>
                   {critical ? <ExclamationCircleOutlined /> : <WarningOutlined />}

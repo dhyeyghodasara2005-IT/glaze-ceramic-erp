@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Alert, App, Button, DatePicker, Descriptions, Drawer, Form, Input, InputNumber, Select, Space, Spin } from 'antd'
-import { CheckOutlined, EditOutlined, MinusCircleOutlined, PlusOutlined, StopOutlined } from '@ant-design/icons'
+import { useEffect, useState } from 'react'
+import { Alert, App, Button, DatePicker, Descriptions, Drawer, Form, Input, Select, Space, Spin } from 'antd'
+import { CheckOutlined, EditOutlined, StopOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -12,17 +12,10 @@ import { dateTime, money, qty } from '../store/format'
 import ReasonModal from '../production/ReasonModal'
 import { DATE_TIME, dayClock, duration, toLocalDateTime } from '../production/time'
 import { useNow } from '../production/useNow'
-import {
-  useBreakdown, useCancelBreakdown, useCloseBreakdown, useSpareGodowns, useSpares, useSpareStock,
-} from './maintenanceApi'
+import { useBreakdown, useCancelBreakdown, useCloseBreakdown } from './maintenanceApi'
 import { BreakdownStatusTag, CategoryTag } from './maintenanceParts'
 import ReportBreakdownModal from './ReportBreakdownModal'
-
-interface SpareRow {
-  materialId?: number
-  locationId?: number
-  quantity?: number
-}
+import SparesField, { type SpareRow } from './SparesField'
 interface CloseValues {
   restartedAt: Dayjs
   category?: BreakdownCategory
@@ -53,29 +46,10 @@ export default function BreakdownDrawer({ id, onClose }: { id?: number; onClose:
   const mayEdit = isOpen && (can('BREAKDOWN_REPORT') || can('MAINTENANCE_ENTRY'))
   const mayCancel = (isOpen && (can('BREAKDOWN_REPORT') || can('MAINTENANCE_ENTRY'))) || (b?.status === 'CLOSED' && can('MAINTENANCE_CANCEL'))
 
-  const spares = useSpares(!!mayClose)
-  const godowns = useSpareGodowns(mayClose ? b?.plantId : undefined)
-  const stock = useSpareStock(mayClose ? b?.plantId : undefined)
-  const rows = Form.useWatch('spares', form) as SpareRow[] | undefined
 
   useEffect(() => {
     if (mayClose) form.setFieldsValue({ restartedAt: dayjs(), spares: [] })
   }, [mayClose, id, form])
-
-  const stockOf = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const s of stock.data ?? []) map.set(`${s.materialId}:${s.locationId}`, s.quantity)
-    return map
-  }, [stock.data])
-  const spareOptions = useMemo(() => {
-    const list = spares.data ?? []
-    const option = (s: (typeof list)[number]) => ({ value: s.id, label: `${s.name} · ${s.code}` })
-    return [
-      { label: t('maint.sparesGroup'), options: list.filter((s) => s.spare).map(option) },
-      { label: t('maint.otherMaterials'), options: list.filter((s) => !s.spare).map(option) },
-    ].filter((g) => g.options.length)
-  }, [spares.data, t])
-  const unitOf = (materialId?: number) => spares.data?.find((s) => s.id === materialId)
 
   const onRunning = async () => {
     let v: CloseValues
@@ -197,39 +171,7 @@ export default function BreakdownDrawer({ id, onClose }: { id?: number; onClose:
                 <Input.TextArea maxLength={500} autoSize={{ minRows: 2, maxRows: 4 }} />
               </Form.Item>
 
-              <div className="form-section">{t('maint.sparesUsed')} <span className="form-section-hint">· {t('maint.sparesHint')}</span></div>
-              <Form.List name="spares">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map((field, index) => {
-                      const row = rows?.[index]
-                      const unit = unitOf(row?.materialId)
-                      const there = row?.materialId && row?.locationId ? stockOf.get(`${row.materialId}:${row.locationId}`) ?? 0 : undefined
-                      return (
-                        <div key={field.key} className="bd-spare-row">
-                          <Form.Item name={[field.name, 'materialId']} rules={[required]}>
-                            <Select options={spareOptions} loading={spares.isLoading} showSearch={{ optionFilterProp: 'label' }}
-                              placeholder={t('maint.chooseSpare')} popupMatchSelectWidth={false} />
-                          </Form.Item>
-                          <Form.Item name={[field.name, 'locationId']} rules={[required]}
-                            extra={there !== undefined && <span className={there < (row?.quantity ?? 0) ? 'short' : undefined}>{t('maint.inStore', { n: qty(there), unit: unit?.unit ?? '' })}</span>}>
-                            <Select options={(godowns.data ?? []).map((g) => ({ value: g.id, label: g.name }))} placeholder={t('maint.godown')} />
-                          </Form.Item>
-                          <Form.Item name={[field.name, 'quantity']} rules={[required]}>
-                            <InputNumber<number> min={0} precision={unit?.decimals ?? 3} suffix={unit?.unit} style={{ width: '100%' }}
-                              placeholder={t('maint.qty')} inputMode="decimal" />
-                          </Form.Item>
-                          <Button type="text" danger icon={<MinusCircleOutlined />} aria-label={t('common.delete')} onClick={() => remove(field.name)} />
-                        </div>
-                      )
-                    })}
-                    <Button type="dashed" block icon={<PlusOutlined />}
-                      onClick={() => add({ locationId: godowns.data?.length === 1 ? godowns.data[0].id : undefined })}>
-                      {t('maint.addSpare')}
-                    </Button>
-                  </>
-                )}
-              </Form.List>
+              <SparesField form={form} plantId={b.plantId} />
 
               <Button type="primary" size="large" block icon={<CheckOutlined />} loading={close.isPending} onClick={onRunning}
                 className="bd-running">

@@ -35,7 +35,7 @@ public class SiloService {
                 .stream().collect(Collectors.groupingBy(r -> r.getSilo().getId()));
 
         List<SiloStatus> result = new ArrayList<>();
-        for (Machine silo : machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId)) {
+        for (Machine silo : machineRepository.findByPlantIdInProcessOrder(plantId)) {
             if (silo.getType() != MachineType.SILO || !silo.isActive()) {
                 continue;
             }

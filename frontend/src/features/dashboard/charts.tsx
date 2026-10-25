@@ -10,10 +10,11 @@ import dayjs from 'dayjs'
  * values were checked with the colour validator (contrast and colour-blind separation).
  */
 
-/** 1,234 -> "1.2K", 12,345 -> "12K": short numbers for axis ticks. */
+/** 1,234 -> "1.2K", 12,345 -> "12K", 4.5 -> "4.5": short numbers for axis ticks. */
 export function compact(n: number) {
   if (Math.abs(n) >= 100_000) return `${Math.round(n / 1000)}K`
   if (Math.abs(n) >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}K`
+  if (Math.abs(n) < 10 && !Number.isInteger(n)) return n.toFixed(1)
   return `${Math.round(n)}`
 }
 
@@ -33,9 +34,9 @@ function useWidth<T extends HTMLElement>() {
   return [ref, width] as const
 }
 
-/** Round the top of the axis up to a clean number: 1,137 -> 1,200. */
+/** Round the top of the axis up to a clean number: 1,137 -> 1,200. Nothing yet -> 4, so the ticks are 0 to 4. */
 function niceMax(max: number) {
-  if (max <= 0) return 1
+  if (max <= 0) return 4
   const step = 10 ** Math.floor(Math.log10(max))
   for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * step >= max) return m * step
   return 10 * step

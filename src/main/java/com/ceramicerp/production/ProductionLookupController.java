@@ -89,7 +89,7 @@ public class ProductionLookupController {
     @Transactional(readOnly = true)
     public List<MachineOption> machines(@RequestParam Long plantId) {
         PlantAccess.require(plantId);
-        return machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId).stream()
+        return machineRepository.findByPlantIdInProcessOrder(plantId).stream()
                 .filter(m -> m.isActive())
                 .map(m -> new MachineOption(m.getId(), m.getCode(), m.getName(), m.getType()))
                 .toList();

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -117,6 +118,18 @@ class MaterialAndMachineIntegrationTest extends IntegrationTestBase {
         String admin = adminToken();
         long plant = createPlant(admin, createCompany(admin, "GRP2"), "U3");
         postAs(admin, "/api/masters/machines", machine(plant, "X-1", "TOASTER")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void machinesComeInProcessOrderNotAToZ() throws Exception {
+        String admin = adminToken();
+        long plant = createPlant(admin, createCompany(admin, "GRP4"), "U4");
+        for (String[] m : new String[][] {{"KILN-1", "KILN"}, {"PRN-1", "DIGITAL_PRINTER"}, {"PRESS-2", "PRESS"}, {"PRESS-1", "PRESS"}}) {
+            postAs(admin, "/api/masters/machines", machine(plant, m[0], m[1])).andExpect(status().isCreated());
+        }
+        // A-Z on the type's name would put DIGITAL_PRINTER first; the line runs press, printer, kiln
+        getAs(admin, "/api/masters/machines?plantId=" + plant)
+                .andExpect(jsonPath("$[*].code").value(contains("PRESS-1", "PRESS-2", "PRN-1", "KILN-1")));
     }
 
     @Test

@@ -46,7 +46,7 @@ public class MaintenanceLookupController {
     @Transactional(readOnly = true)
     public List<MachineRef> machines(@RequestParam Long plantId) {
         PlantAccess.require(plantId);
-        return machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId).stream()
+        return machineRepository.findByPlantIdInProcessOrder(plantId).stream()
                 .filter(m -> m.isActive())
                 .map(MachineRef::of)
                 .toList();

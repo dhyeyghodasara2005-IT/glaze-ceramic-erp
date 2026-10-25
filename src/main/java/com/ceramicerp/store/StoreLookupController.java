@@ -54,7 +54,7 @@ public class StoreLookupController {
     @PreAuthorize("hasAuthority('STORE_VIEW')")
     public List<StoreOption> machines(@RequestParam Long plantId) {
         PlantAccess.require(plantId);
-        return machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId).stream()
+        return machineRepository.findByPlantIdInProcessOrder(plantId).stream()
                 .filter(Machine::isActive)
                 .map(m -> new StoreOption(m.getId(), m.getCode(), m.getName(), m.getType().name(), 0))
                 .toList();

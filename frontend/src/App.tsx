@@ -55,6 +55,7 @@ import LoadingListPage from './features/sales/LoadingListPage'
 import PackingListPage from './features/sales/PackingListPage'
 import BreakdownsPage from './features/maintenance/BreakdownsPage'
 import DowntimePage from './features/maintenance/DowntimePage'
+import PreventivePage from './features/maintenance/PreventivePage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -157,6 +158,7 @@ export default function App() {
         <Route path="sales/loading" element={<RequirePermission permission="SALES_VIEW"><LoadingListPage /></RequirePermission>} />
         <Route path="maintenance/breakdowns" element={<RequirePermission permission="MAINTENANCE_VIEW"><BreakdownsPage /></RequirePermission>} />
         <Route path="maintenance/downtime" element={<RequirePermission permission="MAINTENANCE_VIEW"><DowntimePage /></RequirePermission>} />
+        <Route path="maintenance/preventive" element={<RequirePermission permission="MAINTENANCE_VIEW"><PreventivePage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

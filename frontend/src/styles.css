@@ -3540,6 +3540,187 @@ body {
   }
 }
 
+/* ---------------------------------------------------------------------
+   Preventive jobs (step 8b)
+   --------------------------------------------------------------------- */
+.refreshing {
+  opacity: 0.55;
+  transition: opacity 0.25s var(--ease);
+}
+.pm-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.pm-group {
+  margin-bottom: 22px;
+}
+.pm-count {
+  margin-left: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: #f2ede9;
+}
+.pm-group.overdue .pm-count {
+  color: #a32424;
+  background: #fbeaea;
+}
+.pm-rows {
+  display: grid;
+  gap: 8px;
+}
+/* one job: a coloured edge says how urgent it is */
+.pm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px 12px 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid #d9d2cc;
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+  animation: row-in 0.35s var(--ease) both;
+  transition:
+    box-shadow 0.2s var(--ease),
+    transform 0.2s var(--ease);
+}
+.pm-row:hover,
+.pm-row:focus-visible {
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+  outline: none;
+}
+.pm-row.overdue {
+  border-left-color: var(--status-critical);
+}
+.pm-row.today {
+  border-left-color: var(--status-warning);
+}
+.pm-row.week {
+  border-left-color: var(--brand-400);
+}
+.pm-row.off {
+  opacity: 0.6;
+}
+.pm-row-due {
+  text-align: right;
+}
+.pm-row-due .ant-tag {
+  margin: 0;
+}
+@media (max-width: 575px) {
+  .pm-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .pm-row > .ant-btn {
+    grid-column: 1 / -1;
+  }
+}
+/* suggestions while setting a job up */
+.pm-suggest {
+  margin: -6px 0 16px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--brand-50);
+}
+.pm-suggest-head {
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--brand-700);
+}
+.pm-suggest-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pm-chip {
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    transform 0.2s var(--ease);
+}
+.pm-chip:hover {
+  border-color: var(--brand-400);
+  transform: translateY(-1px);
+}
+.pm-chip span {
+  color: var(--ink-soft);
+}
+/* the job drawer */
+.pm-banner {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f5f3f1;
+  border: 1px solid var(--line);
+}
+.pm-banner.overdue {
+  background: #fdeeee;
+  border-color: #f3c4c4;
+}
+.pm-banner.today {
+  background: #fff7e6;
+  border-color: #f5d9a8;
+}
+.pm-banner.week,
+.pm-banner.later {
+  background: #f4fbf6;
+  border-color: #cfe9d8;
+}
+.pm-banner-due {
+  font-size: 20px;
+  font-weight: 750;
+}
+.pm-banner.overdue .pm-banner-due {
+  color: #a32424;
+}
+.pm-instructions {
+  white-space: pre-wrap;
+}
+.pm-history {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pm-history li {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.pm-history li.cancelled {
+  opacity: 0.6;
+}
+.pm-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pm-history-head .ant-tag {
+  margin: 0;
+}
+.pm-findings {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

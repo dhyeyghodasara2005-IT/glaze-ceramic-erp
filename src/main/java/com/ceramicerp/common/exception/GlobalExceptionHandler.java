@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -87,6 +88,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> unexpected(Exception ex, HttpServletRequest req) {
+        // Spring's own request errors (unknown path, missing parameter, wrong method) already carry their 4xx status
+        if (ex instanceof ErrorResponse spring && spring.getStatusCode().is4xxClientError()) {
+            return build(HttpStatus.valueOf(spring.getStatusCode().value()), spring.getBody().getDetail(), req);
+        }
         log.error("Unexpected error on {}", req.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong. Please try again.", req);
     }

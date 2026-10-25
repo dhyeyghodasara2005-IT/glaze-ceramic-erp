@@ -28,7 +28,7 @@ public record BreakdownResponse(
         String cause,
         String actionTaken,
         String fixedBy,
-        List<Spare> spares,
+        List<SpareUsed> spares,
         Long issueDocumentId,
         String issueDocumentNo,
         BigDecimal spareCost,
@@ -41,7 +41,4 @@ public record BreakdownResponse(
         String cancelReason,
         Long version
 ) {
-    public record Spare(int lineNo, Long materialId, String materialCode, String materialName, String unit,
-                        Long locationId, String locationCode, BigDecimal quantity, BigDecimal value) {
-    }
 }

@@ -1892,13 +1892,21 @@ export interface DashboardResponse {
     boxesNotPlanned: number
   }
   store?: { stockValue: number; lowMaterials: number }
-  maintenance?: { breakdowns: number; downtimeMinutes: number; availabilityPct?: number; machinesDown: number }
+  maintenance?: {
+    breakdowns: number
+    downtimeMinutes: number
+    availabilityPct?: number
+    machinesDown: number
+    pmOverdue: number
+    pmDueWeek: number
+    pmOnTimePct?: number
+  }
   days: { date: string; packedSqm?: number; dispatchedSqm?: number }[]
   attention: {
-    kind: 'MACHINES_DOWN' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
+    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
     what?: string
     count?: number
-    /** boxes short; for MACHINES_DOWN the longest minutes down */
+    /** boxes short; MACHINES_DOWN: the longest minutes down; PM_OVERDUE: days overdue of the oldest */
     boxes?: number
   }[]
 }
@@ -1990,4 +1998,101 @@ export interface DowntimeResponse {
     availabilityPct?: number; downNow: boolean }[]
   categories: { category: BreakdownCategory; breakdowns: number; minutes: number }[]
   downNow: { id: number; breakdownNo: string; machine: MachineRef; stoppedAt: string; minutes: number; symptom: string }[]
+}
+
+// ---- maintenance: preventive jobs (step 8b) ----
+
+export const PM_KINDS = ['LUBRICATION', 'INSPECTION', 'CLEANING', 'ADJUSTMENT', 'REPLACEMENT', 'CALIBRATION', 'OTHER'] as const
+export type PmKind = (typeof PM_KINDS)[number]
+export type DueStatus = 'OVERDUE' | 'TODAY' | 'WEEK' | 'LATER'
+
+export interface PmTaskSummary {
+  id: number
+  machine: MachineRef
+  title: string
+  kind: PmKind
+  everyDays: number
+  needsStop: boolean
+  nextDue: string
+  lastDone?: string
+  active: boolean
+  due: DueStatus
+  daysOverdue: number
+}
+
+export interface SpareUsed {
+  lineNo: number
+  materialId: number
+  materialCode: string
+  materialName: string
+  unit: string
+  locationId: number
+  locationCode: string
+  quantity: number
+  value?: number
+}
+
+export interface PmJob {
+  id: number
+  jobNo: string
+  doneOn: string
+  wasDue: string
+  daysLate: number
+  doneBy?: string
+  minutes?: number
+  stopMinutes?: number
+  findings?: string
+  status: 'DONE' | 'CANCELLED'
+  spares: SpareUsed[]
+  spareCost?: number
+  issueDocumentId?: number
+  issueDocumentNo?: string
+  createdBy?: string
+  createdAt: string
+  cancelledAt?: string
+  cancelledBy?: string
+  cancelReason?: string
+  /** the newest record of its job: only this one can be cancelled */
+  latest: boolean
+}
+
+export interface PmTask extends PmTaskSummary {
+  plantId: number
+  plantCode: string
+  instructions?: string
+  history: PmJob[]
+  createdBy?: string
+  version: number
+}
+
+export interface PmTaskRequest {
+  plantId: number
+  machineIds: number[]
+  title: string
+  kind: PmKind
+  everyDays: number
+  instructions?: string
+  needsStop?: boolean
+  nextDue: string
+  active?: boolean
+}
+
+export interface PmDoneRequest {
+  doneOn: string
+  doneBy?: string
+  minutes?: number
+  stopMinutes?: number
+  findings?: string
+  spares: { materialId: number; locationId: number; quantity: number }[]
+}
+
+export interface PmOverview {
+  activeJobs: number
+  overdue: number
+  dueToday: number
+  dueWeek: number
+  doneLast30: number
+  onTimeLast30: number
+  onTimePct?: number
+  oldest?: PmTaskSummary
 }

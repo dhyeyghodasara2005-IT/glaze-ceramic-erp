@@ -33,8 +33,8 @@ public class MachineService {
     public List<MachineResponse> list(Long plantId) {
         AppUserDetails user = CurrentUser.get();
         List<Machine> machines = plantId == null
-                ? machineRepository.findAllByOrderByPlantNameAscTypeAscCodeAsc()
-                : machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId);
+                ? machineRepository.findAllInProcessOrder()
+                : machineRepository.findByPlantIdInProcessOrder(plantId);
         return machines.stream()
                 .filter(m -> user.canAccessPlant(m.getPlant().getId()))
                 .map(MachineResponse::from)

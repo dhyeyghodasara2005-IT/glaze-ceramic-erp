@@ -11,7 +11,9 @@ import com.ceramicerp.fg.FgStock;
 import com.ceramicerp.fg.FgStockRepository;
 import com.ceramicerp.fg.dto.FgStockRow;
 import com.ceramicerp.maintenance.DowntimeService;
+import com.ceramicerp.maintenance.PmTaskService;
 import com.ceramicerp.maintenance.dto.DowntimeResponse;
+import com.ceramicerp.maintenance.dto.PmOverview;
 import com.ceramicerp.master.Grade;
 import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.production.LineStage;
@@ -54,6 +56,7 @@ public class DashboardService {
     private final FgStockRepository stockRepository;
     private final GradeRepository gradeRepository;
     private final DowntimeService downtimeService;
+    private final PmTaskService pmTaskService;
 
     @Transactional(readOnly = true)
     public DashboardResponse get(Long plantId, LocalDate from, LocalDate to) {
@@ -241,7 +244,13 @@ public class DashboardService {
         long possible = d.periodMinutes() * Math.max(1, d.machines().size());
         BigDecimal availability = d.machines().isEmpty() ? null
                 : BigDecimal.valueOf((possible - d.downtimeMinutes()) * 100).divide(BigDecimal.valueOf(possible), 1, RoundingMode.HALF_UP);
-        return new DashboardResponse.Maintenance(d.breakdowns(), d.downtimeMinutes(), availability, d.downNow().size());
+        PmOverview pm = pmTaskService.overview(plantId);
+        if (pm.oldest() != null) {
+            attention.add(new Attention(Attention.Kind.PM_OVERDUE,
+                    pm.oldest().machine().name() + ": " + pm.oldest().title(), pm.overdue(), pm.oldest().daysOverdue()));
+        }
+        return new DashboardResponse.Maintenance(d.breakdowns(), d.downtimeMinutes(), availability, d.downNow().size(),
+                pm.overdue(), pm.dueWeek() + pm.dueToday(), pm.onTimePct());
     }
 
     // ------------------------------------------------------------------ store

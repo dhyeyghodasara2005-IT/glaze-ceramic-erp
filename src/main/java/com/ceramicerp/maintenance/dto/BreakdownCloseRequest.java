@@ -2,13 +2,10 @@ package com.ceramicerp.maintenance.dto;
 
 import com.ceramicerp.maintenance.BreakdownCategory;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,17 +30,6 @@ public record BreakdownCloseRequest(
         String fixedBy,
 
         @Size(max = 50)
-        List<@Valid Spare> spares
+        List<@Valid SpareLine> spares
 ) {
-    public record Spare(
-            @NotNull(message = "Choose the spare")
-            Long materialId,
-
-            @NotNull(message = "Choose the godown")
-            Long locationId,
-
-            @NotNull(message = "Enter the quantity") @DecimalMin(value = "0", inclusive = false) @Digits(integer = 13, fraction = 3)
-            BigDecimal quantity
-    ) {
-    }
 }

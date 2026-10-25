@@ -52,7 +52,7 @@ public enum Permission {
     MAINTENANCE_VIEW("Maintenance", "View breakdowns and machine downtime"),
     BREAKDOWN_REPORT("Maintenance", "Report a machine as stopped (line supervisors)"),
     MAINTENANCE_ENTRY("Maintenance", "Maintenance team: close breakdowns with the cause, the fix and the spares used"),
-    MAINTENANCE_CANCEL("Maintenance", "Cancel closed breakdowns (their spares go back to the store)");
+    MAINTENANCE_CANCEL("Maintenance", "Cancel closed breakdowns and preventive records (their spares go back to the store)");
 
     private final String group;
     private final String description;

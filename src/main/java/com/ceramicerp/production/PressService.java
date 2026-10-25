@@ -37,7 +37,7 @@ public class PressService {
 
         Map<Long, LotSummary> openByPress = lotService.summaries(lotRepository.findByPlantIdAndStatus(plantId, LotStatus.OPEN))
                 .stream().collect(Collectors.toMap(LotSummary::pressId, Function.identity()));
-        List<PressOverview.Line> lines = machineRepository.findByPlantIdOrderByTypeAscCodeAsc(plantId).stream()
+        List<PressOverview.Line> lines = machineRepository.findByPlantIdInProcessOrder(plantId).stream()
                 .filter(m -> m.getType() == MachineType.PRESS && m.isActive())
                 .map((Machine m) -> new PressOverview.Line(m.getId(), m.getCode(), m.getName(), openByPress.get(m.getId())))
                 .toList();
