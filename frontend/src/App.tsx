@@ -56,6 +56,9 @@ import PackingListPage from './features/sales/PackingListPage'
 import BreakdownsPage from './features/maintenance/BreakdownsPage'
 import DowntimePage from './features/maintenance/DowntimePage'
 import PreventivePage from './features/maintenance/PreventivePage'
+import EnergyPage from './features/energy/EnergyPage'
+import MetersPage from './features/energy/MetersPage'
+import ReadingsPage from './features/energy/ReadingsPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -101,6 +104,7 @@ export default function App() {
         <Route path="masters/grades" element={<RequirePermission permission="MASTER_VIEW"><GradesPage /></RequirePermission>} />
         <Route path="masters/materials" element={<RequirePermission permission="MASTER_VIEW"><MaterialsPage /></RequirePermission>} />
         <Route path="masters/machines" element={<RequirePermission permission="MASTER_VIEW"><MachinesPage /></RequirePermission>} />
+        <Route path="masters/meters" element={<RequirePermission permission="MASTER_VIEW"><MetersPage /></RequirePermission>} />
         <Route path="masters/material-groups" element={<RequirePermission permission="MASTER_VIEW"><MaterialGroupsPage /></RequirePermission>} />
         <Route path="masters/units" element={<RequirePermission permission="MASTER_VIEW"><UnitsPage /></RequirePermission>} />
         {/* one component, three routes; key makes React start fresh when switching type */}
@@ -159,6 +163,8 @@ export default function App() {
         <Route path="maintenance/breakdowns" element={<RequirePermission permission="MAINTENANCE_VIEW"><BreakdownsPage /></RequirePermission>} />
         <Route path="maintenance/downtime" element={<RequirePermission permission="MAINTENANCE_VIEW"><DowntimePage /></RequirePermission>} />
         <Route path="maintenance/preventive" element={<RequirePermission permission="MAINTENANCE_VIEW"><PreventivePage /></RequirePermission>} />
+        <Route path="energy/readings" element={<RequirePermission permission="METER_ENTRY"><ReadingsPage /></RequirePermission>} />
+        <Route path="energy/use" element={<RequirePermission permission="ENERGY_VIEW"><EnergyPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

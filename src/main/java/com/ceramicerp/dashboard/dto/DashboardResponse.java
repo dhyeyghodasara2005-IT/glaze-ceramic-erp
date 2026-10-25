@@ -32,8 +32,8 @@ public record DashboardResponse(
      */
     public record Production(int boxesPacked, BigDecimal sqmPacked, BigDecimal sqmPackedBefore, String topGradeName,
                              BigDecimal topGradePct, List<GradeShare> grades, List<Stage> stages, BigDecimal yieldPct,
-                             BigDecimal gasScm, BigDecimal sqmFired, BigDecimal gasPerSqm, BigDecimal powerKwh,
-                             BigDecimal powerPerSqm) {
+                             BigDecimal gasScm, String gasUnit, BigDecimal sqmFired, BigDecimal gasPerSqm,
+                             BigDecimal powerKwh, BigDecimal powerPerSqm) {
     }
 
     public record GradeShare(String code, String name, int sortOrder, int boxes, BigDecimal sqm, BigDecimal pct) {
@@ -91,6 +91,8 @@ public record DashboardResponse(
             MACHINES_DOWN,
             /** Preventive jobs past their due date (what = the oldest, count = how many, boxes = its days overdue). */
             PM_OVERDUE,
+            /** Meters not read for the shift that ended last (what = their names, count = how many). */
+            METER_MISSING,
             /** Confirmed orders need boxes that aren't in stock: pack more. */
             SHORT_FOR_ORDERS,
             /** Stock rows hold fewer boxes than the confirmed orders keep from them (broken or moved): plan again. */

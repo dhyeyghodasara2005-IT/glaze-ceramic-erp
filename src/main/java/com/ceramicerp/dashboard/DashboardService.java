@@ -10,6 +10,8 @@ import com.ceramicerp.fg.FgPillar;
 import com.ceramicerp.fg.FgStock;
 import com.ceramicerp.fg.FgStockRepository;
 import com.ceramicerp.fg.dto.FgStockRow;
+import com.ceramicerp.energy.EnergyService;
+import com.ceramicerp.energy.dto.EnergyUse;
 import com.ceramicerp.maintenance.DowntimeService;
 import com.ceramicerp.maintenance.PmTaskService;
 import com.ceramicerp.maintenance.dto.DowntimeResponse;
@@ -57,6 +59,7 @@ public class DashboardService {
     private final GradeRepository gradeRepository;
     private final DowntimeService downtimeService;
     private final PmTaskService pmTaskService;
+    private final EnergyService energyService;
 
     @Transactional(readOnly = true)
     public DashboardResponse get(Long plantId, LocalDate from, LocalDate to) {
@@ -74,6 +77,7 @@ public class DashboardService {
         boolean sales = may.contains(Permission.SALES_VIEW);
         boolean store = may.contains(Permission.STORE_VIEW);
         boolean maintenance = may.contains(Permission.MAINTENANCE_VIEW);
+        boolean energy = may.contains(Permission.ENERGY_VIEW) || may.contains(Permission.METER_ENTRY);
 
         List<Attention> attention = new ArrayList<>();
         // a machine standing still is the most urgent thing of all: it goes first
@@ -83,6 +87,14 @@ public class DashboardService {
         List<DispatchRow> dispatched = sales ? queries.dispatchedByDay(plantId, from, to) : List.of();
         DashboardResponse.Dispatch dispatch = sales ? dispatch(plantId, dispatched, attention) : null;
         DashboardResponse.Store st = store ? store(plantId, attention) : null;
+        if (energy) {
+            EnergyUse.LastRound round = energyService.lastRound(plantId);
+            List<String> missing = new ArrayList<>(round.missing());
+            missing.addAll(round.dayMissing());
+            if (!missing.isEmpty()) {
+                attention.add(new Attention(Attention.Kind.METER_MISSING, String.join(", ", missing), missing.size(), null));
+            }
+        }
 
         return new DashboardResponse(from, to, prod, goods, dispatch, st, maint,
                 days(from, to, production ? queries.packedByDay(plantId, from, to) : null, sales ? dispatched : null),
@@ -119,16 +131,30 @@ public class DashboardService {
                 stage("POLISHED", stages.get(LineStage.POLISH)),
                 new DashboardResponse.Stage("PACKED", pack.packed(), pack.sorted() > 0));
 
-        // kiln gas per m² that came out of the kiln; metered power per m² packed
-        BigDecimal fired = sum(queries.firedBySize(plantId, from, to).stream()
-                .map(r -> r.size().sqmPerTile() == null ? null : r.size().sqmPerTile().multiply(BigDecimal.valueOf(r.tiles())))
-                .toList());
-        StageRow kiln = stages.get(LineStage.KILN);
-        BigDecimal gas = kiln == null ? null : kiln.gasScm();
-        BigDecimal power = sum(stages.values().stream().map(StageRow::powerKwh).filter(Objects::nonNull).toList());
+        // kiln gas per m² that came out of the kiln; power per m² packed. The meters (step 8c) come first: the kiln's
+        // own gas meter against what those kilns fired, and the GEB main meter. Without readings, what the shift
+        // entries say (gas in the kiln entries, power in the polishing entries).
+        EnergyService.DashboardFigures metered = energyService.dashboardFigures(plantId, from, to);
+        BigDecimal fired;
+        BigDecimal gas;
+        String gasUnit;
+        if (metered.kilnGas() != null) {
+            fired = metered.sqmFired();
+            gas = metered.kilnGas();
+            gasUnit = metered.kilnGasUnit().name();
+        } else {
+            fired = sum(queries.firedBySize(plantId, from, to).stream()
+                    .map(r -> r.size().sqmPerTile() == null ? null : r.size().sqmPerTile().multiply(BigDecimal.valueOf(r.tiles())))
+                    .toList());
+            StageRow kiln = stages.get(LineStage.KILN);
+            gas = kiln == null ? null : kiln.gasScm();
+            gasUnit = "SCM";
+        }
+        BigDecimal power = metered.powerMain() != null ? metered.powerMain()
+                : sum(stages.values().stream().map(StageRow::powerKwh).filter(Objects::nonNull).toList());
 
         return new DashboardResponse.Production(boxes, scale(sqm), scale(before), top == null ? null : top.getName(),
-                pct(topBoxes, boxes), shares(grades, boxes), funnel, pct(pack.packed(), press.pressed()), gas,
+                pct(topBoxes, boxes), shares(grades, boxes), funnel, pct(pack.packed(), press.pressed()), gas, gasUnit,
                 scale(fired), per(gas, fired), power.signum() == 0 ? null : power, per(power, sqm));
     }
 

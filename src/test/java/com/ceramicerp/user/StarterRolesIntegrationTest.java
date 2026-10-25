@@ -28,22 +28,22 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
     void oneStarterRolePerJobIsReady() throws Exception {
         String admin = adminToken();
         assertThat(permissionsOf(admin, "Store keeper")).containsExactlyInAnyOrder("STORE_VIEW", "STORE_ENTRY");
-        // V16: every line supervisor also reports breakdowns of their machines
+        // V16: every line supervisor also reports breakdowns of their machines; V18: and reads their meters
         assertThat(permissionsOf(admin, "Body prep supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "BODY_PREP_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Press supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "PRESS_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Glaze supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "GLAZE_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Kiln supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "KILN_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Polish supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "POLISH_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         // V11: the packing supervisor also sees finished-goods stock (they choose pillars by it)
         assertThat(permissionsOf(admin, "Packing supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "PACKING_ENTRY", "FG_VIEW",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Maintenance in-charge")).containsExactlyInAnyOrder("MAINTENANCE_VIEW", "BREAKDOWN_REPORT",
-                "MAINTENANCE_ENTRY");
+                "MAINTENANCE_ENTRY", "METER_ENTRY", "ENERGY_VIEW");
         assertThat(permissionsOf(admin, "FG warehouse keeper")).containsExactlyInAnyOrder("FG_VIEW", "FG_ENTRY");
         assertThat(permissionsOf(admin, "Quality checker")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "QUALITY_CHECK");
         // V14: the dispatch office enters slips and sees the stock and parties it checks them against
@@ -53,8 +53,8 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
         assertThat(permissionsOf(admin, "Loading supervisor")).containsExactlyInAnyOrder("SALES_VIEW", "FG_VIEW", "LOADING_ENTRY");
         // V10 gave the starter manager the new divisions too
         assertThat(permissionsOf(admin, "Production manager")).contains("PRODUCTION_CANCEL", "KILN_ENTRY", "BODY_PREP_ENTRY",
-                "POLISH_ENTRY", "PACKING_ENTRY", "QUALITY_CHECK");
-        assertThat(permissionsOf(admin, "Viewer (read only)")).allMatch(p -> p.endsWith("_VIEW")).contains("SALES_VIEW");
+                "POLISH_ENTRY", "PACKING_ENTRY", "QUALITY_CHECK", "METER_ENTRY", "ENERGY_VIEW");
+        assertThat(permissionsOf(admin, "Viewer (read only)")).allMatch(p -> p.endsWith("_VIEW")).contains("SALES_VIEW", "ENERGY_VIEW");
     }
 
     @Test

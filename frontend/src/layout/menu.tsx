@@ -36,6 +36,8 @@ import {
   DiffOutlined,
   FileDoneOutlined,
   FieldTimeOutlined,
+  FormOutlined,
+  ThunderboltOutlined,
   ReconciliationOutlined,
   ScheduleOutlined,
   ExportOutlined,
@@ -262,6 +264,14 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     ],
   },
   {
+    // Step 8c: what the plant burns.
+    labelKey: 'menu.energy',
+    items: [
+      { path: '/energy/readings', labelKey: 'menu.meterReadings', icon: <FormOutlined />, permission: 'METER_ENTRY', mobile: true },
+      { path: '/energy/use', labelKey: 'menu.energyUse', icon: <ThunderboltOutlined />, permission: 'ENERGY_VIEW' },
+    ],
+  },
+  {
     labelKey: 'menu.plantMasters',
     items: [
       {
@@ -271,6 +281,10 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/masters/machines', labelKey: 'menu.machines', icon: <ToolOutlined />, permission: 'MASTER_VIEW',
         searchType: 'machine', create: { labelKey: 'machine.new', permission: 'MASTER_MANAGE' },
+      },
+      {
+        path: '/masters/meters', labelKey: 'menu.meters', icon: <DashboardOutlined />, permission: 'MASTER_VIEW',
+        create: { labelKey: 'energy.newMeter', permission: 'MASTER_MANAGE' },
       },
       {
         path: '/masters/body-recipes', labelKey: 'menu.bodyRecipes', icon: <ExperimentOutlined />, permission: 'MASTER_VIEW',

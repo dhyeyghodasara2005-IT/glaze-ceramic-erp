@@ -105,6 +105,7 @@ Every feature module has the same layers:
 | 7 | Owner dashboard: m² packed with the change on the period before, Premium share, yield, gas per m², dispatched, orders waiting; packed vs dispatched per day; grade split; stage funnel; godown fill; needs-a-look list (each block by permission) | ✅ Done |
 | 8a | Breakdown log: supervisors report a stopped machine, maintenance closes it with cause, fix and spares (issued from the store); downtime by machine and fault, MTTR, MTBF, availability; dashboard alert | ✅ Done |
 | 8b | Preventive maintenance: routine jobs per machine (set up for several machines at once, usual jobs suggested), due list (overdue / today / this week), done records with spares from the store, on-time share; dashboard alert | ✅ Done |
-| 8c–8d | Gas / power meters, quality lab tests | 8c next |
+| 8c | Energy: Gujarat Gas and GEB main meters (daily), kiln gas and section power meters (per shift), coal, propane / LNG and DG diesel by amount, DG hours; a phone reading round with instant use and warnings; kiln gas per m² fired, power and gas per m² packed, coal per tonne of powder, power by section; missing readings on the dashboard | ✅ Done |
+| 8d | Raw-material lab tests at the GRN (accept / reject) | 8d next |
 | 9 | Costing, labour | |
 | 10 | Analytics & predictions (Python service) | |

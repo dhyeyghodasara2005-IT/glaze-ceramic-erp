@@ -3730,3 +3730,88 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ------------------------------------------------------------------ step 8c: energy */
+
+/* The reading round: one card per meter, the number on it and what it means right away. */
+.round-pick {
+  flex-wrap: wrap;
+}
+.round-note {
+  margin: -4px 0 14px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.round-group {
+  margin-bottom: 18px;
+}
+.round-rows {
+  display: grid;
+  gap: 10px;
+}
+.round-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 14px 12px 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid #d9d2cc;
+  border-radius: 14px;
+  background: #fff;
+}
+.round-row > .ant-checkbox-wrapper,
+.round-row > .ant-input {
+  grid-column: 1 / -1;
+}
+.round-row.done {
+  border-left-color: var(--status-good);
+}
+.round-row.odd {
+  border-left-color: var(--status-warning);
+}
+.round-row.bad {
+  border-left-color: var(--status-critical);
+}
+.round-input {
+  width: 100%;
+}
+.round-input input {
+  font-size: 16px; /* 16px keeps phones from zooming in on the box */
+  font-variant-numeric: tabular-nums;
+}
+.round-used {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-variant-numeric: tabular-nums;
+}
+.round-warn {
+  color: #8a5a00;
+}
+.round-warn.bad {
+  color: var(--status-critical);
+  font-weight: 600;
+}
+.round-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.round-saved .anticon-check-circle {
+  color: var(--status-good);
+}
+.round-save {
+  margin-top: 8px;
+}
+@media (max-width: 720px) {
+  .round-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.energy-missing {
+  margin-bottom: 16px;
+}

@@ -89,6 +89,8 @@ export type Permission =
   | 'BREAKDOWN_REPORT'
   | 'MAINTENANCE_ENTRY'
   | 'MAINTENANCE_CANCEL'
+  | 'ENERGY_VIEW'
+  | 'METER_ENTRY'
 
 export interface PermissionInfo {
   code: Permission
@@ -1866,9 +1868,12 @@ export interface DashboardResponse {
     grades: GradeShare[]
     stages: { key: FunnelStage; pieces: number; recorded: boolean }[]
     yieldPct?: number
+    /** from the kiln's own gas meter when it has readings (then often M3), else typed in the kiln entries (SCM) */
     gasScm?: number
+    gasUnit?: MeterUnit
     sqmFired?: number
     gasPerSqm?: number
+    /** from the GEB main meter when it has readings, else the polishing entries */
     powerKwh?: number
     powerPerSqm?: number
   }
@@ -1903,7 +1908,7 @@ export interface DashboardResponse {
   }
   days: { date: string; packedSqm?: number; dispatchedSqm?: number }[]
   attention: {
-    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
+    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'METER_MISSING' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
     what?: string
     count?: number
     /** boxes short; MACHINES_DOWN: the longest minutes down; PM_OVERDUE: days overdue of the oldest */
@@ -2095,4 +2100,115 @@ export interface PmOverview {
   onTimeLast30: number
   onTimePct?: number
   oldest?: PmTaskSummary
+}
+
+// ------------------------------------------------------------------ step 8c: energy (com.ceramicerp.energy)
+
+/** Counters (gas, power, DG hours) are read off the meter; the others are amounts used, typed as they are. */
+export const METER_KINDS = ['GAS', 'POWER', 'RUN_HOURS', 'COAL', 'PROPANE', 'LNG', 'DIESEL'] as const
+export type MeterKind = (typeof METER_KINDS)[number]
+export type MeterUnit = 'SCM' | 'M3' | 'KWH' | 'HOUR' | 'KG' | 'LITRE'
+/** The units each kind may count in; the first is the usual one. */
+export const KIND_UNITS: Record<MeterKind, MeterUnit[]> = {
+  GAS: ['SCM', 'M3'], POWER: ['KWH'], RUN_HOURS: ['HOUR'], COAL: ['KG'], PROPANE: ['KG'], LNG: ['KG'], DIESEL: ['LITRE'],
+}
+export type ReadEvery = 'DAY' | 'SHIFT'
+
+export interface Meter {
+  id: number
+  plantId: number
+  code: string
+  name: string
+  kind: MeterKind
+  unit: MeterUnit
+  counter: boolean
+  /** false: typed only when some was used (diesel, propane, LNG), so never "missing" */
+  everyRound: boolean
+  main: boolean
+  machine?: MachineRef
+  readEvery: ReadEvery
+  sortOrder: number
+  active: boolean
+  version: number
+}
+
+export interface MeterRequest {
+  plantId: number
+  code: string
+  name: string
+  kind: MeterKind
+  unit?: MeterUnit
+  main?: boolean
+  machineId?: number
+  readEvery: ReadEvery
+  sortOrder?: number
+  active?: boolean
+}
+
+export interface ShiftRef {
+  id: number
+  code: string
+  name: string
+  sortOrder: number
+}
+
+export interface RoundLine {
+  meter: Meter
+  /** the reading before this one (counters); none for a meter's first reading */
+  previous?: { reading: number; readOn: string; shiftCode?: string }
+  /** the middle of its recent uses, to warn about a number far from it */
+  usual?: number
+  saved?: { id: number; reading?: number; used: number; restarted: boolean; note?: string; by?: string; at?: string }
+}
+
+export interface RoundResponse {
+  date: string
+  /** none = the once-a-day meters only */
+  shift?: ShiftRef
+  shifts: ShiftRef[]
+  lines: RoundLine[]
+}
+
+export interface RoundRequest {
+  plantId: number
+  date: string
+  shiftId?: number
+  lines: { meterId: number; reading?: number; used?: number; restarted?: boolean; note?: string }[]
+}
+
+export interface EnergyUse {
+  from: string
+  to: string
+  totals: {
+    gasMain?: number
+    gasMainUnit?: MeterUnit
+    kilnGas?: number
+    kilnGasUnit?: MeterUnit
+    sqmFired?: number
+    kilnGasPerSqm?: number
+    powerMain?: number
+    sqmPacked?: number
+    powerPerSqm?: number
+    gasPerSqm?: number
+    coalKg?: number
+    powderTon?: number
+    coalPerTon?: number
+    propaneKg?: number
+    lngKg?: number
+    dgHours?: number
+    dieselLitres?: number
+    dieselPerHour?: number
+  }
+  days: { date: string; gasMain?: number; kilnGas?: number; powerMain?: number }[]
+  meters: {
+    meter: Meter
+    used?: number
+    perDay?: number
+    readings: number
+    expected: number
+    last?: { reading?: number; used: number; readOn: string; shiftCode?: string }
+  }[]
+  /** power by section meter; the last one, without a meterId, is what the main meter counted beyond them */
+  powerParts: { meterId?: number; name?: string; kwh: number }[]
+  lastRound: { date: string; shiftId?: number; shiftCode?: string; missing: string[]; day: string; dayMissing: string[] }
 }

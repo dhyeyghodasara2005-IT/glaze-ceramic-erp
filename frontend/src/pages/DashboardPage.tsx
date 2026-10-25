@@ -185,8 +185,13 @@ function Headline({ d, days }: { d: DashboardResponse; days: number }) {
     tiles.push({ key: 'grade', label: t('dashboard.topGrade', { grade: p.topGradeName ?? '' }), value: p.topGradePct, decimals: 1, suffix: '%',
       sub: t('dashboard.ofBoxes', { n: fmt(p.boxesPacked) }) })
     tiles.push({ key: 'yield', label: t('dashboard.yield'), value: p.yieldPct, decimals: 1, suffix: '%', sub: t('dashboard.yieldSub') })
-    tiles.push({ key: 'gas', label: t('dashboard.gas'), value: p.gasPerSqm, decimals: 2, suffix: ' SCM/m²',
-      sub: p.gasScm != null ? t('dashboard.gasSub', { n: fmt(p.gasScm), sqm: fmt(p.sqmFired) }) : t('dashboard.noReadings') })
+    const gasUnit = t(`energy.unitShort.${p.gasUnit ?? 'SCM'}`)
+    tiles.push({ key: 'gas', label: t('dashboard.gas'), value: p.gasPerSqm, decimals: 2, suffix: ` ${gasUnit}/m²`,
+      sub: p.gasScm != null ? t('dashboard.gasSub', { n: fmt(p.gasScm), unit: gasUnit, sqm: fmt(p.sqmFired) }) : t('dashboard.noReadings') })
+    if (p.powerKwh != null) {
+      tiles.push({ key: 'power', label: t('dashboard.power'), value: p.powerPerSqm, decimals: 2, suffix: ' kWh/m²',
+        sub: t('dashboard.powerSub', { n: fmt(p.powerKwh) }) })
+    }
   }
   if (d.dispatch) {
     tiles.push({ key: 'dispatched', label: t('dashboard.dispatched'), value: d.dispatch.sqmDispatched, suffix: ' m²',
@@ -325,7 +330,7 @@ function StockCard({ d }: { d: DashboardResponse }) {
 /** What needs a look today, most urgent first, each with where to go. Status colours always come with an icon. */
 function AttentionCard({ d }: { d: DashboardResponse }) {
   const { t } = useTranslation()
-  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
+  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', METER_MISSING: '/energy/readings', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
   return (
     <FadeIn delay={0.2}>
       <section className="panel viz-card">
