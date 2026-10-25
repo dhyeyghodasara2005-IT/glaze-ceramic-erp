@@ -133,6 +133,11 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         searchType: 'grn', create: { labelKey: 'store.newDoc.GRN', permission: 'STORE_ENTRY' },
       },
       {
+        // Step 8d: raw material tested when it arrives; the GRN waits for it.
+        path: '/lab/tests', labelKey: 'menu.labTests', icon: <ExperimentOutlined />, permission: 'LAB_VIEW', mobile: true,
+        worksIn: ['LAB_ENTRY'], searchType: 'lab-test',
+      },
+      {
         path: '/store/issues', labelKey: 'menu.issues', icon: <ExportOutlined />, permission: 'STORE_VIEW',
         searchType: 'issue', create: { labelKey: 'store.newDoc.ISSUE', permission: 'STORE_ENTRY' },
       },
@@ -286,6 +291,7 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         path: '/masters/meters', labelKey: 'menu.meters', icon: <DashboardOutlined />, permission: 'MASTER_VIEW',
         create: { labelKey: 'energy.newMeter', permission: 'MASTER_MANAGE' },
       },
+      { path: '/masters/lab-tests', labelKey: 'menu.labSetup', icon: <ExperimentOutlined />, permission: 'MASTER_VIEW' },
       {
         path: '/masters/body-recipes', labelKey: 'menu.bodyRecipes', icon: <ExperimentOutlined />, permission: 'MASTER_VIEW',
         create: { labelKey: 'recipe.new', permission: 'MASTER_MANAGE' },

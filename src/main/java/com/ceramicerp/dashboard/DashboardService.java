@@ -12,6 +12,8 @@ import com.ceramicerp.fg.FgStockRepository;
 import com.ceramicerp.fg.dto.FgStockRow;
 import com.ceramicerp.energy.EnergyService;
 import com.ceramicerp.energy.dto.EnergyUse;
+import com.ceramicerp.lab.LabService;
+import com.ceramicerp.lab.dto.LabSample;
 import com.ceramicerp.maintenance.DowntimeService;
 import com.ceramicerp.maintenance.PmTaskService;
 import com.ceramicerp.maintenance.dto.DowntimeResponse;
@@ -60,6 +62,7 @@ public class DashboardService {
     private final DowntimeService downtimeService;
     private final PmTaskService pmTaskService;
     private final EnergyService energyService;
+    private final LabService labService;
 
     @Transactional(readOnly = true)
     public DashboardResponse get(Long plantId, LocalDate from, LocalDate to) {
@@ -78,6 +81,7 @@ public class DashboardService {
         boolean store = may.contains(Permission.STORE_VIEW);
         boolean maintenance = may.contains(Permission.MAINTENANCE_VIEW);
         boolean energy = may.contains(Permission.ENERGY_VIEW) || may.contains(Permission.METER_ENTRY);
+        boolean lab = may.contains(Permission.LAB_VIEW) || may.contains(Permission.LAB_ENTRY);
 
         List<Attention> attention = new ArrayList<>();
         // a machine standing still is the most urgent thing of all: it goes first
@@ -87,6 +91,14 @@ public class DashboardService {
         List<DispatchRow> dispatched = sales ? queries.dispatchedByDay(plantId, from, to) : List.of();
         DashboardResponse.Dispatch dispatch = sales ? dispatch(plantId, dispatched, attention) : null;
         DashboardResponse.Store st = store ? store(plantId, attention) : null;
+        if (lab) {
+            // material standing at the gate (or in the yard, not in stock) until the lab has tested it
+            List<LabSample> waiting = labService.waiting(plantId);
+            if (!waiting.isEmpty()) {
+                attention.add(new Attention(Attention.Kind.LAB_WAITING, waiting.stream().map(LabSample::materialName)
+                        .distinct().collect(Collectors.joining(", ")), waiting.size(), null));
+            }
+        }
         if (energy) {
             EnergyUse.LastRound round = energyService.lastRound(plantId);
             List<String> missing = new ArrayList<>(round.missing());

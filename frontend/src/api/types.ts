@@ -91,6 +91,8 @@ export type Permission =
   | 'MAINTENANCE_CANCEL'
   | 'ENERGY_VIEW'
   | 'METER_ENTRY'
+  | 'LAB_VIEW'
+  | 'LAB_ENTRY'
 
 export interface PermissionInfo {
   code: Permission
@@ -1908,7 +1910,7 @@ export interface DashboardResponse {
   }
   days: { date: string; packedSqm?: number; dispatchedSqm?: number }[]
   attention: {
-    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'METER_MISSING' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
+    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'METER_MISSING' | 'LAB_WAITING' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
     what?: string
     count?: number
     /** boxes short; MACHINES_DOWN: the longest minutes down; PM_OVERDUE: days overdue of the oldest */
@@ -2211,4 +2213,118 @@ export interface EnergyUse {
   /** power by section meter; the last one, without a meterId, is what the main meter counted beyond them */
   powerParts: { meterId?: number; name?: string; kwh: number }[]
   lastRound: { date: string; shiftId?: number; shiftCode?: string; missing: string[]; day: string; dayMissing: string[] }
+}
+
+// ------------------------------------------------------------------ step 8d: raw-material lab tests (com.ceramicerp.lab)
+
+export type LabVerdict = 'ACCEPTED' | 'REJECTED'
+
+/** A test a material gets on arrival, and the range the plant accepts (either end may be open). */
+export interface LabParameter {
+  id: number
+  code: string
+  name: string
+  unit?: string
+  minValue?: number
+  maxValue?: number
+  sortOrder: number
+  active: boolean
+}
+
+export interface LabMaterialRow {
+  materialId: number
+  code: string
+  name: string
+  groupCode: string
+  groupName: string
+  unit: string
+  /** 0 = it doesn't wait for the lab */
+  tests: number
+}
+
+/** One material from one truck (GRN). */
+export interface LabSample {
+  documentId: number
+  /** none while the GRN is a draft */
+  docNo?: string
+  docDate: string
+  status: 'DRAFT' | 'POSTED' | 'CANCELLED'
+  supplierName?: string
+  vehicleNo?: string
+  weighbridgeSlipNo?: string
+  invoiceNo?: string
+  materialId: number
+  materialCode: string
+  materialName: string
+  unit: string
+  receivedQty: number
+  rejectedQty: number
+  arrivedAt: string
+}
+
+export interface LabTest {
+  id: number
+  testNo: string
+  plantId: number
+  sample: LabSample
+  testedOn: string
+  testedBy?: string
+  verdict: LabVerdict
+  outOfRange: number
+  remarks?: string
+  results: { parameterId: number; code: string; name: string; unit?: string; minValue?: number; maxValue?: number; value: number; withinRange: boolean }[]
+  /** the GRN is still a draft, so the result may still change */
+  editable: boolean
+  createdBy?: string
+  createdAt?: string
+  updatedBy?: string
+  updatedAt?: string
+}
+
+export interface LabForm {
+  sample: LabSample
+  parameters: LabParameter[]
+  test?: LabTest
+}
+
+export interface LabTestRequest {
+  documentId: number
+  materialId: number
+  testedOn: string
+  testedBy?: string
+  verdict: LabVerdict
+  remarks?: string
+  results: { parameterId: number; value: number }[]
+}
+
+export interface LabTestSummary {
+  id: number
+  testNo: string
+  testedOn: string
+  documentId: number
+  docNo?: string
+  materialId: number
+  materialCode: string
+  materialName: string
+  supplierName?: string
+  vehicleNo?: string
+  verdict: LabVerdict
+  outOfRange: number
+}
+
+export interface LabOverview {
+  waiting: number
+  tested: number
+  rejected: number
+  rejectedPct?: number
+  suppliers: { supplierId?: number; name?: string; tested: number; rejected: number; rejectedPct?: number }[]
+}
+
+export interface GrnLabStatus {
+  materialId: number
+  materialName: string
+  /** none while it waits for the lab */
+  testId?: number
+  testNo?: string
+  verdict?: LabVerdict
 }

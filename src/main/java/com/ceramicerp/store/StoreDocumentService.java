@@ -21,6 +21,7 @@ import com.ceramicerp.store.dto.StoreDocumentRequest;
 import com.ceramicerp.store.dto.StoreDocumentResponse;
 import com.ceramicerp.store.dto.StoreDocumentSummary;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -60,6 +61,8 @@ public class StoreDocumentService {
     private final PartyRepository partyRepository;
     private final MachineRepository machineRepository;
     private final MaterialRepository materialRepository;
+    /** Other modules' checks before a GRN is posted (the lab's, since step 8d). */
+    private final ObjectProvider<GrnCheck> grnChecks;
 
     @Transactional(readOnly = true)
     public PageResponse<StoreDocumentSummary> search(Long plantId, StoreDocType type, DocStatus status,
@@ -121,6 +124,9 @@ public class StoreDocumentService {
 
     private void postDocument(StoreDocument doc) {
         requireNotFuture(doc.getDocDate());
+        if (doc.getDocType() == StoreDocType.GRN) {
+            grnChecks.orderedStream().forEach(check -> check.beforePost(doc));
+        }
 
         doc.setDocNo(numberService.next(doc.getPlant(), doc.getDocType(), doc.getDocDate()));
 
@@ -211,6 +217,36 @@ public class StoreDocumentService {
         documentRepository.save(doc);
         postDocument(doc);
         return doc;
+    }
+
+    /**
+     * The lab's verdict on one material of a draft GRN (step 8d). Rejected: its lines are rejected in full, so none of
+     * it enters stock. Accepted after a rejection: lines rejected in full are received again. Lines the store keeper
+     * rejected only in part are left alone. The moisture the lab found, if any, goes on the lines.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void labVerdict(StoreDocument grn, Material material, boolean rejected, BigDecimal moisturePct) {
+        if (grn.getDocType() != StoreDocType.GRN || grn.getStatus() != DocStatus.DRAFT) {
+            throw new BusinessException("Only a draft GRN takes the lab's result");
+        }
+        BigDecimal total = BigDecimal.ZERO;
+        for (StoreDocumentLine line : grn.getLines()) {
+            if (line.getMaterial().getId().equals(material.getId())) {
+                boolean allRejected = line.getRejectedQty() != null && line.getRejectedQty().compareTo(line.getReceivedQty()) == 0;
+                if (rejected) {
+                    line.setRejectedQty(line.getReceivedQty());
+                } else if (allRejected) {
+                    line.setRejectedQty(BigDecimal.ZERO);
+                }
+                line.setQuantity(line.getReceivedQty().subtract(line.getRejectedQty()));
+                line.setValue(line.getQuantity().multiply(line.getRate()).setScale(2, RoundingMode.HALF_UP));
+                if (moisturePct != null) {
+                    line.setMoisturePct(moisturePct);
+                }
+            }
+            total = total.add(line.getValue() == null ? BigDecimal.ZERO : line.getValue());
+        }
+        grn.setTotalValue(total);
     }
 
     /** Reverses a document made with {@link #postIssueFor}, inside the caller's transaction. */

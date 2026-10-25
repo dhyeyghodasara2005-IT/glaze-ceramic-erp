@@ -330,7 +330,7 @@ function StockCard({ d }: { d: DashboardResponse }) {
 /** What needs a look today, most urgent first, each with where to go. Status colours always come with an icon. */
 function AttentionCard({ d }: { d: DashboardResponse }) {
   const { t } = useTranslation()
-  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', METER_MISSING: '/energy/readings', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
+  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', METER_MISSING: '/energy/readings', LAB_WAITING: '/lab/tests', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
   return (
     <FadeIn delay={0.2}>
       <section className="panel viz-card">

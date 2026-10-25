@@ -27,7 +27,9 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
     @Test
     void oneStarterRolePerJobIsReady() throws Exception {
         String admin = adminToken();
-        assertThat(permissionsOf(admin, "Store keeper")).containsExactlyInAnyOrder("STORE_VIEW", "STORE_ENTRY");
+        // V19: the store keeper sees why a GRN waits for the lab
+        assertThat(permissionsOf(admin, "Store keeper")).containsExactlyInAnyOrder("STORE_VIEW", "STORE_ENTRY", "LAB_VIEW");
+        assertThat(permissionsOf(admin, "Lab chemist")).containsExactlyInAnyOrder("LAB_VIEW", "LAB_ENTRY");
         // V16: every line supervisor also reports breakdowns of their machines; V18: and reads their meters
         assertThat(permissionsOf(admin, "Body prep supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "BODY_PREP_ENTRY",
                 "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");

@@ -93,6 +93,8 @@ public record DashboardResponse(
             PM_OVERDUE,
             /** Meters not read for the shift that ended last (what = their names, count = how many). */
             METER_MISSING,
+            /** Trucks of raw material waiting for the lab (what = the materials, count = how many samples). */
+            LAB_WAITING,
             /** Confirmed orders need boxes that aren't in stock: pack more. */
             SHORT_FOR_ORDERS,
             /** Stock rows hold fewer boxes than the confirmed orders keep from them (broken or moved): plan again. */

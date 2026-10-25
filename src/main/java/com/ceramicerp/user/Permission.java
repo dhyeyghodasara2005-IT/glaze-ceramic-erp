@@ -55,7 +55,10 @@ public enum Permission {
     MAINTENANCE_CANCEL("Maintenance", "Cancel closed breakdowns and preventive records (their spares go back to the store)"),
 
     ENERGY_VIEW("Energy", "View energy use: gas, power, coal and diesel, per day and per m²"),
-    METER_ENTRY("Energy", "Enter meter readings and the fuel used (supervisors and department in-charges)");
+    METER_ENTRY("Energy", "Enter meter readings and the fuel used (supervisors and department in-charges)"),
+
+    LAB_VIEW("Lab", "View raw-material lab tests and supplier quality"),
+    LAB_ENTRY("Lab", "Lab: test raw material when it arrives, and accept or reject it");
 
     private final String group;
     private final String description;

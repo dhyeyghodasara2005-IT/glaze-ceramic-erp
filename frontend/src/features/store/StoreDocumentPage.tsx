@@ -41,6 +41,7 @@ import { DOC_TYPES } from './docTypes'
 import DocStatusTag from './DocStatusTag'
 import { dateTime, decimalsOf, money, qty, shortDate } from './format'
 import NoPlant from './NoPlant'
+import GrnLabNote from '../lab/GrnLabNote'
 
 // ---- form values (dates are dayjs objects while editing; strings in the API) ----
 
@@ -380,6 +381,7 @@ function DocumentEditor({ type, docId }: { type: StoreDocType; docId?: number })
           <Alert className="doc-alert" type="error" showIcon
             title={t('store.cancelledInfo', { by: doc.cancelledBy, at: dateTime(doc.cancelledAt), reason: doc.cancelReason })} />
         )}
+        {type === 'GRN' && doc && <GrnLabNote documentId={doc.id} />}
         {editable && !noGodowns && <Alert className="doc-alert" type="info" showIcon title={t('store.draftInfo')} />}
         {noGodowns && (
           <Alert className="doc-alert" type="warning" showIcon title={t('store.noGodowns')}
