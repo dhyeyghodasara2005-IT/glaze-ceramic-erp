@@ -178,6 +178,14 @@ public class MaterialLotService {
         return lot;
     }
 
+    /** What is left of a material in a plant's godown, in the order it will be used. */
+    @Transactional(readOnly = true)
+    public List<MaterialLot> openLots(Long plantId, Long locationId, Long materialId) {
+        return lotRepository.findOpen(locationId, materialId).stream()
+                .filter(l -> l.getPlant().getId().equals(plantId))
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<MaterialLotDraw> drawsOf(Collection<Long> documentIds) {
         return documentIds.isEmpty() ? List.of() : drawRepository.findForDocuments(documentIds);

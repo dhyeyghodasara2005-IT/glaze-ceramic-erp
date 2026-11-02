@@ -31,7 +31,8 @@ export default function TrucksUsed({ kind, id }: { kind: 'body-batches' | 'lots'
               {x.oldStock && <Tag bordered={false} style={{ marginInlineStart: 8 }}>{t('lots.oldStock')}</Tag>}
               <div className="cell-sub">
                 {[x.supplierName, x.vehicleNo, shortDate(x.receivedOn),
-                  x.moisturePct != null ? `${t('lots.moisture')} ${qty(x.moisturePct, 2)} %` : null].filter(Boolean).join(' · ')}
+                  x.moisturePct != null ? `${t('lots.moisture')} ${qty(x.moisturePct, 2)} %` : null,
+                  x.dryQuantity != null ? t('lots.dryIn', { qty: `${qty(x.dryQuantity, x.unitDecimals)} ${x.unitCode}` }) : null].filter(Boolean).join(' · ')}
               </div>
               {kind === 'lots' && (
                 <div className="trace-batches">{x.batches.map((b) => <Tag key={b}>{b}</Tag>)}</div>

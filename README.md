@@ -44,7 +44,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
   cancelling writes the opposite rows.
 - **Modules plug into each other through small interfaces.** The store asks every `GrnCheck` before posting a GRN, and
   the lab is one of them; global search asks every `SearchProvider`. Neither side depends on the other's code.
-- **Tests run against MySQL**, not an in-memory stand-in: 214 integration tests (JUnit 5, MockMvc) on a separate test
+- **Tests run against MySQL**, not an in-memory stand-in: 226 integration tests (JUnit 5, MockMvc) on a separate test
   database that is rebuilt on every run.
 
 ---
@@ -123,4 +123,4 @@ frontend/src/
 | 7 | Owner dashboard | ✅ Done |
 | 8 | Maintenance, energy, raw-material lab tests | ✅ Done |
 | 9 | Labour and costing | ✅ Done |
-| 10 | Analytics and predictions | Started: raw material traced truck by truck, from the GRN to the design lot |
+| 10 | Analytics and predictions | Started: raw material traced truck by truck, and mill charges corrected for moisture |

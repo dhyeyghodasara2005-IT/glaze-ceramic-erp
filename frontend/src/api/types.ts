@@ -2396,7 +2396,30 @@ export interface TraceTruck {
   oldStock: boolean
   /** how much of it went into those mill charges */
   quantity: number
+  /** that quantity without its moisture; none when no moisture was recorded */
+  dryQuantity?: number
   batches: string[]
+}
+
+/** The weight to load for a dry quantity, from the lots it will come from (step 10b). */
+export interface ChargeWeightLine {
+  materialId: number
+  locationId: number
+  dryQuantity: number
+  wetQuantity: number
+  /** average of the lots used; none when none of them has a moisture */
+  moisturePct?: number
+  /** some of it comes from a lot with no moisture, loaded as weighed */
+  moistureUnknown: boolean
+  /** dry quantity the godown can't supply */
+  shortDry?: number
+  lots: { lotNo: string; moisturePct?: number; wetQuantity: number }[]
+}
+
+export interface ChargeWeights {
+  lines: ChargeWeightLine[]
+  /** water the moisture brings into the mill */
+  waterLitres: number
 }
 
 export interface MaterialReach {

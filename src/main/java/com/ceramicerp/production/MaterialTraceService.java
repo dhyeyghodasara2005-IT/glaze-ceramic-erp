@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -82,10 +83,13 @@ public class MaterialTraceService {
             BigDecimal quantity = draws.stream().map(MaterialLotDraw::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
             List<String> batchNos = draws.stream().map(d -> batchOfIssue.get(d.getTransaction().getDocument().getId()))
                     .distinct().sorted().toList();
+            BigDecimal moisture = l.getLine() == null ? null : l.getLine().getMoisturePct();
+            BigDecimal dry = moisture == null ? null : quantity.multiply(BigDecimal.valueOf(100).subtract(moisture))
+                    .divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
             return new MaterialTrace.Truck(l.getId(), l.getLotNo(), l.getMaterial().getCode(), l.getMaterial().getName(),
                     unit.getCode(), unit.getDecimals(), l.getSupplier() == null ? null : l.getSupplier().getName(),
-                    l.getDocument() == null ? null : l.getDocument().getVehicleNo(), l.getReceivedOn(),
-                    l.getLine() == null ? null : l.getLine().getMoisturePct(), l.getDocument() == null, quantity, batchNos);
+                    l.getDocument() == null ? null : l.getDocument().getVehicleNo(), l.getReceivedOn(), moisture,
+                    l.getDocument() == null, quantity, dry, batchNos);
         }).toList();
     }
 }

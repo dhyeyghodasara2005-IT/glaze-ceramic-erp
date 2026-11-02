@@ -21,7 +21,7 @@ import EmptyState from '../../components/EmptyState'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import { applyFieldErrors, errorMessage } from '../../api/errors'
-import type { BodyBatch, BodyBatchRequest, BodyBatchSummary } from '../../api/types'
+import type { BodyBatch, BodyBatchRequest, BodyBatchSummary, ChargeWeights } from '../../api/types'
 import NoPlant from '../store/NoPlant'
 import { dateTime, decimalsOf, qty, shortDate } from '../store/format'
 import {
@@ -29,6 +29,7 @@ import {
   useBodyOverview,
   useCancelBatch,
   useChargeBatch,
+  useChargeWeights,
   useCurrentShift,
   useDeleteBatch,
   useProdGodowns,
@@ -141,6 +142,9 @@ function BatchEditor({ batchId }: { batchId?: number }) {
   const charge = useChargeBatch()
   const cancel = useCancelBatch()
   const remove = useDeleteBatch()
+  const weights = useChargeWeights()
+  // what the last "fill from recipe" worked out, to explain each weight until it is changed by hand
+  const [filled, setFilled] = useState<ChargeWeights>()
   const [confirmCharge, setConfirmCharge] = useState(false)
   const [discharging, setDischarging] = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -219,7 +223,7 @@ function BatchEditor({ batchId }: { batchId?: number }) {
     [...(stock.data ?? [])].filter((s) => s.materialId === materialId).sort((a, b) => b.quantity - a.quantity)[0]?.locationId
     ?? firstGodown
 
-  const fillFromRecipe = () => {
+  const fillFromRecipe = async () => {
     const recipe = recipes.data?.find((r) => r.id === form.getFieldValue('recipeId'))
     const charge = form.getFieldValue('chargeTon') as number | undefined
     if (!recipe || !charge) {
@@ -227,11 +231,25 @@ function BatchEditor({ batchId }: { batchId?: number }) {
       return
     }
     // toFixed rounds to what the unit allows (0.3 x 40 = 12.000000000000002 -> 12)
-    form.setFieldValue('lines', recipe.lines.map((l) => ({
+    const dry = recipe.lines.map((l) => ({
       materialId: l.materialId,
-      locationId: bestGodown(l.materialId),
-      quantity: Number((l.qtyPerTon * charge).toFixed(l.unitDecimals)),
-    })))
+      locationId: bestGodown(l.materialId)!,
+      dryQuantity: Number((l.qtyPerTon * charge).toFixed(l.unitDecimals)),
+    }))
+    try {
+      const result = await weights.mutateAsync({ plantId: plantId!, lines: dry })
+      setFilled(result)
+      form.setFieldValue('lines', result.lines.map((l) => ({ materialId: l.materialId, locationId: l.locationId, quantity: l.wetQuantity })))
+    } catch (err) {
+      message.error(errorMessage(err, t('common.somethingWrong')))
+    }
+  }
+
+  /** What was worked out for this line, if it still stands as filled in. */
+  const filledLine = (index: number) => {
+    const f = filled?.lines[index]
+    const l = lines?.[index]
+    return f && l && f.materialId === l.materialId && f.locationId === l.locationId && f.wetQuantity === l.quantity ? f : undefined
   }
 
   // ---- actions ----
@@ -468,11 +486,14 @@ function BatchEditor({ batchId }: { batchId?: number }) {
           <div className="panel-title-row">
             <div className="form-section" style={{ flex: 1 }}>{t('prod.rawMaterials')}</div>
             {editable && (
-              <Button size="small" icon={<ExperimentOutlined />} onClick={fillFromRecipe} title={t('prod.fillHint')}>
+              <Button size="small" icon={<ExperimentOutlined />} loading={weights.isPending} onClick={fillFromRecipe} title={t('prod.fillHint')}>
                 {t('prod.fillFromRecipe')}
               </Button>
             )}
           </div>
+          {editable && filled && filled.waterLitres > 0 && filled.lines.every((_, i) => filledLine(i)) && (
+            <Alert className="doc-alert" type="info" showIcon title={t('prod.waterFromMaterials', { litres: qty(filled.waterLitres, 0) })} />
+          )}
           <Form.List name="lines" rules={[{ validator: async (_, v?: LineValues[]) => {
             if (!v?.length) throw new Error(t('store.noLines'))
           } }]}>
@@ -514,6 +535,17 @@ function BatchEditor({ batchId }: { batchId?: number }) {
                               {t('store.available', { qty: `${qty(avail, decimals)} ${m?.unit ?? ''}` })}
                             </div>
                           )}
+                          {editable && filledLine(index) && (() => {
+                            const f = filledLine(index)!
+                            return (
+                              <div className={`line-hint${f.moistureUnknown || f.shortDry ? ' short' : ''}`}>
+                                {t('prod.wetHint', { dry: `${qty(f.dryQuantity, decimals)} ${m?.unit ?? ''}` })}
+                                {f.moisturePct != null && ` · ${t('prod.wetMoisture', { pct: qty(f.moisturePct, 2) })}`}
+                                {f.moistureUnknown && ` · ${t('prod.noMoisture')}`}
+                                {f.shortDry != null && ` · ${t('prod.shortDry', { qty: `${qty(f.shortDry, decimals)} ${m?.unit ?? ''}` })}`}
+                              </div>
+                            )
+                          })()}
                         </Cell>
                         <div className="line-remove">
                           {editable && fields.length > 1 && (

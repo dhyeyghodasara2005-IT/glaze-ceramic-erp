@@ -4,6 +4,7 @@ import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.production.dto.BodyBatchRequest;
 import com.ceramicerp.production.dto.BodyBatchResponse;
 import com.ceramicerp.production.dto.BodyBatchSummary;
+import com.ceramicerp.production.dto.ChargeWeights;
 import com.ceramicerp.production.dto.DischargeRequest;
 import com.ceramicerp.store.dto.CancelRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -36,6 +37,14 @@ import java.time.LocalDate;
 public class BodyBatchController {
 
     private final BodyBatchService batchService;
+    private final ChargeWeightService chargeWeightService;
+
+    /** The weight to load so a dry quantity stays exact, given the moisture of the lots it will come from. Saves nothing. */
+    @PostMapping("/wet-weights")
+    @PreAuthorize("hasAuthority('BODY_PREP_ENTRY')")
+    public ChargeWeights.Result wetWeights(@Valid @RequestBody ChargeWeights.Request req) {
+        return chargeWeightService.work(req);
+    }
 
     @GetMapping
     @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")

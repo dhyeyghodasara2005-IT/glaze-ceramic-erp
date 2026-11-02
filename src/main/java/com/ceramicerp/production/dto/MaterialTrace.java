@@ -16,11 +16,13 @@ public final class MaterialTrace {
      * A truck behind a mill charge or a design lot.
      *
      * @param quantity how much of it went into those mill charges (a design lot may have used only part of their powder)
+     * @param dryQuantity that quantity without its moisture; empty when no moisture was recorded
      * @param batches  the mill charges that took from it
      */
     public record Truck(Long lotId, String lotNo, String materialCode, String materialName, String unitCode,
                         int unitDecimals, String supplierName, String vehicleNo, LocalDate receivedOn,
-                        BigDecimal moisturePct, boolean oldStock, BigDecimal quantity, List<String> batches) {
+                        BigDecimal moisturePct, boolean oldStock, BigDecimal quantity, BigDecimal dryQuantity,
+                        List<String> batches) {
     }
 
     /** Where a truck went: the mill charges that took from it and the design lots pressed from their powder. */

@@ -13,7 +13,7 @@ public interface MaterialLotRepository extends JpaRepository<MaterialLot, Long> 
 
     /** What is left of a material in a godown, oldest first: the order it gets used in. */
     @Query("""
-            select l from MaterialLot l
+            select l from MaterialLot l left join fetch l.line
             where l.location.id = :locationId and l.material.id = :materialId and l.quantityLeft > 0
             order by l.receivedOn, l.id
             """)

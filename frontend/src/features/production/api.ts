@@ -8,6 +8,7 @@ import type {
   BodyBatchSummary,
   BodyPrepOverview,
   BodyRecipe,
+  ChargeWeights,
   CurrentShift,
   DischargeRequest,
   DocStatus,
@@ -154,6 +155,13 @@ export const useSaveBatch = () =>
       ? (await api.put<BodyBatch>(`/production/body-batches/${id}`, body)).data
       : (await api.post<BodyBatch>('/production/body-batches', body)).data,
   )
+
+/** Works out the weights to load; saves nothing, so it needs no refresh. */
+export const useChargeWeights = () =>
+  useMutation({
+    mutationFn: async (body: { plantId: number; lines: { materialId: number; locationId: number; dryQuantity: number }[] }) =>
+      (await api.post<ChargeWeights>('/production/body-batches/wet-weights', body)).data,
+  })
 
 export const useChargeBatch = () =>
   useProdMutation('body-batch', async (id: number) => (await api.post<BodyBatch>(`/production/body-batches/${id}/charge`)).data)
