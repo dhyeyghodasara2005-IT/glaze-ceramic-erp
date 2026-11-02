@@ -79,6 +79,11 @@ public class PlantService {
         p.setState(Text.trimToNull(req.state()));
         p.setPincode(Text.trimToNull(req.pincode()));
         p.setCapacitySqmPerDay(req.capacitySqmPerDay());
+        if ((req.latitude() == null) != (req.longitude() == null)) {
+            throw new BusinessException("Enter both the latitude and the longitude, or neither");
+        }
+        p.setLatitude(req.latitude());
+        p.setLongitude(req.longitude());
         if (req.active() != null) {
             p.setActive(req.active());
         }

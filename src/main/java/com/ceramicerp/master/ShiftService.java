@@ -79,7 +79,7 @@ public class ShiftService {
      * Night 20:00-08:00 at 22:00 on 22 Oct -> (Night, 22 Oct)
      * Night 20:00-08:00 at 02:00 on 23 Oct -> (Night, 22 Oct)   the night started yesterday
      */
-    static Optional<CurrentShift> findCurrent(List<Shift> shifts, LocalDateTime now) {
+    public static Optional<CurrentShift> findCurrent(List<Shift> shifts, LocalDateTime now) {
         LocalTime time = now.toLocalTime();
         LocalDate today = now.toLocalDate();
         for (Shift s : shifts) {

@@ -36,7 +36,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
 
 - **Package by feature.** Each module (`store`, `production`, `sales`, `maintenance`, `energy`, `lab`, `labour`, `costing` …) has the same
   layers: **Controller** (HTTP) → **Service** (business rules) → **Repository** (database) → **Entity** (table).
-- **The database is versioned** with Flyway: 22 migrations, from the first tables to raw material lots. Hibernate only
+- **The database is versioned** with Flyway: 23 migrations, from the first tables to the weather. Hibernate only
   validates the schema.
 - **Rules live in the database too** where two requests could race: a unique key on a generated column allows one open
   breakdown per machine; row locks keep two people from posting stock or planning a truck from the same pillar at once.
@@ -44,7 +44,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
   cancelling writes the opposite rows.
 - **Modules plug into each other through small interfaces.** The store asks every `GrnCheck` before posting a GRN, and
   the lab is one of them; global search asks every `SearchProvider`. Neither side depends on the other's code.
-- **Tests run against MySQL**, not an in-memory stand-in: 226 integration tests (JUnit 5, MockMvc) on a separate test
+- **Tests run against MySQL**, not an in-memory stand-in: 240 integration tests (JUnit 5, MockMvc) on a separate test
   database that is rebuilt on every run.
 
 ---
@@ -101,7 +101,7 @@ src/main/java/com/ceramicerp/
 ├── costing/         rates, monthly costs, cost per m² and per design
 └── search/          global search
 
-src/main/resources/db/migration/   V1 … V22 (Flyway)
+src/main/resources/db/migration/   V1 … V23 (Flyway)
 
 frontend/src/
 ├── api/  auth/  layout/  i18n/   HTTP client and types, login, sidebar and phone bar, English + Gujarati
@@ -123,4 +123,4 @@ frontend/src/
 | 7 | Owner dashboard | ✅ Done |
 | 8 | Maintenance, energy, raw-material lab tests | ✅ Done |
 | 9 | Labour and costing | ✅ Done |
-| 10 | Analytics and predictions | Started: raw material traced truck by truck, and mill charges corrected for moisture |
+| 10 | Analytics and predictions | Started: raw material traced truck by truck, mill charges corrected for moisture, weather per shift |

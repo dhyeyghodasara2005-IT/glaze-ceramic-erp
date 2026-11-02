@@ -49,5 +49,10 @@ app:
     expiration: 12h
   cors:
     allowed-origins: http://localhost:5173
+  weather:
+    # Off until a provider is chosen: open-meteo.com's free service is for non-commercial use only.
+    # A paid plan uses https://customer-api.open-meteo.com/v1/forecast with an api-key (in application-local.yml).
+    enabled: false
+    url: https://api.open-meteo.com/v1/forecast
   bootstrap:
     admin-full-name: System Administrator

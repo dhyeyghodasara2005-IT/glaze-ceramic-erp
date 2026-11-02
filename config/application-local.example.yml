@@ -14,3 +14,11 @@ app:
     # Only used once: to create the first admin when the users table is empty.
     admin-username: admin
     admin-password: CHANGE_ME
+
+# Weather per shift is off by default. Open-Meteo's free service is for non-commercial use only,
+# so a running plant needs a paid plan (or another provider).
+# app:
+#   weather:
+#     enabled: true
+#     url: https://customer-api.open-meteo.com/v1/forecast
+#     api-key: your-key

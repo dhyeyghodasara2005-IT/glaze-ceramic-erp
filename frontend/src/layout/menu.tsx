@@ -7,6 +7,7 @@ import {
   SwapOutlined,
   WarningOutlined,
   GoldOutlined,
+  SunOutlined,
   HddOutlined,
   SketchOutlined,
   TableOutlined,
@@ -183,6 +184,8 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
         path: '/production/lots', labelKey: 'menu.lots', icon: <TagOutlined />, permission: 'PRODUCTION_VIEW',
         searchType: 'lot', create: { labelKey: 'press.startDesign', permission: 'PRESS_ENTRY' },
       },
+      // Step 10c: the weather of each shift, kept beside production for later analysis.
+      { path: '/production/weather', labelKey: 'menu.weather', icon: <SunOutlined />, permission: 'PRODUCTION_VIEW' },
     ],
   },
   {

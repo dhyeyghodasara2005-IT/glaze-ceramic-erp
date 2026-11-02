@@ -17,4 +17,7 @@ public interface PlantRepository extends JpaRepository<Plant, Long> {
     boolean existsByCodeIgnoreCase(String code);
 
     boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
+
+    /** The plants whose weather can be collected. */
+    List<Plant> findByActiveTrueAndLatitudeNotNullAndLongitudeNotNull();
 }

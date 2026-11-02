@@ -1,6 +1,7 @@
 package com.ceramicerp.organization.dto;
 
 import com.ceramicerp.common.ValidationPatterns;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -37,6 +38,12 @@ public record PlantRequest(
 
         @DecimalMin("0") @Digits(integer = 10, fraction = 2)
         BigDecimal capacitySqmPerDay,
+
+        @DecimalMin("-90") @DecimalMax("90") @Digits(integer = 2, fraction = 5)
+        BigDecimal latitude,
+
+        @DecimalMin("-180") @DecimalMax("180") @Digits(integer = 3, fraction = 5)
+        BigDecimal longitude,
 
         Boolean active
 ) {

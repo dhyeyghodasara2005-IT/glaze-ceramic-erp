@@ -128,6 +128,18 @@ export default function PlantFormDrawer({ open, plant, onClose }: Props) {
             </Form.Item>
           </Col>
         </Row>
+        <Row gutter={16}>
+          <Col xs={12}>
+            <Form.Item name="latitude" label={t('plant.latitude')} extra={t('plant.locationHint')}>
+              <InputNumber min={-90} max={90} precision={5} style={{ width: '100%' }} placeholder="22.81730" inputMode="decimal" />
+            </Form.Item>
+          </Col>
+          <Col xs={12}>
+            <Form.Item name="longitude" label={t('plant.longitude')}>
+              <InputNumber min={-180} max={180} precision={5} style={{ width: '100%' }} placeholder="70.83780" inputMode="decimal" />
+            </Form.Item>
+          </Col>
+        </Row>
         <Form.Item name="active" label={t('common.status')} valuePropName="checked">
           <Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} />
         </Form.Item>

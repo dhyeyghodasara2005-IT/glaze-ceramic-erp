@@ -139,6 +139,8 @@ export interface Plant {
   state?: string
   pincode?: string
   capacitySqmPerDay?: number
+  latitude?: number
+  longitude?: number
   active: boolean
   version: number
 }
@@ -2332,6 +2334,31 @@ export interface GrnLabStatus {
   testId?: number
   testNo?: string
   verdict?: LabVerdict
+}
+
+// ---- weather (step 10c, must match weather/dto) ----
+
+export interface WeatherStatus {
+  enabled: boolean
+  hasLocation: boolean
+  stale: boolean
+  latestHour?: string
+  temperatureC?: number
+  humidityPct?: number
+  rainMm?: number
+}
+
+export interface WeatherShift {
+  prodDate: string
+  shiftId: number
+  shiftCode: string
+  shiftName: string
+  hours: number
+  temperatureAvg: number
+  temperatureMin: number
+  temperatureMax: number
+  humidityAvg: number
+  rainMm: number
 }
 
 // ---- raw material lots (step 10a, must match store/dto and production/dto/MaterialTrace) ----

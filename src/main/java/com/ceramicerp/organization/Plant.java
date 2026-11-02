@@ -50,6 +50,13 @@ public class Plant extends BaseEntity {
     @Column(precision = 12, scale = 2)
     private BigDecimal capacitySqmPerDay;
 
+    /** Where the plant is, for its weather. Both or neither. */
+    @Column(precision = 8, scale = 5)
+    private BigDecimal latitude;
+
+    @Column(precision = 8, scale = 5)
+    private BigDecimal longitude;
+
     @Column(nullable = false)
     private boolean active = true;
 }
