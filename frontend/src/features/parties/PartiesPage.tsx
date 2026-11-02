@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import { Button, Card, Input, Segmented, Select, Table, Tag, type TableColumnsType } from 'antd'
-import { CarOutlined, EditOutlined, PlusOutlined, ReconciliationOutlined, ShopOutlined, ShoppingCartOutlined } from '@ant-design/icons'
+import { CarOutlined, EditOutlined, PlusOutlined, ReconciliationOutlined, ShopOutlined, ShoppingCartOutlined, SolutionOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../components/PageHeader'
 import StatusTag from '../../components/StatusTag'
@@ -20,11 +20,12 @@ const ICONS: Record<PartyType, React.ReactNode> = {
   SUPPLIER: <ShoppingCartOutlined />,
   TRANSPORTER: <CarOutlined />,
   JOBWORK: <ReconciliationOutlined />,
+  CONTRACTOR: <SolutionOutlined />,
 }
 
 /**
  * One screen for every party type. App.tsx mounts it once per type:
- * /parties/dealers, /parties/suppliers, /parties/transporters, /parties/principals.
+ * /parties/dealers, /parties/suppliers, /parties/transporters, /parties/principals, /parties/contractors.
  */
 export default function PartiesPage({ type }: { type: PartyType }) {
   const { t } = useTranslation()

@@ -58,7 +58,11 @@ public enum Permission {
     METER_ENTRY("Energy", "Enter meter readings and the fuel used (supervisors and department in-charges)"),
 
     LAB_VIEW("Lab", "View raw-material lab tests and supplier quality"),
-    LAB_ENTRY("Lab", "Lab: test raw material when it arrives, and accept or reject it");
+    LAB_ENTRY("Lab", "Lab: test raw material when it arrives, and accept or reject it"),
+
+    LABOUR_VIEW("Labour", "View workers, attendance and the month per contractor (with rates)"),
+    LABOUR_MANAGE("Labour", "Add and change workers, their contractor and their rates"),
+    ATTENDANCE_ENTRY("Labour", "Mark attendance: supervisors sign for their section's workers");
 
     private final String group;
     private final String description;

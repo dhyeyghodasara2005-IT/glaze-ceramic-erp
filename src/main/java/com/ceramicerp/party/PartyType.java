@@ -1,7 +1,7 @@
 package com.ceramicerp.party;
 
 /**
- * The kinds of party. Each has its own screen and code prefix (DLR-0001, SUP-0001, TRN-0001, JWP-0001).
+ * The kinds of party. Each has its own screen and code prefix (DLR-0001, SUP-0001, TRN-0001, JWP-0001, LBC-0001).
  */
 public enum PartyType {
     /** Customers who buy tiles: dealers, distributors, builders, exporters. */
@@ -11,7 +11,9 @@ public enum PartyType {
     /** Truck / container transporters used for dispatch. */
     TRANSPORTER("TRN-", "transporter"),
     /** Companies whose tiles you make on jobwork: the bill for a jobwork loading slip goes to them. */
-    JOBWORK("JWP-", "jobwork principal");
+    JOBWORK("JWP-", "jobwork principal"),
+    /** Labour contractors: the workers come through them, and they are paid for them every month. */
+    CONTRACTOR("LBC-", "labour contractor");
 
     private final String codePrefix;
     private final String label;

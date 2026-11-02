@@ -61,6 +61,9 @@ import PreventivePage from './features/maintenance/PreventivePage'
 import EnergyPage from './features/energy/EnergyPage'
 import MetersPage from './features/energy/MetersPage'
 import ReadingsPage from './features/energy/ReadingsPage'
+import AttendancePage from './features/labour/AttendancePage'
+import WorkersPage from './features/labour/WorkersPage'
+import LabourMonthPage from './features/labour/LabourMonthPage'
 
 /**
  * Every page (URL) in the app. Pages inside <AppLayout> get the sidebar and top bar.
@@ -114,6 +117,7 @@ export default function App() {
         <Route path="parties/suppliers" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="SUPPLIER" type="SUPPLIER" /></RequirePermission>} />
         <Route path="parties/transporters" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="TRANSPORTER" type="TRANSPORTER" /></RequirePermission>} />
         <Route path="parties/principals" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="JOBWORK" type="JOBWORK" /></RequirePermission>} />
+        <Route path="parties/contractors" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="CONTRACTOR" type="CONTRACTOR" /></RequirePermission>} />
         <Route path="store/stock" element={<RequirePermission permission="STORE_VIEW"><StockPage /></RequirePermission>} />
         <Route path="lab/tests" element={<RequirePermission permission="LAB_VIEW"><LabPage /></RequirePermission>} />
         <Route path="masters/lab-tests" element={<RequirePermission permission="MASTER_VIEW"><LabSetupPage /></RequirePermission>} />
@@ -169,6 +173,9 @@ export default function App() {
         <Route path="maintenance/preventive" element={<RequirePermission permission="MAINTENANCE_VIEW"><PreventivePage /></RequirePermission>} />
         <Route path="energy/readings" element={<RequirePermission permission="METER_ENTRY"><ReadingsPage /></RequirePermission>} />
         <Route path="energy/use" element={<RequirePermission permission="ENERGY_VIEW"><EnergyPage /></RequirePermission>} />
+        <Route path="labour/attendance" element={<RequirePermission permission="ATTENDANCE_ENTRY"><AttendancePage /></RequirePermission>} />
+        <Route path="labour/workers" element={<RequirePermission permission="LABOUR_VIEW"><WorkersPage /></RequirePermission>} />
+        <Route path="labour/month" element={<RequirePermission permission="LABOUR_VIEW"><LabourMonthPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -49,6 +49,9 @@ import {
   ToolOutlined,
   SafetyCertificateOutlined,
   TeamOutlined,
+  IdcardOutlined,
+  CalendarOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons'
 import type { Permission } from '../api/types'
 
@@ -274,6 +277,22 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     items: [
       { path: '/energy/readings', labelKey: 'menu.meterReadings', icon: <FormOutlined />, permission: 'METER_ENTRY', mobile: true },
       { path: '/energy/use', labelKey: 'menu.energyUse', icon: <ThunderboltOutlined />, permission: 'ENERGY_VIEW' },
+    ],
+  },
+  {
+    // Step 9a: who worked, through which contractor, and what the month comes to.
+    labelKey: 'menu.labour',
+    items: [
+      { path: '/labour/attendance', labelKey: 'menu.attendance', icon: <ScheduleOutlined />, permission: 'ATTENDANCE_ENTRY', mobile: true },
+      {
+        path: '/labour/workers', labelKey: 'menu.workers', icon: <IdcardOutlined />, permission: 'LABOUR_VIEW',
+        searchType: 'worker', create: { labelKey: 'labour.newWorker', permission: 'LABOUR_MANAGE' },
+      },
+      { path: '/labour/month', labelKey: 'menu.labourMonth', icon: <CalendarOutlined />, permission: 'LABOUR_VIEW' },
+      {
+        path: '/parties/contractors', labelKey: 'menu.contractors', icon: <SolutionOutlined />, permission: 'PARTY_VIEW',
+        searchType: 'contractor', create: { labelKey: 'party.new.CONTRACTOR', permission: 'PARTY_MANAGE' },
+      },
     ],
   },
   {

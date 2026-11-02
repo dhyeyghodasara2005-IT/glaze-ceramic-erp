@@ -95,6 +95,8 @@ public record DashboardResponse(
             METER_MISSING,
             /** Trucks of raw material waiting for the lab (what = the materials, count = how many samples). */
             LAB_WAITING,
+            /** Workers with nothing marked for yesterday (what = their departments, comma-separated codes; count = how many). */
+            ATTENDANCE_MISSING,
             /** Confirmed orders need boxes that aren't in stock: pack more. */
             SHORT_FOR_ORDERS,
             /** Stock rows hold fewer boxes than the confirmed orders keep from them (broken or moved): plan again. */

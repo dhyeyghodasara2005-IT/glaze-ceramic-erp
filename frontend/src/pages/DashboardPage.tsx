@@ -330,7 +330,10 @@ function StockCard({ d }: { d: DashboardResponse }) {
 /** What needs a look today, most urgent first, each with where to go. Status colours always come with an icon. */
 function AttentionCard({ d }: { d: DashboardResponse }) {
   const { t } = useTranslation()
-  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', METER_MISSING: '/energy/readings', LAB_WAITING: '/lab/tests', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
+  const LINKS = { MACHINES_DOWN: '/maintenance/breakdowns', PM_OVERDUE: '/maintenance/preventive', METER_MISSING: '/energy/readings', LAB_WAITING: '/lab/tests', ATTENDANCE_MISSING: '/labour/attendance', SHORT_FOR_ORDERS: '/sales/loading', PLAN_TOO_FEW: '/sales/loading', PILLARS_FULL: '/fg/godowns', LOW_MATERIALS: '/store/stock' }
+  // attendance names departments by their codes: say them in the user's language
+  const whatOf = (a: DashboardResponse['attention'][number]) =>
+    a.kind === 'ATTENDANCE_MISSING' ? a.what?.split(',').map((d) => t(`labour.dept.${d}`)).join(', ') : a.what
   return (
     <FadeIn delay={0.2}>
       <section className="panel viz-card">
@@ -346,7 +349,7 @@ function AttentionCard({ d }: { d: DashboardResponse }) {
                 <li key={i} className={critical ? 'critical' : 'warning'}>
                   {critical ? <ExclamationCircleOutlined /> : <WarningOutlined />}
                   <Link to={LINKS[a.kind]}>
-                    <b>{t(`dashboard.attention.${a.kind}`, { what: a.what, count: a.count ?? 0, boxes: fmt(a.boxes), time: hoursText(a.boxes ?? 0) })}</b>
+                    <b>{t(`dashboard.attention.${a.kind}`, { what: whatOf(a), count: a.count ?? 0, boxes: fmt(a.boxes), time: hoursText(a.boxes ?? 0) })}</b>
                     <span>{t(`dashboard.attentionDo.${a.kind}`)}</span>
                   </Link>
                 </li>

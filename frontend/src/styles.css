@@ -3945,3 +3945,86 @@ body {
     display: none !important;
   }
 }
+
+/* ------------------------------------------------------------------ step 9a: labour */
+
+/* The day's totals above the sheet: how many of each, and how many still to mark. */
+.att-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.att-count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.att-count b {
+  color: var(--ink);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.att-count.none.left {
+  border-color: var(--status-warning);
+}
+/* One worker: the left edge says what the day is (with the letter on the button, never colour alone). */
+.att-row {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.att-row.present {
+  border-left-color: var(--status-good);
+}
+.att-row.half {
+  border-left-color: #4a7fc1;
+}
+.att-row.absent {
+  border-left-color: var(--status-critical);
+}
+.att-row.leave {
+  border-left-color: #9a8f88;
+}
+.att-row.changed {
+  background: #fffaf3;
+}
+.att-pick .ant-radio-button-wrapper {
+  min-width: 48px;
+  height: 40px;
+  line-height: 38px;
+  text-align: center;
+  font-weight: 700;
+}
+.att-ot {
+  width: 120px;
+}
+.att-ot input {
+  font-size: 16px; /* 16px keeps phones from zooming in on the box */
+}
+@media (max-width: 720px) {
+  .att-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .att-pick {
+    display: flex;
+  }
+  .att-pick .ant-radio-button-wrapper {
+    flex: 1;
+  }
+}
+.labour-depts {
+  margin-bottom: 20px;
+}
+.labour-contractor {
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.labour-month-card {
+  margin-bottom: 20px;
+}

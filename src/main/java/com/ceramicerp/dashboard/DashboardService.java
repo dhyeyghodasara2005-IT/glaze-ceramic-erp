@@ -13,6 +13,7 @@ import com.ceramicerp.fg.dto.FgStockRow;
 import com.ceramicerp.energy.EnergyService;
 import com.ceramicerp.energy.dto.EnergyUse;
 import com.ceramicerp.lab.LabService;
+import com.ceramicerp.labour.AttendanceService;
 import com.ceramicerp.lab.dto.LabSample;
 import com.ceramicerp.maintenance.DowntimeService;
 import com.ceramicerp.maintenance.PmTaskService;
@@ -63,6 +64,7 @@ public class DashboardService {
     private final PmTaskService pmTaskService;
     private final EnergyService energyService;
     private final LabService labService;
+    private final AttendanceService attendanceService;
 
     @Transactional(readOnly = true)
     public DashboardResponse get(Long plantId, LocalDate from, LocalDate to) {
@@ -82,6 +84,7 @@ public class DashboardService {
         boolean maintenance = may.contains(Permission.MAINTENANCE_VIEW);
         boolean energy = may.contains(Permission.ENERGY_VIEW) || may.contains(Permission.METER_ENTRY);
         boolean lab = may.contains(Permission.LAB_VIEW) || may.contains(Permission.LAB_ENTRY);
+        boolean labour = may.contains(Permission.LABOUR_VIEW) || may.contains(Permission.ATTENDANCE_ENTRY);
 
         List<Attention> attention = new ArrayList<>();
         // a machine standing still is the most urgent thing of all: it goes first
@@ -105,6 +108,14 @@ public class DashboardService {
             missing.addAll(round.dayMissing());
             if (!missing.isEmpty()) {
                 attention.add(new Attention(Attention.Kind.METER_MISSING, String.join(", ", missing), missing.size(), null));
+            }
+        }
+        if (labour) {
+            // yesterday should be fully marked by now: the cards were signed at the end of the shift
+            AttendanceService.Unmarked unmarked = attendanceService.unmarked(plantId, attendanceService.yesterday());
+            if (unmarked != null) {
+                attention.add(new Attention(Attention.Kind.ATTENDANCE_MISSING, unmarked.departments().stream()
+                        .map(Enum::name).collect(Collectors.joining(",")), unmarked.workers(), null));
             }
         }
 

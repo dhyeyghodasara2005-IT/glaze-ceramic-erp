@@ -93,6 +93,9 @@ export type Permission =
   | 'METER_ENTRY'
   | 'LAB_VIEW'
   | 'LAB_ENTRY'
+  | 'LABOUR_VIEW'
+  | 'LABOUR_MANAGE'
+  | 'ATTENDANCE_ENTRY'
 
 export interface PermissionInfo {
   code: Permission
@@ -383,7 +386,7 @@ export interface MachineRequest {
 
 // ---- parties (must match party/*.java) ----
 
-export type PartyType = 'DEALER' | 'SUPPLIER' | 'TRANSPORTER' | 'JOBWORK'
+export type PartyType = 'DEALER' | 'SUPPLIER' | 'TRANSPORTER' | 'JOBWORK' | 'CONTRACTOR'
 
 /** Parties you bill (dealers and jobwork principals): they have a credit limit. Same rule as PartyType.isCustomer(). */
 export const isCustomer = (type: PartyType) => type === 'DEALER' || type === 'JOBWORK'
@@ -1910,7 +1913,7 @@ export interface DashboardResponse {
   }
   days: { date: string; packedSqm?: number; dispatchedSqm?: number }[]
   attention: {
-    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'METER_MISSING' | 'LAB_WAITING' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
+    kind: 'MACHINES_DOWN' | 'PM_OVERDUE' | 'METER_MISSING' | 'LAB_WAITING' | 'ATTENDANCE_MISSING' | 'SHORT_FOR_ORDERS' | 'PLAN_TOO_FEW' | 'PILLARS_FULL' | 'LOW_MATERIALS'
     what?: string
     count?: number
     /** boxes short; MACHINES_DOWN: the longest minutes down; PM_OVERDUE: days overdue of the oldest */
@@ -2327,4 +2330,142 @@ export interface GrnLabStatus {
   testId?: number
   testNo?: string
   verdict?: LabVerdict
+}
+
+// ---- labour: workers and attendance (step 9a, must match labour/*.java) ----
+
+/** Where a worker works, in the order the tile moves through the plant. */
+export const DEPARTMENTS = ['BODY_PREP', 'PRESS', 'GLAZE', 'KILN', 'POLISH', 'PACKING', 'WAREHOUSE', 'STORE', 'MAINTENANCE',
+  'LAB', 'UTILITY', 'OFFICE', 'SECURITY', 'OTHER'] as const
+export type Department = (typeof DEPARTMENTS)[number]
+export type PunchMethod = 'FINGERPRINT' | 'CARD'
+export const ATTENDANCE_STATUSES = ['PRESENT', 'HALF', 'ABSENT', 'LEAVE'] as const
+export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
+
+export interface ContractorRef {
+  id: number
+  code: string
+  name: string
+}
+
+export interface Worker {
+  id: number
+  plantId: number
+  code: string
+  name: string
+  /** none = on the plant's own rolls */
+  contractor?: ContractorRef
+  department: Department
+  job?: string
+  punch: PunchMethod
+  /** the worker's number in the fingerprint machine */
+  deviceId?: string
+  dayRate?: number
+  otRate?: number
+  phone?: string
+  joinedOn?: string
+  active: boolean
+  version: number
+}
+
+export interface WorkerRequest {
+  plantId: number
+  /** empty = the next W-0001 */
+  code?: string
+  name: string
+  contractorId?: number
+  department: Department
+  job?: string
+  punch: PunchMethod
+  deviceId?: string
+  dayRate?: number
+  otRate?: number
+  phone?: string
+  joinedOn?: string
+  active?: boolean
+}
+
+export interface AttendanceMark {
+  id: number
+  status: AttendanceStatus
+  otHours: number
+  shiftId?: number
+  shiftCode?: string
+  inTime?: string
+  outTime?: string
+  source: 'CARD' | 'FINGERPRINT'
+  note?: string
+  /** who marked it: the supervisor's signature */
+  by?: string
+  at?: string
+}
+
+export interface AttendanceRow {
+  workerId: number
+  code: string
+  name: string
+  department: Department
+  job?: string
+  punch: PunchMethod
+  contractorName?: string
+  mark?: AttendanceMark
+}
+
+export interface AttendanceSheet {
+  date: string
+  department?: Department
+  shifts: { id: number; code: string; name: string }[]
+  /** the shift running now, when the sheet is today's */
+  shiftNow?: number
+  rows: AttendanceRow[]
+  counts: { workers: number; present: number; half: number; absent: number; leave: number; notMarked: number }
+}
+
+export interface AttendanceRequest {
+  plantId: number
+  date: string
+  shiftId?: number
+  /** status left out = take the mark back */
+  lines: { workerId: number; status?: AttendanceStatus; otHours?: number; note?: string }[]
+}
+
+export interface LabourWorkerMonth {
+  workerId: number
+  code: string
+  name: string
+  department: Department
+  present: number
+  half: number
+  absent: number
+  leave: number
+  manDays: number
+  otHours: number
+  dayRate?: number
+  otRate?: number
+  amount: number
+}
+
+export interface LabourContractorMonth {
+  /** none = the plant's own rolls */
+  contractorId?: number
+  name?: string
+  workers: number
+  manDays: number
+  otHours: number
+  amount: number
+  /** workers who worked but have no rate (their days aren't in the amount) */
+  unpriced: number
+  rows: LabourWorkerMonth[]
+}
+
+export interface LabourMonth {
+  month: string
+  from: string
+  /** the month's last day, or today while it runs */
+  to: string
+  contractors: LabourContractorMonth[]
+  departments: { department: Department; manDays: number }[]
+  manDays: number
+  otHours: number
+  amount: number
 }
