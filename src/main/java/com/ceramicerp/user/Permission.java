@@ -62,7 +62,10 @@ public enum Permission {
 
     LABOUR_VIEW("Labour", "View workers, attendance and the month per contractor (with rates)"),
     LABOUR_MANAGE("Labour", "Add and change workers, their contractor and their rates"),
-    ATTENDANCE_ENTRY("Labour", "Mark attendance: supervisors sign for their section's workers");
+    ATTENDANCE_ENTRY("Labour", "Mark attendance: supervisors sign for their section's workers"),
+
+    COST_VIEW("Costing", "View what a m² costs: material, energy, labour and monthly costs"),
+    COST_MANAGE("Costing", "Set the rates of gas, power and fuel, and enter monthly costs");
 
     private final String group;
     private final String description;

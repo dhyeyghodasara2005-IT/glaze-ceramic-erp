@@ -62,6 +62,8 @@ import EnergyPage from './features/energy/EnergyPage'
 import MetersPage from './features/energy/MetersPage'
 import ReadingsPage from './features/energy/ReadingsPage'
 import AttendancePage from './features/labour/AttendancePage'
+import CostSheetPage from './features/costing/CostSheetPage'
+import CostRatesPage from './features/costing/CostRatesPage'
 import WorkersPage from './features/labour/WorkersPage'
 import LabourMonthPage from './features/labour/LabourMonthPage'
 
@@ -176,6 +178,8 @@ export default function App() {
         <Route path="labour/attendance" element={<RequirePermission permission="ATTENDANCE_ENTRY"><AttendancePage /></RequirePermission>} />
         <Route path="labour/workers" element={<RequirePermission permission="LABOUR_VIEW"><WorkersPage /></RequirePermission>} />
         <Route path="labour/month" element={<RequirePermission permission="LABOUR_VIEW"><LabourMonthPage /></RequirePermission>} />
+        <Route path="costing/sheet" element={<RequirePermission permission="COST_VIEW"><CostSheetPage /></RequirePermission>} />
+        <Route path="costing/rates" element={<RequirePermission permission="COST_VIEW"><CostRatesPage /></RequirePermission>} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

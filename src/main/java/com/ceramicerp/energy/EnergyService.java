@@ -1,6 +1,7 @@
 package com.ceramicerp.energy;
 
 import com.ceramicerp.common.exception.BusinessException;
+import com.ceramicerp.energy.dto.CostableUse;
 import com.ceramicerp.energy.dto.EnergyUse;
 import com.ceramicerp.energy.dto.MeterResponse;
 import com.ceramicerp.master.MachineType;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 public class EnergyService {
 
     private static final int MAX_DAYS = 366;
+    /** The kinds with a main meter and section meters under it. */
+    private static final Set<MeterKind> SUB_METERED = Set.of(MeterKind.GAS, MeterKind.POWER);
 
     private final MeterRepository meterRepository;
     private final MeterReadingRepository readingRepository;
@@ -146,6 +150,46 @@ public class EnergyService {
      * The shift meters not read for the shift that ended last, and the once-a-day meters not read for yesterday
      * (they were due this morning).
      */
+    /**
+     * What was used in a period, for costing, without counting anything twice. A section or kiln meter counts part of
+     * what the main meter counts, so gas and power come from the main meters; only when those have no readings at all
+     * do the other meters stand in, which is said in {@code fromSections}.
+     */
+    @Transactional(readOnly = true)
+    public CostableUse costableUse(Long plantId, LocalDate from, LocalDate to) {
+        PlantAccess.require(plantId);
+        List<MeterReading> readings = readingRepository.usedBetween(plantId, from, to).stream()
+                .filter(r -> r.getMeter().getKind() != MeterKind.RUN_HOURS)   // the DG set's cost is its diesel
+                .toList();
+        Set<MeterKind> withMainReadings = readings.stream().filter(r -> r.getMeter().isMain())
+                .map(r -> r.getMeter().getKind()).collect(Collectors.toSet());
+        Set<MeterKind> fromSections = readings.stream().map(r -> r.getMeter().getKind())
+                .filter(k -> SUB_METERED.contains(k) && !withMainReadings.contains(k))
+                .collect(Collectors.toSet());
+        List<CostableUse.Use> uses = readings.stream()
+                .filter(r -> !withMainReadings.contains(r.getMeter().getKind()) || r.getMeter().isMain())
+                .map(r -> new CostableUse.Use(r.getMeter().getKind(), r.getMeter().getUnit(), r.getReadOn(), r.getUsed()))
+                .toList();
+
+        // readings that should be there and aren't: the figure is too low by that much
+        List<Meter> meters = meterRepository.findByPlantIdOrderBySortOrderAscCodeAsc(plantId);
+        Set<MeterKind> hasMainMeter = meters.stream().filter(m -> m.isActive() && m.isMain()).map(Meter::getKind)
+                .collect(Collectors.toSet());
+        Map<Long, Long> counted = readings.stream().collect(Collectors.groupingBy(r -> r.getMeter().getId(), Collectors.counting()));
+        Rounds.Slot last = rounds.lastFinished();
+        LocalDate today = rounds.today();
+        List<Shift> shifts = rounds.activeShifts();
+        Map<MeterKind, Integer> missing = new EnumMap<>(MeterKind.class);
+        for (Meter m : meters) {
+            boolean counts = !hasMainMeter.contains(m.getKind()) || m.isMain();
+            if (m.isActive() && counts && m.getKind().isEveryRound() && m.getKind() != MeterKind.RUN_HOURS) {
+                int gap = expected(m, inUseSince(m), from, to, last, today, shifts) - counted.getOrDefault(m.getId(), 0L).intValue();
+                missing.merge(m.getKind(), Math.max(gap, 0), Integer::sum);
+            }
+        }
+        return new CostableUse(uses, fromSections, missing);
+    }
+
     private EnergyUse.LastRound lastRound(Long plantId, List<Meter> meters, Rounds.Slot last, LocalDate today) {
         Set<Long> readForShift = last.shift() == null ? Set.of()
                 : readingRepository.inRound(plantId, last.date(), last.shift().getId()).stream()

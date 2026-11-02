@@ -52,6 +52,8 @@ import {
   IdcardOutlined,
   CalendarOutlined,
   SolutionOutlined,
+  CalculatorOutlined,
+  PercentageOutlined,
 } from '@ant-design/icons'
 import type { Permission } from '../api/types'
 
@@ -292,6 +294,17 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
       {
         path: '/parties/contractors', labelKey: 'menu.contractors', icon: <SolutionOutlined />, permission: 'PARTY_VIEW',
         searchType: 'contractor', create: { labelKey: 'party.new.CONTRACTOR', permission: 'PARTY_MANAGE' },
+      },
+    ],
+  },
+  {
+    // Step 9b: what a m² costs.
+    labelKey: 'menu.costing',
+    items: [
+      { path: '/costing/sheet', labelKey: 'menu.costSheet', icon: <CalculatorOutlined />, permission: 'COST_VIEW' },
+      {
+        path: '/costing/rates', labelKey: 'menu.costRates', icon: <PercentageOutlined />, permission: 'COST_VIEW',
+        create: { labelKey: 'costing.newRate', permission: 'COST_MANAGE' },
       },
     ],
   },

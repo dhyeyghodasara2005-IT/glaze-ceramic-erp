@@ -2,10 +2,10 @@
 
 **Glaze** is an ERP for ceramic tile manufacturing, built first for a glazed vitrified tile (GVT) plant in Morbi,
 Gujarat, that makes 600×1200 mm tiles. The plant ran on Tally, Excel and paper registers; Glaze brings the store,
-production, finished goods, dispatch, maintenance, energy, the lab and labour into one system that works on office PCs and on
+production, finished goods, dispatch, maintenance, energy, the lab, labour and costing into one system that works on office PCs and on
 supervisors' phones, in English and Gujarati.
 
-**Status:** ongoing. Steps 1 to 8 are done and step 9 (labour and costing) is under way (see the roadmap below).
+**Status:** ongoing. Steps 1 to 8 are done and step 9 (labour and costing) is nearly done (see the roadmap below).
 
 **Stack:** Java 17 · Spring Boot 3.5 · Spring Security (JWT) · Spring Data JPA / Hibernate · MySQL · Flyway ·
 React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
@@ -16,7 +16,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
 
 | Area | What it covers |
 |---|---|
-| **Organisation & access** | Companies, plants, users and roles; 42 permissions; every user sees only their plants. Starter roles for each job (store keeper, press supervisor, lab chemist, labour office …) |
+| **Organisation & access** | Companies, plants, users and roles; 44 permissions; every user sees only their plants. Starter roles for each job (store keeper, press supervisor, lab chemist, labour office, accounts …) |
 | **Masters** | Sizes, finishes, categories, grades, designs, materials, machines and lines, dealers, suppliers, transporters, jobwork principals, labour contractors |
 | **Raw-material store** | Godowns, GRNs, issues and adjustments; stock and ledger at weighted average cost |
 | **Production** | Shifts, body recipes, ball mill charges, slip tests, spray dryer runs, silos (powder traced oldest first back to its batches), design lots, press, glaze, kiln, quality checks, polishing, sorting and packing by grade, shade and caliber |
@@ -27,15 +27,16 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
 | **Energy** | Gas and power meters (main and per section), coal, LPG and DG diesel; reading rounds on the phone; use per m² fired and packed |
 | **Lab** | Raw-material tests at the GRN: tests and ranges per material, the GRN waits for the lab, rejected material never enters stock, supplier rejection % |
 | **Labour** | Workers under their labour contractors, by department; daily attendance marked by supervisors from signed cards (present, half day, absent, leave, overtime); the month per contractor at each worker's rates |
+| **Costing** | Fuel and power rates with dates, monthly costs, and the cost per m² and per box: store issues, energy at each day's rate, labour and monthly costs, without counting anything twice, and saying when a figure is too low |
 | **Search** | Ctrl+K across every module: document numbers, designs, parties, materials |
 
 ---
 
 ## How it is built
 
-- **Package by feature.** Each module (`store`, `production`, `sales`, `maintenance`, `energy`, `lab`, `labour` …) has the same
+- **Package by feature.** Each module (`store`, `production`, `sales`, `maintenance`, `energy`, `lab`, `labour`, `costing` …) has the same
   layers: **Controller** (HTTP) → **Service** (business rules) → **Repository** (database) → **Entity** (table).
-- **The database is versioned** with Flyway: 20 migrations, from the first tables to labour. Hibernate only
+- **The database is versioned** with Flyway: 21 migrations, from the first tables to costing. Hibernate only
   validates the schema.
 - **Rules live in the database too** where two requests could race: a unique key on a generated column allows one open
   breakdown per machine; row locks keep two people from posting stock or planning a truck from the same pillar at once.
@@ -43,7 +44,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
   cancelling writes the opposite rows.
 - **Modules plug into each other through small interfaces.** The store asks every `GrnCheck` before posting a GRN, and
   the lab is one of them; global search asks every `SearchProvider`. Neither side depends on the other's code.
-- **Tests run against MySQL**, not an in-memory stand-in: 187 integration tests (JUnit 5, MockMvc) on a separate test
+- **Tests run against MySQL**, not an in-memory stand-in: 192 integration tests (JUnit 5, MockMvc) on a separate test
   database that is rebuilt on every run.
 
 ---
@@ -97,9 +98,10 @@ src/main/java/com/ceramicerp/
 ├── energy/          meters, reading rounds, energy use
 ├── lab/             raw-material lab tests
 ├── labour/          workers, attendance, the month per contractor
+├── costing/         rates, monthly costs, the cost per m²
 └── search/          global search
 
-src/main/resources/db/migration/   V1 … V20 (Flyway)
+src/main/resources/db/migration/   V1 … V21 (Flyway)
 
 frontend/src/
 ├── api/  auth/  layout/  i18n/   HTTP client and types, login, sidebar and phone bar, English + Gujarati
@@ -120,5 +122,5 @@ frontend/src/
 | 6 | Smart put-away, sales orders from loading slips, loading and dispatch | ✅ Done (invoicing and Tally sync next) |
 | 7 | Owner dashboard | ✅ Done |
 | 8 | Maintenance, energy, raw-material lab tests | ✅ Done |
-| 9 | Labour and costing | In progress (workers and attendance done; cost per m² next) |
+| 9 | Labour and costing | In progress (workers, attendance and cost per m² done; cost per design next) |
 | 10 | Analytics and predictions | Planned |

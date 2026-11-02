@@ -165,8 +165,8 @@ public class AttendanceService {
     }
 
     /**
-     * A month per contractor: man-days, overtime, and what they come to at each worker's rates (today's rates: rates
-     * that change during a month come with step 9b).
+     * A month per contractor: man-days, overtime, and what they come to at each worker's rates (today's rates: dated
+     * rates wait for how contractors are really paid, sheet F, question 30).
      *
      * @param month null = this month
      */
@@ -224,7 +224,7 @@ public class AttendanceService {
     // ------------------------------------------------------------------ helpers
 
     /** The production date running now: the night shift after midnight still belongs to yesterday. */
-    LocalDate today() {
+    public LocalDate today() {
         LocalDateTime now = LocalDateTime.now(PLANT_ZONE);
         return shiftService.current(now).map(ShiftService.CurrentShift::prodDate).orElse(now.toLocalDate());
     }

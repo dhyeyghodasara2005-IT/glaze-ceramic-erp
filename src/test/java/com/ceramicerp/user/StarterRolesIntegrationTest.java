@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** V9, V10, V11, V14-V16 and V18-V20 seed one ready-made role per job. They must be ordinary, editable roles - and never touch the user's own. */
+/** V9, V10, V11, V14-V16 and V18-V21 seed one ready-made role per job. They must be ordinary, editable roles - and never touch the user's own. */
 class StarterRolesIntegrationTest extends IntegrationTestBase {
 
     @Autowired
@@ -27,6 +27,11 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
     @Test
     void oneStarterRolePerJobIsReady() throws Exception {
         String admin = adminToken();
+        // V21: money stays with accounts
+        assertThat(permissionsOf(admin, "Accounts")).containsExactlyInAnyOrder("COST_VIEW", "COST_MANAGE", "STORE_VIEW",
+                "ENERGY_VIEW", "LABOUR_VIEW");
+        assertThat(permissionsOf(admin, "Production manager")).doesNotContain("COST_VIEW", "COST_MANAGE");
+        assertThat(permissionsOf(admin, "Viewer (read only)")).doesNotContain("COST_VIEW");
         // V20: the labour office keeps the workers; whoever runs a section also signs for its workers' attendance
         assertThat(permissionsOf(admin, "Labour office")).containsExactlyInAnyOrder("LABOUR_VIEW", "LABOUR_MANAGE",
                 "ATTENDANCE_ENTRY", "PARTY_VIEW");

@@ -4028,3 +4028,44 @@ body {
 .labour-month-card {
   margin-bottom: 20px;
 }
+
+/* ------------------------------------------------------------------ step 9b: costing */
+
+.cost-trend {
+  margin-bottom: 20px;
+}
+.cost-monthly-hint {
+  margin: 0 0 14px;
+}
+.cost-monthly {
+  display: grid;
+  gap: 14px;
+}
+.cost-monthly-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  align-items: center;
+  gap: 6px 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.cost-monthly-row input {
+  font-size: 16px; /* 16px keeps phones from zooming in on the box */
+}
+.cost-copy {
+  grid-column: 2;
+  justify-self: end;
+  padding: 0;
+}
+.cost-note {
+  grid-column: 1 / -1;
+}
+@media (max-width: 575px) {
+  .cost-monthly-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cost-copy {
+    grid-column: 1;
+    justify-self: start;
+  }
+}

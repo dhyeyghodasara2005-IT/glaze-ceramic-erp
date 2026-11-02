@@ -96,6 +96,8 @@ export type Permission =
   | 'LABOUR_VIEW'
   | 'LABOUR_MANAGE'
   | 'ATTENDANCE_ENTRY'
+  | 'COST_VIEW'
+  | 'COST_MANAGE'
 
 export interface PermissionInfo {
   code: Permission
@@ -2468,4 +2470,93 @@ export interface LabourMonth {
   manDays: number
   otHours: number
   amount: number
+}
+
+// ---- costing: what a m² costs (step 9b, must match costing/*.java) ----
+
+export const MONTHLY_COST_HEADS = ['POWER_FIXED', 'GAS_FIXED', 'STAFF_SALARY', 'REPAIRS_OUTSIDE', 'ADMIN', 'INTEREST', 'DEPRECIATION', 'OTHER'] as const
+export type MonthlyCostHead = (typeof MONTHLY_COST_HEADS)[number]
+export const COST_SECTIONS = ['MATERIAL', 'ENERGY', 'LABOUR', 'MONTHLY'] as const
+export type CostSection = (typeof COST_SECTIONS)[number]
+
+export interface CostLine {
+  section: CostSection
+  /** the material group, fuel, CONTRACT / OWN_ROLLS, or the monthly cost head */
+  code: string
+  /** the material group's name */
+  name?: string
+  /** energy used, or man-days */
+  quantity?: number
+  unit?: MeterUnit
+  /** the average rate of the priced part (energy) */
+  rate?: number
+  amount: number
+  perSqm?: number
+  sharePct?: number
+  /** energy used on days without a rate: not in the amount */
+  unpricedQuantity?: number
+  /** workers without a rate: not in the amount */
+  unpricedWorkers?: number
+  /** meter readings that should be there and aren't: the amount is low */
+  missingReadings?: number
+  /** the main meter wasn't read, so the section meters stand in */
+  fromSections?: boolean
+}
+
+export interface CostSheet {
+  month: string
+  from: string
+  to: string
+  /** the month isn't over: its monthly costs count in full against part of its production */
+  running: boolean
+  sqmPacked: number
+  boxesPacked: number
+  total: number
+  perSqm?: number
+  perBox?: number
+  lines: CostLine[]
+  /** fuel issued from the store: shown, not added */
+  fuelInStore?: number
+}
+
+export interface CostTrend {
+  month: string
+  total: number
+  sqmPacked: number
+  perSqm?: number
+}
+
+export interface CostRate {
+  id: number
+  kind: MeterKind
+  unit: MeterUnit
+  validFrom: string
+  rate: number
+  note?: string
+  by?: string
+}
+
+export interface CostRateRequest {
+  plantId: number
+  kind: MeterKind
+  unit: MeterUnit
+  validFrom: string
+  rate: number
+  note?: string
+}
+
+export interface MonthlyCostRow {
+  head: MonthlyCostHead
+  amount?: number
+  note?: string
+  by?: string
+  /** the month before's amount, to copy when it stays the same */
+  lastMonth?: number
+}
+
+export interface MonthlyCostRequest {
+  plantId: number
+  month: string
+  /** amount left out = this head has no cost this month */
+  lines: { head: MonthlyCostHead; amount?: number; note?: string }[]
 }
