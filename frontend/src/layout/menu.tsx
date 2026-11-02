@@ -302,6 +302,7 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     labelKey: 'menu.costing',
     items: [
       { path: '/costing/sheet', labelKey: 'menu.costSheet', icon: <CalculatorOutlined />, permission: 'COST_VIEW' },
+      { path: '/costing/designs', labelKey: 'menu.costDesigns', icon: <PictureOutlined />, permission: 'COST_VIEW' },
       {
         path: '/costing/rates', labelKey: 'menu.costRates', icon: <PercentageOutlined />, permission: 'COST_VIEW',
         create: { labelKey: 'costing.newRate', permission: 'COST_MANAGE' },

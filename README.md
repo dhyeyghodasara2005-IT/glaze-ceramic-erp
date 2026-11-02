@@ -5,7 +5,7 @@ Gujarat, that makes 600×1200 mm tiles. The plant ran on Tally, Excel and paper 
 production, finished goods, dispatch, maintenance, energy, the lab, labour and costing into one system that works on office PCs and on
 supervisors' phones, in English and Gujarati.
 
-**Status:** ongoing. Steps 1 to 8 are done and step 9 (labour and costing) is nearly done (see the roadmap below).
+**Status:** ongoing. Steps 1 to 9 are done (see the roadmap below); invoicing, Tally sync and analytics are planned next.
 
 **Stack:** Java 17 · Spring Boot 3.5 · Spring Security (JWT) · Spring Data JPA / Hibernate · MySQL · Flyway ·
 React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
@@ -27,7 +27,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
 | **Energy** | Gas and power meters (main and per section), coal, LPG and DG diesel; reading rounds on the phone; use per m² fired and packed |
 | **Lab** | Raw-material tests at the GRN: tests and ranges per material, the GRN waits for the lab, rejected material never enters stock, supplier rejection % |
 | **Labour** | Workers under their labour contractors, by department; daily attendance marked by supervisors from signed cards (present, half day, absent, leave, overtime); the month per contractor at each worker's rates |
-| **Costing** | Fuel and power rates with dates, monthly costs, and the cost per m² and per box: store issues, energy at each day's rate, labour and monthly costs, without counting anything twice, and saying when a figure is too low |
+| **Costing** | Fuel and power rates with dates, monthly costs, and the cost per m² and per box: store issues, energy at each day's rate, labour and monthly costs, without counting anything twice, and saying when a figure is too low. The month's cost shared out per design by what each used (powder, glaze, ink, boxes) |
 | **Search** | Ctrl+K across every module: document numbers, designs, parties, materials |
 
 ---
@@ -44,7 +44,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
   cancelling writes the opposite rows.
 - **Modules plug into each other through small interfaces.** The store asks every `GrnCheck` before posting a GRN, and
   the lab is one of them; global search asks every `SearchProvider`. Neither side depends on the other's code.
-- **Tests run against MySQL**, not an in-memory stand-in: 192 integration tests (JUnit 5, MockMvc) on a separate test
+- **Tests run against MySQL**, not an in-memory stand-in: 197 integration tests (JUnit 5, MockMvc) on a separate test
   database that is rebuilt on every run.
 
 ---
@@ -98,7 +98,7 @@ src/main/java/com/ceramicerp/
 ├── energy/          meters, reading rounds, energy use
 ├── lab/             raw-material lab tests
 ├── labour/          workers, attendance, the month per contractor
-├── costing/         rates, monthly costs, the cost per m²
+├── costing/         rates, monthly costs, cost per m² and per design
 └── search/          global search
 
 src/main/resources/db/migration/   V1 … V21 (Flyway)
@@ -122,5 +122,5 @@ frontend/src/
 | 6 | Smart put-away, sales orders from loading slips, loading and dispatch | ✅ Done (invoicing and Tally sync next) |
 | 7 | Owner dashboard | ✅ Done |
 | 8 | Maintenance, energy, raw-material lab tests | ✅ Done |
-| 9 | Labour and costing | In progress (workers, attendance and cost per m² done; cost per design next) |
+| 9 | Labour and costing | ✅ Done |
 | 10 | Analytics and predictions | Planned |

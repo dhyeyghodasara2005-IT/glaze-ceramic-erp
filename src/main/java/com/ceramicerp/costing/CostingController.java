@@ -4,6 +4,7 @@ import com.ceramicerp.costing.dto.CostRateRequest;
 import com.ceramicerp.costing.dto.CostRateResponse;
 import com.ceramicerp.costing.dto.CostSheet;
 import com.ceramicerp.costing.dto.CostTrend;
+import com.ceramicerp.costing.dto.DesignCosts;
 import com.ceramicerp.costing.dto.MonthlyCostRequest;
 import com.ceramicerp.costing.dto.MonthlyCostRow;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,6 +36,7 @@ public class CostingController {
 
     private final CostSheetService sheetService;
     private final CostRateService rateService;
+    private final DesignCostService designCostService;
 
     /** month as 2026-10 (default: this month) */
     @GetMapping("/sheet")
@@ -42,6 +44,14 @@ public class CostingController {
     public CostSheet sheet(@RequestParam Long plantId,
                            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
         return sheetService.sheet(plantId, month);
+    }
+
+    /** The same month, shared out per design. */
+    @GetMapping("/designs")
+    @PreAuthorize("hasAuthority('COST_VIEW')")
+    public DesignCosts designs(@RequestParam Long plantId,
+                               @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+        return designCostService.designs(plantId, month);
     }
 
     @GetMapping("/trend")

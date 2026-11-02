@@ -1,5 +1,6 @@
 package com.ceramicerp.costing;
 
+import com.ceramicerp.production.LineStage;
 import com.ceramicerp.store.DocStatus;
 import com.ceramicerp.store.StoreDocType;
 import jakarta.persistence.EntityManager;
@@ -33,6 +34,62 @@ class CostQueries {
                 .setParameter("posted", DocStatus.POSTED).setParameter("from", from).setParameter("to", to)
                 .getResultList().stream()
                 .map(r -> new Issued((String) r[0], (String) r[1], (BigDecimal) r[2]))
+                .toList();
+    }
+
+    record PackedDesign(Long designId, String code, String name, long boxes, BigDecimal sqm) {
+    }
+
+    /** Boxes and m² packed per design. */
+    List<PackedDesign> packedByDesign(Long plantId, LocalDate from, LocalDate to) {
+        return em.createQuery("""
+                        select d.id, d.code, d.name, sum(l.boxes), sum(l.boxes * s.sqmPerBox)
+                        from PackEntryLine l join l.entry e join e.lot lot join lot.design d join d.tileSize s
+                        where e.plant.id = :plantId and e.status = :posted and e.prodDate between :from and :to
+                        group by d.id, d.code, d.name
+                        """, Object[].class)
+                .setParameter("plantId", plantId).setParameter("posted", DocStatus.POSTED)
+                .setParameter("from", from).setParameter("to", to)
+                .getResultList().stream()
+                .map(r -> new PackedDesign((Long) r[0], (String) r[1], (String) r[2], ((Number) r[3]).longValue(), (BigDecimal) r[4]))
+                .toList();
+    }
+
+    record PressedDesign(Long designId, String code, String name, BigDecimal powderTon) {
+    }
+
+    /** Tonnes of powder pressed per design. */
+    List<PressedDesign> pressedByDesign(Long plantId, LocalDate from, LocalDate to) {
+        return em.createQuery("""
+                        select d.id, d.code, d.name, sum(e.powderTon)
+                        from PressEntry e join e.lot lot join lot.design d
+                        where e.plant.id = :plantId and e.status = :posted and e.prodDate between :from and :to
+                        group by d.id, d.code, d.name
+                        """, Object[].class)
+                .setParameter("plantId", plantId).setParameter("posted", DocStatus.POSTED)
+                .setParameter("from", from).setParameter("to", to)
+                .getResultList().stream()
+                .map(r -> new PressedDesign((Long) r[0], (String) r[1], (String) r[2], (BigDecimal) r[3]))
+                .toList();
+    }
+
+    record GlazeEntry(Long designId, String code, String name, int tilesIn, BigDecimal engobeGpt, BigDecimal glazeGpt,
+                      BigDecimal inkLitres) {
+    }
+
+    /** Each posted glaze-line entry: what it put on the tiles of which design. */
+    List<GlazeEntry> glazeEntries(Long plantId, LocalDate from, LocalDate to) {
+        return em.createQuery("""
+                        select d.id, d.code, d.name, e.tilesIn, e.engobeGpt, e.glazeGpt, e.inkLitres
+                        from LineEntry e join e.lot lot join lot.design d
+                        where e.plant.id = :plantId and e.status = :posted and e.stage = :glaze
+                          and e.prodDate between :from and :to
+                        """, Object[].class)
+                .setParameter("plantId", plantId).setParameter("posted", DocStatus.POSTED)
+                .setParameter("glaze", LineStage.GLAZE).setParameter("from", from).setParameter("to", to)
+                .getResultList().stream()
+                .map(r -> new GlazeEntry((Long) r[0], (String) r[1], (String) r[2], (Integer) r[3], (BigDecimal) r[4],
+                        (BigDecimal) r[5], (BigDecimal) r[6]))
                 .toList();
     }
 

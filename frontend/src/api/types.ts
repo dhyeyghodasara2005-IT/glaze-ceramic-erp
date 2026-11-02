@@ -2560,3 +2560,40 @@ export interface MonthlyCostRequest {
   /** amount left out = this head has no cost this month */
   lines: { head: MonthlyCostHead; amount?: number; note?: string }[]
 }
+
+export interface DesignCostRow {
+  designId: number
+  code: string
+  name: string
+  sqm: number
+  boxes: number
+  body: number
+  glaze: number
+  ink: number
+  packing: number
+  /** chemicals, spares and any other material group */
+  otherMaterial: number
+  energy: number
+  labour: number
+  monthly: number
+  total: number
+  /** none when nothing of it was packed this month */
+  perSqm?: number
+  perBox?: number
+}
+
+export interface DesignCosts {
+  month: string
+  from: string
+  to: string
+  running: boolean
+  total: number
+  /** cost nothing could share out, because nothing was packed or pressed */
+  unshared: number
+  /** the plant's cost per m², to compare a design with */
+  perSqm?: number
+  designs: DesignCostRow[]
+  /** material groups with no usage recorded in the month, shared by m² instead */
+  sharedByArea: string[]
+  glazeEntriesWithoutUsage: number
+}

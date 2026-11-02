@@ -1,6 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../api/client'
-import type { CostRate, CostRateRequest, CostSheet, CostTrend, MonthlyCostRequest, MonthlyCostRow } from '../../api/types'
+import type { CostRate, CostRateRequest, CostSheet, CostTrend, DesignCosts, MonthlyCostRequest, MonthlyCostRow } from '../../api/types'
 
 // Step 9b: /api/costing - the month's cost per m², fuel rates and monthly costs
 
@@ -9,6 +9,16 @@ export function useCostSheet(params: { plantId: number; month: string } | null) 
   return useQuery({
     queryKey: ['cost-sheet', params],
     queryFn: async () => (await api.get<CostSheet>('/costing/sheet', { params })).data,
+    enabled: params !== null,
+    placeholderData: keepPreviousData,
+  })
+}
+
+/** The same month, shared out per design. */
+export function useDesignCosts(params: { plantId: number; month: string } | null) {
+  return useQuery({
+    queryKey: ['design-costs', params],
+    queryFn: async () => (await api.get<DesignCosts>('/costing/designs', { params })).data,
     enabled: params !== null,
     placeholderData: keepPreviousData,
   })
@@ -33,7 +43,7 @@ export function useCostRates(plantId?: number) {
 function useRefreshCosts() {
   const queryClient = useQueryClient()
   return () => {
-    for (const key of ['cost-rates', 'cost-sheet', 'cost-trend', 'monthly-costs']) queryClient.invalidateQueries({ queryKey: [key] })
+    for (const key of ['cost-rates', 'cost-sheet', 'cost-trend', 'monthly-costs', 'design-costs']) queryClient.invalidateQueries({ queryKey: [key] })
   }
 }
 
