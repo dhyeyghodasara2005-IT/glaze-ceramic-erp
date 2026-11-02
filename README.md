@@ -36,7 +36,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
 
 - **Package by feature.** Each module (`store`, `production`, `sales`, `maintenance`, `energy`, `lab`, `labour`, `costing` …) has the same
   layers: **Controller** (HTTP) → **Service** (business rules) → **Repository** (database) → **Entity** (table).
-- **The database is versioned** with Flyway: 23 migrations, from the first tables to the weather. Hibernate only
+- **The database is versioned** with Flyway: 23 migrations. Hibernate only
   validates the schema.
 - **Rules live in the database too** where two requests could race: a unique key on a generated column allows one open
   breakdown per machine; row locks keep two people from posting stock or planning a truck from the same pillar at once.
@@ -44,7 +44,7 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
   cancelling writes the opposite rows.
 - **Modules plug into each other through small interfaces.** The store asks every `GrnCheck` before posting a GRN, and
   the lab is one of them; global search asks every `SearchProvider`. Neither side depends on the other's code.
-- **Tests run against MySQL**, not an in-memory stand-in: 240 integration tests (JUnit 5, MockMvc) on a separate test
+- **Tests run against MySQL**, not an in-memory stand-in: 251 integration tests (JUnit 5, MockMvc) on a separate test
   database that is rebuilt on every run.
 
 ---
@@ -78,6 +78,26 @@ React 19 · TypeScript · Vite · Ant Design 6 · TanStack Query · i18next
    ./mvnw test
    cd frontend && npm run typecheck
    ```
+
+---
+
+## Run it at the plant
+
+The plant's server needs only **Java 17 and MySQL**. The whole app, screens included, is one file.
+
+1. **Build it** (on a computer with Node):
+   ```bash
+   ./mvnw -Prelease clean package
+   ```
+2. **Put on the server:** `target/glaze.jar`, and beside it `config/application-local.yml` with real passwords. It refuses to start with
+   the template's `CHANGE_ME` values.
+3. **Start it** from that folder:
+   ```bash
+   java -jar glaze.jar --spring.profiles.active=prod
+   ```
+   Open `http://<server address>:8080` on any PC or phone on the factory network. Logs go to `logs/glaze.log`.
+
+To upgrade, replace the jar and restart. The database upgrades itself on start, and every browser picks up the new screens.
 
 ---
 
@@ -124,3 +144,4 @@ frontend/src/
 | 8 | Maintenance, energy, raw-material lab tests | ✅ Done |
 | 9 | Labour and costing | ✅ Done |
 | 10 | Analytics and predictions | Started: raw material traced truck by truck, mill charges corrected for moisture, weather per shift |
+| 11 | Going live | Started: the app as one file with production settings |

@@ -41,3 +41,6 @@ config/application-local.yml
 
 ### Project documents (learning guide, testing guide, plans): kept on this laptop only ###
 docs/
+
+### Logs of a local production run
+logs/

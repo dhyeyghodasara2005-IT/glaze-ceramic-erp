@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,7 +29,7 @@ import java.util.List;
 
 /**
  * Who may call what.
- * - A few URLs are public (login, health check, API docs).
+ * - A few URLs are public (login, health check, API docs), and so are the React app's own files.
  * - Everything else needs a valid JWT token.
  * - Fine-grained checks (which permission) are on each controller method via @PreAuthorize.
  */
@@ -60,6 +61,9 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS).permitAll()
+                        .requestMatchers("/api/**", "/actuator/**").authenticated()
+                        // The React app's own files hold no data, and the login page must load before anyone has logged in.
+                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) ->

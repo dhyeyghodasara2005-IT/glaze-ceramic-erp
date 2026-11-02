@@ -133,4 +133,61 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<!-- One file for the plant: ./mvnw -Prelease clean package   makes target/glaze.jar with the React app inside. -->
+		<profile>
+			<id>release</id>
+			<build>
+				<finalName>glaze</finalName>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>3.5.0</version>
+						<configuration>
+							<executable>npm</executable>
+							<workingDirectory>${project.basedir}/frontend</workingDirectory>
+						</configuration>
+						<executions>
+							<execution>
+								<id>frontend-install</id>
+								<phase>generate-resources</phase>
+								<goals><goal>exec</goal></goals>
+								<configuration>
+									<arguments><argument>install</argument><argument>--no-audit</argument><argument>--no-fund</argument></arguments>
+								</configuration>
+							</execution>
+							<execution>
+								<id>frontend-build</id>
+								<phase>generate-resources</phase>
+								<goals><goal>exec</goal></goals>
+								<configuration>
+									<arguments><argument>run</argument><argument>build</argument></arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-resources-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>copy-frontend</id>
+								<phase>process-resources</phase>
+								<goals><goal>copy-resources</goal></goals>
+								<configuration>
+									<outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+									<resources>
+										<resource>
+											<directory>${project.basedir}/frontend/dist</directory>
+										</resource>
+									</resources>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>
