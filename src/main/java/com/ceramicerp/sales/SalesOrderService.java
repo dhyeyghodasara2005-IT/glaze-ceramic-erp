@@ -227,7 +227,9 @@ public class SalesOrderService {
                 : requireParty(req.transporterId(), PartyType.TRANSPORTER, order.getTransporter()));
         order.setSlipBoxes(req.slipBoxes());
         order.setSlipWeightKg(req.slipWeightKg());
-        order.setRemarks(Text.trimToNull(req.remarks()));
+        // Jobwork goods are sold to the principal: who buys them next, and where, isn't ours to keep. Free text is the
+        // one way it could slip in, so a jobwork order has none. V24 holds the database to the same rule.
+        order.setRemarks(req.orderType() == SalesOrderType.JOBWORK ? null : Text.trimToNull(req.remarks()));
 
         // Designs and grades already on this draft may stay even if they have been made inactive since.
         Set<Long> designsBefore = order.getLines().stream().map(SalesOrderLine::getDesign).filter(Objects::nonNull)

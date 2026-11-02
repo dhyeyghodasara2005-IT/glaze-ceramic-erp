@@ -1022,6 +1022,7 @@ export const en = {
     transporter: 'Transporter',
     transporterHint: 'Only when the factory arranges the truck. Truck no. and driver are noted at loading.',
     narration: 'Narration',
+    jobworkNote: 'The goods are sold to the principal. Glaze keeps no end customer or selling place for jobwork.',
     slipBoxes: 'Total boxes (slip)',
     slipWeight: 'Total weight (slip)',
     slipTotalsHint: 'As printed at the bottom of the slip: Glaze checks its own totals against them',

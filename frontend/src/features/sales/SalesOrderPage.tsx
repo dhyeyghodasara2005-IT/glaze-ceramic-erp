@@ -494,6 +494,7 @@ function OrderEditor({ orderId }: { orderId?: number }) {
               }}
             />
           </Form.Item>
+          {orderType === 'JOBWORK' && <Alert className="doc-alert" type="info" showIcon title={t('sales.jobworkNote')} />}
           <div className="sales-head">
             <Form.Item name="slipNo" label={t('sales.slipNo')} rules={[required]} normalize={(v?: string) => v?.toUpperCase()}>
               <Input maxLength={30} inputMode="numeric" />
@@ -522,9 +523,11 @@ function OrderEditor({ orderId }: { orderId?: number }) {
             <Form.Item name="transporterId" label={t('sales.transporter')} tooltip={t('sales.transporterHint')}>
               <Select options={transporterOptions} loading={transporters.isLoading} allowClear showSearch={{ optionFilterProp: 'label' }} />
             </Form.Item>
-            <Form.Item name="remarks" label={t('sales.narration')}>
-              <Input maxLength={500} />
-            </Form.Item>
+            {orderType !== 'JOBWORK' && (
+              <Form.Item name="remarks" label={t('sales.narration')}>
+                <Input maxLength={500} />
+              </Form.Item>
+            )}
           </div>
           <div className="sales-head">
             <Form.Item name="slipBoxes" label={t('sales.slipBoxes')} tooltip={t('sales.slipTotalsHint')}>

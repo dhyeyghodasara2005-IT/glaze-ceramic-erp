@@ -62,7 +62,8 @@ export default function PackingListPage() {
         <div>
           <div className="print-label">{t(`sales.partyLabel.${order.orderType}`)}</div>
           <b>{order.party.name}</b> ({order.party.code})
-          <div>{[order.party.city, order.party.state].filter(Boolean).join(', ')}</div>
+          {/* on a truck's papers a principal's city could be read as where the goods are going, which isn't known */}
+          {order.orderType !== 'JOBWORK' && <div>{[order.party.city, order.party.state].filter(Boolean).join(', ')}</div>}
           {order.party.gstin && <div>GSTIN {order.party.gstin}</div>}
         </div>
         <div>

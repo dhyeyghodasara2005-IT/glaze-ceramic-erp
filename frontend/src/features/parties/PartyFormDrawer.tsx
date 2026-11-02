@@ -97,11 +97,14 @@ export default function PartyFormDrawer({ open, type, party, onClose }: Props) {
               <Input maxLength={100} />
             </Form.Item>
           </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item name="region" label={t('party.region')} tooltip={t('party.regionHint')}>
-              <Input maxLength={60} />
-            </Form.Item>
-          </Col>
+          {/* a sales area would say where a principal's goods get sold, which Glaze doesn't keep */}
+          {type !== 'JOBWORK' && (
+            <Col xs={24} sm={12}>
+              <Form.Item name="region" label={t('party.region')} tooltip={t('party.regionHint')}>
+                <Input maxLength={60} />
+              </Form.Item>
+            </Col>
+          )}
         </Row>
 
         <Section>{t('party.sectionGst')}</Section>

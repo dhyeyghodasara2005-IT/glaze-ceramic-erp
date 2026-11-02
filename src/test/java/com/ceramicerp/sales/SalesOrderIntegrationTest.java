@@ -1,6 +1,10 @@
 package com.ceramicerp.sales;
 
 import com.ceramicerp.IntegrationTestBase;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,6 +30,12 @@ class SalesOrderIntegrationTest extends IntegrationTestBase {
     private static final String FLAVOUR = "O7VM 600X1200-2 FLAVOUR IVORY PDR-P";
 
     private final LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+
+    @Autowired
+    private JdbcTemplate jdbc;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private String admin;
     private long plantId, premium, standard;
@@ -178,6 +189,62 @@ class SalesOrderIntegrationTest extends IntegrationTestBase {
         assertThat(sale.at("/party/creditLimit").asInt()).isEqualTo(500000);
         assertThat(sale.at("/party/creditDays").asInt()).isEqualTo(30);
         assertThat(sale.at("/party/city").asText()).isEqualTo("Jaipur");
+    }
+
+    @Test
+    void aJobworkOrderKeepsNoFreeTextThatCouldNameTheBuyer() throws Exception {
+        Map<String, Object> jobwork = order("11", "JOBWORK", principal, line(FLAVOUR, flavour, premium, 5));
+        jobwork.put("remarks", "For Shree Tiles, Jaipur");
+        JsonNode created = read(postAs(admin, ORDERS, jobwork).andExpect(status().isCreated()));
+        assertThat(created.has("remarks")).isFalse();
+
+        // a sale keeps its narration...
+        Map<String, Object> sale = order("12", "SALE", dealer, line(FLAVOUR, flavour, premium, 5));
+        sale.put("remarks", "Deliver before Friday");
+        JsonNode saved = read(postAs(admin, ORDERS, sale).andExpect(status().isCreated()));
+        assertThat(saved.get("remarks").asText()).isEqualTo("Deliver before Friday");
+
+        // ...until the draft turns out to be jobwork
+        sale.put("orderType", "JOBWORK");
+        sale.put("partyId", principal);
+        JsonNode changed = read(putAs(admin, ORDERS + "/" + saved.get("id").asLong(), sale).andExpect(status().isOk()));
+        assertThat(changed.has("remarks")).isFalse();
+    }
+
+    @Test
+    void aJobworkOrderHasNoFieldForTheBuyerOrTheSellingPlace() throws Exception {
+        JsonNode created = read(postAs(admin, ORDERS, order("13", "JOBWORK", principal, line(FLAVOUR, flavour, premium, 5)))
+                .andExpect(status().isCreated()));
+        JsonNode list = read(getAs(admin, ORDERS + "?plantId=" + plantId + "&type=JOBWORK").andExpect(status().isOk()));
+        List<String> names = new ArrayList<>();
+        fieldNames(created, names);
+        fieldNames(list, names);
+        assertThat(names).isNotEmpty().noneMatch(n -> n.toLowerCase().matches(
+                ".*(dealer|customer|consumer|consignee|buyer|shipto|destination|deliver|region|soldto|sellingplace).*"));
+    }
+
+    @Test
+    void aPrincipalHasNoSalesAreaButADealerDoes() throws Exception {
+        Map<String, Object> body = party("JOBWORK", "Kajaria Jobwork");
+        body.put("region", "Rajasthan North");
+        JsonNode created = read(postAs(admin, "/api/parties", body).andExpect(status().isCreated()));
+        assertThat(created.has("region")).isFalse();
+
+        Map<String, Object> dealerBody = party("DEALER", "Area Tiles");
+        dealerBody.put("region", "Rajasthan North");
+        assertThat(read(postAs(admin, "/api/parties", dealerBody).andExpect(status().isCreated())).get("region").asText())
+                .isEqualTo("Rajasthan North");
+    }
+
+    @Test
+    void theDatabaseItselfRefusesItOnJobwork() throws Exception {
+        long order = read(postAs(admin, ORDERS, order("14", "JOBWORK", principal, line(FLAVOUR, flavour, premium, 5)))
+                .andExpect(status().isCreated())).get("id").asLong();
+        entityManager.flush();
+        assertThatThrownBy(() -> jdbc.update("update sales_orders set remarks = 'For Shree Tiles' where id = ?", order))
+                .hasMessageContaining("ck_so_jobwork_no_remarks");
+        assertThatThrownBy(() -> jdbc.update("update parties set region = 'Jaipur' where id = ?", principal))
+                .hasMessageContaining("ck_party_jobwork_no_region");
     }
 
     @Test
@@ -343,6 +410,12 @@ class SalesOrderIntegrationTest extends IntegrationTestBase {
     }
 
     /** Empty fields are left out of the JSON. */
+    /** Every field name in a response, at any depth. */
+    private static void fieldNames(JsonNode node, List<String> names) {
+        node.fieldNames().forEachRemaining(names::add);
+        node.forEach(child -> fieldNames(child, names));
+    }
+
     private static boolean absent(JsonNode node, String pointer) {
         return node.at(pointer).isMissingNode() || node.at(pointer).isNull();
     }

@@ -167,7 +167,8 @@ public class PartyService {
         p.setPhone(Text.trimToNull(req.phone()));
         p.setMobile(Text.trimToNull(req.mobile()));
         p.setEmail(Text.trimToNull(req.email()));
-        p.setRegion(Text.trimToNull(req.region()));
+        // A sales area describes a dealer. For a jobwork principal it would say where the goods get sold, which we don't keep.
+        p.setRegion(p.getPartyType() == PartyType.JOBWORK ? null : Text.trimToNull(req.region()));
         // Credit limit only means something for parties you bill (how much they may owe you).
         p.setCreditLimit(p.getPartyType().isCustomer() ? req.creditLimit() : null);
         p.setCreditDays(req.creditDays());
