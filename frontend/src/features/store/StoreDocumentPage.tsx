@@ -42,6 +42,7 @@ import DocStatusTag from './DocStatusTag'
 import { dateTime, decimalsOf, money, qty, shortDate } from './format'
 import NoPlant from './NoPlant'
 import GrnLabNote from '../lab/GrnLabNote'
+import DocumentLots from './DocumentLots'
 
 // ---- form values (dates are dayjs objects while editing; strings in the API) ----
 
@@ -638,6 +639,8 @@ function DocumentEditor({ type, docId }: { type: StoreDocType; docId?: number })
           </div>
         </FadeIn>
       </Form>
+
+      {doc?.status === 'POSTED' && <DocumentLots documentId={doc.id} type={type} />}
 
       <Modal
         open={confirmPost}

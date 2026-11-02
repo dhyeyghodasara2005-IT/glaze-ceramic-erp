@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import TrucksUsed from './TrucksUsed'
 import dayjs, { type Dayjs } from 'dayjs'
 import PageHeader from '../../components/PageHeader'
 import EmptyState from '../../components/EmptyState'
@@ -405,6 +406,12 @@ function BatchEditor({ batchId }: { batchId?: number }) {
               </div>
             )}
           </div>
+        </FadeIn>
+      )}
+
+      {batch?.issueDocumentId && batch.status !== 'CANCELLED' && (
+        <FadeIn delay={0.07} className="panel doc-panel">
+          <TrucksUsed kind="body-batches" id={batch.id} />
         </FadeIn>
       )}
 

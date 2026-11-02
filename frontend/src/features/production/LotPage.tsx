@@ -3,6 +3,7 @@ import { Alert, App, Button, Card, Popconfirm, Space, Spin, Table, Tag, type Tab
 import { ArrowLeftOutlined, NodeIndexOutlined, PlusOutlined, StopOutlined, TagsOutlined } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import TrucksUsed from './TrucksUsed'
 import PageHeader from '../../components/PageHeader'
 import EmptyState from '../../components/EmptyState'
 import { FadeIn } from '../../components/motion'
@@ -330,6 +331,7 @@ export default function LotPage() {
             </div>
           ))}
         </div>
+        {lot.trace.length > 0 && <div style={{ marginTop: 20 }}><TrucksUsed kind="lots" id={lot.id} /></div>}
       </FadeIn>
 
       <ReasonModal

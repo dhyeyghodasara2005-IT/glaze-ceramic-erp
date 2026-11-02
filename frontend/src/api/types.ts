@@ -2334,6 +2334,76 @@ export interface GrnLabStatus {
   verdict?: LabVerdict
 }
 
+// ---- raw material lots (step 10a, must match store/dto and production/dto/MaterialTrace) ----
+
+export interface MaterialLotRow {
+  id: number
+  lotNo: string
+  materialId: number
+  materialCode: string
+  materialName: string
+  unitCode: string
+  unitDecimals: number
+  locationCode: string
+  locationName: string
+  receivedOn: string
+  supplierName?: string
+  vehicleNo?: string
+  moisturePct?: number
+  quantityIn: number
+  quantityLeft: number
+  rate: number
+  /** none for old stock: what was in the godown when lots began */
+  documentId?: number
+  docType?: StoreDocType
+  cancelled: boolean
+}
+
+export interface MaterialLotUse {
+  id: number
+  documentId: number
+  docNo: string
+  docType: StoreDocType
+  date: string
+  issuedTo?: string
+  machineCode?: string
+  quantity: number
+}
+
+export interface MaterialLotDetail {
+  lot: MaterialLotRow
+  uses: MaterialLotUse[]
+}
+
+/** A lot on a document's screen, with how much of it this document moved. */
+export interface DocumentLot {
+  lot: MaterialLotRow
+  quantity: number
+}
+
+/** A truck behind a mill charge or a design lot. */
+export interface TraceTruck {
+  lotId: number
+  lotNo: string
+  materialCode: string
+  materialName: string
+  unitCode: string
+  unitDecimals: number
+  supplierName?: string
+  vehicleNo?: string
+  receivedOn: string
+  moisturePct?: number
+  oldStock: boolean
+  /** how much of it went into those mill charges */
+  quantity: number
+  batches: string[]
+}
+
+export interface MaterialReach {
+  batches: { batchId: number; batchNo: string; prodDate: string; quantity: number }[]
+  designLots: { lotId: number; lotNo: string; designCode: string; designName: string; status: LotStatus }[]
+}
+
 // ---- labour: workers and attendance (step 9a, must match labour/*.java) ----
 
 /** Where a worker works, in the order the tile moves through the plant. */

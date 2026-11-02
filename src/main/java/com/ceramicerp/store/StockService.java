@@ -17,6 +17,9 @@ import java.math.RoundingMode;
  * Valuation = weighted average per godown:
  *   in  : value = qty x rate given (GRN rate, opening rate)
  *   out : value = qty x current average (balance value / balance qty)
+ *
+ * Every movement also tells MaterialLotService, so the lots always add up to the balance. Lots trace quantity only:
+ * they don't change the value.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,6 +27,7 @@ public class StockService {
 
     private final StockBalanceRepository balanceRepository;
     private final StockTransactionRepository transactionRepository;
+    private final MaterialLotService lotService;
 
     /**
      * One stock movement.
@@ -40,8 +44,31 @@ public class StockService {
     public record Result(BigDecimal rate, BigDecimal value) {
     }
 
+    /** One line of a document being posted: stock in makes a new lot, stock out draws the oldest lots. */
     @Transactional(propagation = Propagation.MANDATORY)
-    public Result apply(StoreDocument doc, Movement m, boolean reversal) {
+    public Result apply(StoreDocument doc, StoreDocumentLine line, Movement m) {
+        StockTransaction txn = move(doc, m, false);
+        if (txn.getQuantity().signum() > 0) {
+            lotService.received(txn, line);
+        } else {
+            lotService.draw(txn);
+        }
+        return new Result(txn.getRate(), txn.getValue());
+    }
+
+    /** Undoes exactly what a movement did, when its document is cancelled, in stock and in the lots. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void reverse(StoreDocument doc, StockTransaction original) {
+        StockTransaction txn = move(doc, new Movement(original.getLocation(), original.getMaterial(),
+                original.getQuantity().negate(), original.getRate(), original.getValue().negate()), true);
+        if (original.getQuantity().signum() > 0) {
+            lotService.undoReceipt(original, txn);
+        } else {
+            lotService.undoDraw(original, txn);
+        }
+    }
+
+    private StockTransaction move(StoreDocument doc, Movement m, boolean reversal) {
         StockBalance balance = balanceRepository.findForUpdate(m.location().getId(), m.material().getId())
                 .orElseGet(() -> newBalance(m));
 
@@ -87,9 +114,7 @@ public class StockService {
         txn.setDocType(doc.getDocType());
         txn.setDocNo(doc.getDocNo());
         txn.setReversal(reversal);
-        transactionRepository.save(txn);
-
-        return new Result(txn.getRate(), value);
+        return transactionRepository.save(txn);
     }
 
     private StockBalance newBalance(Movement m) {

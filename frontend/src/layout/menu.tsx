@@ -133,6 +133,8 @@ export const MENU: (MenuEntry | MenuGroup)[] = [
     labelKey: 'menu.store',
     items: [
       { path: '/store/stock', labelKey: 'menu.stock', icon: <DatabaseOutlined />, permission: 'STORE_VIEW', mobile: true },
+      // Step 10a: which truck the stock is from, and where each truck went.
+      { path: '/store/lots', labelKey: 'menu.materialLots', icon: <GoldOutlined />, permission: 'STORE_VIEW' },
       {
         path: '/store/grn', labelKey: 'menu.grn', icon: <ImportOutlined />, permission: 'STORE_VIEW',
         searchType: 'grn', create: { labelKey: 'store.newDoc.GRN', permission: 'STORE_ENTRY' },

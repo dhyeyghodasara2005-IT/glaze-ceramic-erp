@@ -2,7 +2,10 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { api } from '../../api/client'
 import type {
   DocStatus,
+  DocumentLot,
   LedgerRow,
+  MaterialLotDetail,
+  MaterialLotRow,
   PageResponse,
   StockRow,
   StoreDocType,
@@ -95,6 +98,44 @@ export function useLedger(params: LedgerSearch | null) {
   })
 }
 
+// ---- lots (step 10a) ----
+
+export interface MaterialLotSearch {
+  plantId: number
+  materialId?: number
+  locationId?: number
+  /** true = some left, false = used up, none = every lot */
+  open?: boolean
+  search?: string
+  page: number
+  size: number
+}
+
+export function useMaterialLots(params: MaterialLotSearch | null) {
+  return useQuery({
+    queryKey: ['material-lots', params],
+    queryFn: async () => (await api.get<PageResponse<MaterialLotRow>>('/store/lots', { params })).data,
+    enabled: params !== null,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useMaterialLot(id?: number) {
+  return useQuery({
+    queryKey: ['material-lot', id],
+    queryFn: async () => (await api.get<MaterialLotDetail>(`/store/lots/${id}`)).data,
+    enabled: id !== undefined,
+  })
+}
+
+export function useDocumentLots(documentId?: number) {
+  return useQuery({
+    queryKey: ['document-lots', documentId],
+    queryFn: async () => (await api.get<DocumentLot[]>(`/store/lots/of-document/${documentId}`)).data,
+    enabled: documentId !== undefined,
+  })
+}
+
 // ---- documents ----
 
 export interface DocumentSearch {
@@ -135,7 +176,7 @@ function useDocumentMutation<V, R extends StoreDocument | void>(fn: (vars: V) =>
     mutationFn: fn,
     onSuccess: (doc: R) => {
       if (doc) queryClient.setQueryData(['store-doc', doc.id], doc)
-      for (const key of ['store-docs', 'stock', 'ledger']) queryClient.invalidateQueries({ queryKey: [key] })
+      for (const key of ['store-docs', 'stock', 'ledger', 'material-lots', 'material-lot', 'document-lots']) queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 }

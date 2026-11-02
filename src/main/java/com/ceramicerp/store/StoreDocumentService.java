@@ -145,8 +145,8 @@ public class StoreDocumentService {
             boolean issue = doc.getDocType() == StoreDocType.ISSUE;
             BigDecimal movementQty = issue ? line.getQuantity().negate() : line.getQuantity();
             BigDecimal rate = issue || movementQty.signum() < 0 ? null : line.getRate();
-            var result = stockService.apply(doc,
-                    new StockService.Movement(line.getLocation(), line.getMaterial(), movementQty, rate, null), false);
+            var result = stockService.apply(doc, line,
+                    new StockService.Movement(line.getLocation(), line.getMaterial(), movementQty, rate, null));
 
             // Copy back what the engine used, so issue lines show the value they took out.
             line.setRate(result.rate());
@@ -185,8 +185,7 @@ public class StoreDocumentService {
                 .toList();
         try {
             for (StockTransaction t : movements) {
-                stockService.apply(doc, new StockService.Movement(t.getLocation(), t.getMaterial(),
-                        t.getQuantity().negate(), t.getRate(), t.getValue().negate()), true);
+                stockService.reverse(doc, t);
             }
         } catch (BusinessException e) {
             throw new BusinessException("Can't cancel " + doc.getDocNo() + ". " + e.getMessage());

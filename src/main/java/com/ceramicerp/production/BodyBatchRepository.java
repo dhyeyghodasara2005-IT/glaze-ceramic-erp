@@ -1,6 +1,7 @@
 package com.ceramicerp.production;
 
 import com.ceramicerp.production.dto.DayTotal;
+import com.ceramicerp.store.DocStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -51,4 +52,21 @@ public interface BodyBatchRepository extends JpaRepository<BodyBatch, Long> {
             """)
     DayTotal totalForDay(@Param("plantId") Long plantId, @Param("date") LocalDate date,
                          @Param("statuses") Collection<BodyBatchStatus> statuses);
+
+    /** The mill charges behind a design lot: its press entries' powder, and the spray runs that made it. */
+    @Query("""
+            select b from BodyBatch b join fetch b.issueDocument
+            where b.id in (select rb.bodyBatch.id from SprayRunBatch rb, PressEntryPowder p
+                           where p.sprayRun = rb.run and p.entry.lot.id = :lotId
+                             and p.entry.status = :status and rb.run.status = :status)
+            """)
+    List<BodyBatch> findBehindDesignLot(@Param("lotId") Long lotId, @Param("status") DocStatus status);
+
+    /** The mill charges these store issues were made for. Spares and other manual issues have none. */
+    @Query("""
+            select b from BodyBatch b join fetch b.issueDocument d
+            where d.id in :documentIds
+            order by b.prodDate desc, b.id desc
+            """)
+    List<BodyBatch> findByIssueDocuments(@Param("documentIds") Collection<Long> documentIds);
 }

@@ -1,5 +1,6 @@
 package com.ceramicerp.production;
 
+import com.ceramicerp.store.DocStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -9,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,4 +54,14 @@ public interface ProductionLotRepository extends JpaRepository<ProductionLot, Lo
     /** Lots in one state in a plant (the press home screen asks for the OPEN ones). */
     @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "press", "openedShift"})
     List<ProductionLot> findByPlantIdAndStatus(Long plantId, LotStatus status);
+
+    /** The design lots pressed from these mill charges' powder. */
+    @Query("""
+            select l from ProductionLot l join fetch l.design
+            where l.id in (select p.entry.lot.id from PressEntryPowder p, SprayRunBatch rb
+                           where p.sprayRun = rb.run and rb.bodyBatch.id in :batchIds
+                             and p.entry.status = :status and rb.run.status = :status)
+            order by l.id desc
+            """)
+    List<ProductionLot> findPressedFrom(@Param("batchIds") Collection<Long> batchIds, @Param("status") DocStatus status);
 }

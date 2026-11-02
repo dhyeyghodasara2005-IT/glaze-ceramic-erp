@@ -12,12 +12,14 @@ import type {
   DischargeRequest,
   DocStatus,
   MachineOption,
+  MaterialReach,
   PageResponse,
   Shift,
   SprayRun,
   SprayRunRequest,
   SprayRunSummary,
   StoreOption,
+  TraceTruck,
 } from '../../api/types'
 
 // Matches com.ceramicerp.production: /api/production/...
@@ -228,3 +230,23 @@ export const useDeleteRun = () =>
   useProdMutation('spray-run', async (id: number) => {
     await api.delete(`/production/spray-runs/${id}`)
   })
+
+// ---- raw material trace (step 10a) ----
+
+/** The trucks behind a mill charge or a design lot. */
+export function useTrucks(kind: 'body-batches' | 'lots', id?: number) {
+  return useQuery({
+    queryKey: ['trace-trucks', kind, id],
+    queryFn: async () => (await api.get<TraceTruck[]>(`/production/trace/${kind}/${id}`)).data,
+    enabled: id !== undefined,
+  })
+}
+
+/** The mill charges and design lots one truck went into. */
+export function useMaterialReach(lotId?: number, enabled = true) {
+  return useQuery({
+    queryKey: ['trace-reach', lotId],
+    queryFn: async () => (await api.get<MaterialReach>(`/production/trace/material-lots/${lotId}`)).data,
+    enabled: lotId !== undefined && enabled,
+  })
+}

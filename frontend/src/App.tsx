@@ -20,6 +20,7 @@ import MaterialGroupsPage from './features/masters/material-groups/MaterialGroup
 import UnitsPage from './features/masters/units/UnitsPage'
 import PartiesPage from './features/parties/PartiesPage'
 import StockPage from './features/store/StockPage'
+import MaterialLotsPage from './features/store/MaterialLotsPage'
 import LabPage from './features/lab/LabPage'
 import LabSetupPage from './features/lab/LabSetupPage'
 import StoreDocumentsPage from './features/store/StoreDocumentsPage'
@@ -122,6 +123,7 @@ export default function App() {
         <Route path="parties/principals" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="JOBWORK" type="JOBWORK" /></RequirePermission>} />
         <Route path="parties/contractors" element={<RequirePermission permission="PARTY_VIEW"><PartiesPage key="CONTRACTOR" type="CONTRACTOR" /></RequirePermission>} />
         <Route path="store/stock" element={<RequirePermission permission="STORE_VIEW"><StockPage /></RequirePermission>} />
+        <Route path="store/lots" element={<RequirePermission permission="STORE_VIEW"><MaterialLotsPage /></RequirePermission>} />
         <Route path="lab/tests" element={<RequirePermission permission="LAB_VIEW"><LabPage /></RequirePermission>} />
         <Route path="masters/lab-tests" element={<RequirePermission permission="MASTER_VIEW"><LabSetupPage /></RequirePermission>} />
         <Route path="store/godowns" element={<RequirePermission permission="STORE_VIEW"><GodownsPage /></RequirePermission>} />
