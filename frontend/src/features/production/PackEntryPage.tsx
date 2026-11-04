@@ -185,8 +185,8 @@ function PackEditor({ entryId }: { entryId?: number }) {
     if (topGrade && !form.getFieldValue('lines')?.length) form.setFieldValue('lines', [{ gradeId: topGrade.id }])
   }, [isNew, params, current.data, topGrade, form])
 
-  // New entry: the sorting line after the lot's line in the layout (or the plant's only one), until picked.
-  const lotMachineId = lot?.pressId
+  // New entry: the sorting line after the lot's printer in the layout (or the plant's only one), until picked.
+  const lotMachineId = lot?.printerId
   useEffect(() => {
     if (!isNew || !machines.data || form.isFieldTouched('machineId')) return
     const sorter = pickMachine(links.data, machines.data, lotMachineId, 'SORTING_LINE', 'down')
@@ -196,9 +196,9 @@ function PackEditor({ entryId }: { entryId?: number }) {
   const lotOptions = useMemo(() => {
     const opts = allLots.map((l) => ({
       value: l.id,
-      label: `${l.lotNo} · ${l.designName} · ${l.pressCode}${l.status === 'CLOSED' ? ` (${t('press.lotStatus.CLOSED')})` : ''}`,
+      label: `${l.lotNo} · ${l.designName} · ${l.printerCode}${l.status === 'CLOSED' ? ` (${t('press.lotStatus.CLOSED')})` : ''}`,
     }))
-    if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.pressCode}` })
+    if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.printerCode}` })
     return opts
   }, [allLots, entry, t])
   const machineOptions = sorters.map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))

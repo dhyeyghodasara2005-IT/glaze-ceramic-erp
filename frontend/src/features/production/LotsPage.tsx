@@ -38,7 +38,7 @@ export default function LotsPage() {
     size: pageSize,
   } : null)
   // Lots running now, so the dialog can say which one a design change closes.
-  const running = useMemo(() => new Map((data?.content ?? []).filter((l) => l.status === 'OPEN').map((l) => [l.pressId, l])), [data])
+  const running = useMemo(() => new Map((data?.content ?? []).filter((l) => l.status === 'OPEN').map((l) => [l.printerId, l])), [data])
 
   // Search palette: ?open=12 -> the lot page; ?new=1 -> "Start a design".
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function LotsPage() {
 
   if (!currentPlant) return <NoPlant />
 
-  const startButton = can('PRESS_ENTRY') && (
+  const startButton = can('GLAZE_ENTRY') && (
     <Button type="primary" icon={<SwapOutlined />} onClick={() => setStarting(true)}>{t('press.startDesign')}</Button>
   )
 
@@ -68,7 +68,7 @@ export default function LotsPage() {
         </>
       ),
     },
-    { title: t('press.press'), dataIndex: 'pressCode', width: 110, responsive: ['md'] },
+    { title: t('line.printer'), dataIndex: 'printerCode', width: 120, responsive: ['md'] },
     {
       title: t('press.started'),
       dataIndex: 'openedDate',
@@ -82,14 +82,14 @@ export default function LotsPage() {
       ),
     },
     {
-      title: t('press.good'),
-      dataIndex: 'good',
+      title: t('press.glazed'),
+      dataIndex: 'glazed',
       width: 150,
       align: 'right',
-      render: (good: number, l) => (
+      render: (glazed: number, l) => (
         <>
-          <div className="cell-title">{good.toLocaleString('en-IN')}</div>
-          {l.goodSqm != null && <div className="cell-sub">{qty(l.goodSqm, 0)} m²</div>}
+          <div className="cell-title">{glazed.toLocaleString('en-IN')}</div>
+          {l.glazedSqm != null && <div className="cell-sub">{qty(l.glazedSqm, 0)} m²</div>}
         </>
       ),
     },

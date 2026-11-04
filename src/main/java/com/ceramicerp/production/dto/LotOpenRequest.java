@@ -6,9 +6,9 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
 /**
- * Start a design on a press line.
+ * Start a design on a digital printer.
  *
- * @param closeCurrent true = if the press is running another lot, close it (the design is being changed)
+ * @param closeCurrent true = if the printer is running another lot, close it (the design is being changed)
  */
 public record LotOpenRequest(
         @NotNull(message = "Select a plant")
@@ -17,8 +17,8 @@ public record LotOpenRequest(
         @NotNull(message = "Select the design")
         Long designId,
 
-        @NotNull(message = "Select the press")
-        Long pressId,
+        @NotNull(message = "Select the printer")
+        Long printerId,
 
         @NotNull(message = "Enter the production date")
         LocalDate openedDate,

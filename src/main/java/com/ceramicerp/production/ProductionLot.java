@@ -22,8 +22,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 /**
- * A design lot: one run of one design on one press line, from the press to packing.
- * The lot number is what links a box in a dealer's showroom back to the shift, the silo and the body batches.
+ * A design lot: one run of one design on one digital printer, from the glaze line to packing.
+ * The press only makes green tiles (no design yet), so a lot has no press: the presses behind it are found by
+ * shift (see LotPressMatch). The lot number is what links a box in a dealer's showroom back to the shift, the silo
+ * and the body batches.
  */
 @Getter
 @Setter
@@ -42,10 +44,10 @@ public class ProductionLot extends BaseEntity {
     @JoinColumn(name = "design_id", nullable = false)
     private Design design;
 
-    /** The line is known by its press. */
+    /** The printer that decides the design. It runs one design at a time: one OPEN lot per printer. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "press_id", nullable = false)
-    private Machine press;
+    @JoinColumn(name = "printer_id", nullable = false)
+    private Machine printer;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)

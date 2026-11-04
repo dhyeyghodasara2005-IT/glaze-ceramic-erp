@@ -26,7 +26,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/** One shift of one design lot at the press and dryer. DRAFT -> POSTED -> CANCELLED. */
+/**
+ * One shift of one press and its dryer: green tiles pressed, rejects, powder and settings. DRAFT -> POSTED -> CANCELLED.
+ * There is no design here - the design goes on at the printer - so a press entry has no lot. The lots it fed are
+ * the ones glazed in the same shift on its line (see LotPressMatch).
+ */
 @Getter
 @Setter
 @Entity
@@ -40,10 +44,6 @@ public class PressEntry extends BaseEntity {
     @Column(length = 40)
     private String entryNo;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "lot_id", nullable = false)
-    private ProductionLot lot;
-
     @Column(nullable = false)
     private LocalDate prodDate;
 
@@ -51,7 +51,6 @@ public class PressEntry extends BaseEntity {
     @JoinColumn(name = "shift_id", nullable = false)
     private Shift shift;
 
-    /** Copied from the lot, so reports by press don't need the lot. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "press_id", nullable = false)
     private Machine press;

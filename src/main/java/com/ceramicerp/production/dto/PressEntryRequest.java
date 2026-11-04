@@ -12,15 +12,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * One shift of a lot at the press and dryer (saved as DRAFT; posting is a separate call).
+ * One shift of one press and its dryer (saved as DRAFT; posting is a separate call). No design: green tiles have none.
  * Powder used: leave powderTon empty and it is worked out as tiles pressed x green tile weight.
  */
 public record PressEntryRequest(
         @NotNull(message = "Select a plant")
         Long plantId,
 
-        @NotNull(message = "Select the design lot")
-        Long lotId,
+        @NotNull(message = "Select the press")
+        Long pressId,
 
         @NotNull(message = "Enter the production date")
         LocalDate prodDate,

@@ -25,27 +25,22 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import static com.ceramicerp.production.ProductionRules.requireActiveIfChanged;
 import static com.ceramicerp.production.ProductionRules.requireMachine;
 import static com.ceramicerp.production.ProductionRules.requireNotFuture;
-import static com.ceramicerp.production.ProductionRules.sqm;
-import static com.ceramicerp.production.ProductionRules.sqmPerTile;
 
 /**
- * Press & dryer shift entries. Posting draws the powder from the silo, OLDEST spray run first (FIFO),
- * and records which runs it came from - that is what lets a lot be traced back to its body batches.
+ * Press & dryer shift entries: one press, one shift - green tiles, no design. Posting draws the powder from the silo,
+ * OLDEST spray run first (FIFO), and records which runs it came from; a design lot glazed in the same shift is
+ * traced back to its body batches through them (LotPressMatch).
  */
 @Service
 @RequiredArgsConstructor
 public class PressEntryService {
 
-    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH);
-
     private final PressEntryRepository entryRepository;
-    private final ProductionLotRepository lotRepository;
     private final SprayRunRepository runRepository;
     private final MachineRepository machineRepository;
     private final PlantService plantService;
@@ -97,7 +92,6 @@ public class PressEntryService {
     public PressEntryResponse post(Long id) {
         PressEntry entry = find(id);
         requireDraft(entry, "posted");
-        requireLotUsable(entry.getLot());
         requireNotFuture(entry.getProdDate());
 
         entry.setEntryNo(numberService.next(entry.getPlant(), ProductionDocType.PRESS_ENTRY, entry.getProdDate()));
@@ -164,28 +158,13 @@ public class PressEntryService {
         }
     }
 
-    private static void requireLotUsable(ProductionLot lot) {
-        if (lot.getStatus() == LotStatus.CANCELLED) {
-            throw new BusinessException("Lot " + lot.getLotNo() + " is cancelled");
-        }
-    }
-
-    private PressEntryResponse toResponse(PressEntry e) {
-        BigDecimal perTile = sqmPerTile(e.getLot().getDesign().getTileSize());
-        return PressEntryResponse.from(e, perTile, sqm(e.goodCount(), perTile));
+    private static PressEntryResponse toResponse(PressEntry e) {
+        return PressEntryResponse.from(e);
     }
 
     private void apply(PressEntry entry, PressEntryRequest req) {
-        ProductionLot lot = lotRepository.findWithDetailsById(req.lotId())
-                .filter(l -> l.getPlant().getId().equals(entry.getPlant().getId()))
-                .orElseThrow(() -> new NotFoundException("Design lot", req.lotId()));
-        requireLotUsable(lot);
         requireNotFuture(req.prodDate());
-        if (req.prodDate().isBefore(lot.getOpenedDate())) {
-            throw new BusinessException("The date can't be before the lot started (" + lot.getOpenedDate().format(DAY) + ")");
-        }
-        entry.setLot(lot);
-        entry.setPress(lot.getPress());
+        entry.setPress(requireMachine(machineRepository, req.pressId(), entry.getPlant(), MachineType.PRESS, entry.getPress()));
         entry.setProdDate(req.prodDate());
 
         Shift shift = shiftService.find(req.shiftId());

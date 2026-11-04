@@ -19,7 +19,7 @@ public record PackEntryResponse(
         String lotNo,
         String designName,
         String sizeCode,
-        String pressCode,
+        String printerCode,
         Integer pcsPerBox,
         BigDecimal sqmPerTile,
         LocalDate prodDate,
@@ -66,7 +66,7 @@ public record PackEntryResponse(
                     pillar == null ? null : pillar.getGodown().getCode());
         }).toList();
         return new PackEntryResponse(e.getId(), e.getPlant().getId(), e.getPlant().getCode(), e.getEntryNo(),
-                lot.getId(), lot.getLotNo(), lot.getDesign().getName(), size.getCode(), lot.getPress().getCode(),
+                lot.getId(), lot.getLotNo(), lot.getDesign().getName(), size.getCode(), lot.getPrinter().getCode(),
                 size.getPcsPerBox(), sqmPerTile, e.getProdDate(), e.getShift().getId(), e.getShift().getCode(),
                 e.getShift().getName(), e.getMachine().getId(), e.getMachine().getCode(), e.getMachine().getName(),
                 e.getStatus(), e.getTilesSorted(), e.getPiecesPacked(), e.getBoxes(), e.getBroken(),

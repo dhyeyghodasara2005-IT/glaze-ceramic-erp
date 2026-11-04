@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, App, Button, Col, DatePicker, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Spin } from 'antd'
 import { ArrowLeftOutlined, BuildOutlined, CheckCircleOutlined, DeleteOutlined, SaveOutlined, StopOutlined } from '@ant-design/icons'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -15,7 +15,7 @@ import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
 import { useCurrentShift, useProdMachineLinks, useProdMachines, useProdShifts } from './api'
 import { pickMachine } from '../masters/machines/layout'
-import { useCancelEntry, useDeleteEntry, usePostEntry, usePressEntry, useSaveEntry, useSelectableLots, useSilos } from './pressApi'
+import { useCancelEntry, useDeleteEntry, usePostEntry, usePressEntry, useSaveEntry, useSilos } from './pressApi'
 import ReasonModal from './ReasonModal'
 
 const BASE = '/production/press-entries'
@@ -58,7 +58,6 @@ function EntryEditor({ entryId }: { entryId?: number }) {
   const shifts = useProdShifts()
   const machines = useProdMachines(plantId)
   const links = useProdMachineLinks(editable ? plantId : undefined)
-  const lots = useSelectableLots(editable ? plantId : undefined)
   const silos = useSilos(plantId)
 
   const save = useSaveEntry()
@@ -69,7 +68,7 @@ function EntryEditor({ entryId }: { entryId?: number }) {
   const [cancelling, setCancelling] = useState(false)
 
   const [form] = Form.useForm<FormValues>()
-  const lotId = Form.useWatch('lotId', form) as number | undefined
+  const pressId = Form.useWatch('pressId', form) as number | undefined
   const pressed = Form.useWatch('pressedCount', form) as number | undefined
   const pressRejects = Form.useWatch('pressRejects', form) as number | undefined
   const dryerRejects = Form.useWatch('dryerRejects', form) as number | undefined
@@ -79,30 +78,21 @@ function EntryEditor({ entryId }: { entryId?: number }) {
     if (entry) form.setFieldsValue(toForm(entry))
   }, [entry, form])
 
-  // New entry: today's shift, and the lot it was opened for (?lot=12 from the press home or the lot page).
+  // New entry: today's shift, and the press it was opened for (?press=12 from a card on the press home), or the
+  // plant's only press. No design: green tiles have none, the printer gives it.
+  const presses = (machines.data ?? []).filter((m) => m.type === 'PRESS')
+  const onlyPress = presses.length === 1 ? presses[0].id : undefined
   useEffect(() => {
     if (!isNew) return
-    const fromUrl = Number(params.get('lot'))
-    if (fromUrl && !form.getFieldValue('lotId')) form.setFieldValue('lotId', fromUrl)
+    const fromUrl = Number(params.get('press')) || onlyPress
+    if (fromUrl && !form.getFieldValue('pressId')) form.setFieldValue('pressId', fromUrl)
     if (current.data) {
       if (!form.isFieldTouched('prodDate')) form.setFieldValue('prodDate', dayjs(current.data.prodDate))
       if (!form.isFieldTouched('shiftId') && current.data.shiftId) form.setFieldValue('shiftId', current.data.shiftId)
     }
-  }, [isNew, params, current.data, form])
-
-  const lotOptions = useMemo(() => {
-    const opts = (lots.data ?? []).map((l) => ({
-      value: l.id,
-      label: `${l.lotNo} · ${l.designName} · ${l.pressCode}${l.status === 'CLOSED' ? ` (${t('press.lotStatus.CLOSED')})` : ''}`,
-    }))
-    if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.pressCode}` })
-    return opts
-  }, [lots.data, entry, t])
-  const chosenLot = lots.data?.find((l) => l.id === lotId)
-  const sqmPerTile = chosenLot?.sqmPerTile ?? entry?.sqmPerTile
+  }, [isNew, params, onlyPress, current.data, form])
 
   // New entry: the dryer after this press in the layout (or the plant's only dryer), until the supervisor picks.
-  const pressId = chosenLot?.pressId
   useEffect(() => {
     if (!isNew || !machines.data || form.isFieldTouched('dryerId')) return
     const dryer = pickMachine(links.data, machines.data, pressId, 'DRYER', 'down')
@@ -184,7 +174,7 @@ function EntryEditor({ entryId }: { entryId?: number }) {
   if (!isNew && !entry) return <div className="panel"><EmptyState title={t('store.notFound')} action={<Link to={BASE}>{t('common.back')}</Link>} /></div>
 
   const required = { required: true, message: t('common.required') }
-  const noLots = editable && lots.data !== undefined && lots.data.length === 0
+  const noPress = editable && machines.data !== undefined && presses.length === 0
 
   return (
     <>
@@ -193,7 +183,7 @@ function EntryEditor({ entryId }: { entryId?: number }) {
         subtitle={entry && (
           <Space size={10} wrap>
             <DocStatusTag status={entry.status} />
-            <span><b>{entry.designName}</b> · {entry.lotNo}</span>
+            <span><b>{entry.pressCode}</b> · {entry.pressName}</span>
             <span>{shortDate(entry.prodDate)} · {t('prod.shift')} {entry.shiftCode}</span>
           </Space>
         )}
@@ -229,7 +219,7 @@ function EntryEditor({ entryId }: { entryId?: number }) {
       />
 
       <FadeIn delay={0.04}>
-        {noLots && <Alert className="doc-alert" type="warning" showIcon title={t('press.noLots')} action={<Link to="/production/press">{t('press.startDesign')}</Link>} />}
+        {noPress && <Alert className="doc-alert" type="warning" showIcon title={t('prod.noMachines', { type: t('machineType.PRESS') })} />}
         {entry?.status === 'POSTED' && (
           <Alert className="doc-alert" type="success" showIcon title={t('store.postedInfo', { by: entry.postedBy, at: dateTime(entry.postedAt) })} />
         )}
@@ -261,8 +251,8 @@ function EntryEditor({ entryId }: { entryId?: number }) {
           <div className="form-section">{t('store.details')}</div>
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item name="lotId" label={t('press.lot')} rules={[required]}>
-                <Select options={lotOptions} loading={lots.isLoading} showSearch={{ optionFilterProp: 'label' }} />
+              <Form.Item name="pressId" label={t('press.press')} rules={[required]} extra={editable ? t('press.greenOnly') : undefined}>
+                <Select options={ofType('PRESS', entry && { id: entry.pressId, code: entry.pressCode })} loading={machines.isLoading} />
               </Form.Item>
             </Col>
             <Col xs={12} md={6}>
@@ -314,7 +304,6 @@ function EntryEditor({ entryId }: { entryId?: number }) {
             <Col xs={24} md={12}>
               <div className="entry-result">
                 <div><span className="stat-label">{t('press.goodCount')}</span><b>{good !== undefined ? good.toLocaleString('en-IN') : '–'}</b></div>
-                <div><span className="stat-label">{t('press.goodSqm')}</span><b>{good !== undefined && sqmPerTile ? `${qty(good * sqmPerTile, 0)} m²` : '–'}</b></div>
                 <div><span className="stat-label">{t('press.loss')}</span><b>{loss !== undefined ? `${loss.toFixed(1)} %` : '–'}</b></div>
               </div>
             </Col>

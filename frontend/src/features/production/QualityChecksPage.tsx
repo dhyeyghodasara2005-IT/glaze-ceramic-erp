@@ -73,7 +73,7 @@ export default function QualityChecksPage() {
       render: (_, c) => (
         <>
           <div className="cell-title">{c.designName}</div>
-          <div className="cell-sub">{c.lotNo} · {c.pressCode}</div>
+          <div className="cell-sub">{c.lotNo} · {c.printerCode}</div>
         </>
       ),
     },

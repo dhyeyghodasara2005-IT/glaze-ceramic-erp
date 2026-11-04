@@ -9,16 +9,16 @@ const n = (v: number) => v.toLocaleString('en-IN')
 export type FunnelPart = 'line' | 'finish' | 'all'
 
 /**
- * A lot's tiles stage by stage, as boxes with "waiting" chips between them:
+ * A lot's tiles stage by stage, as boxes with "waiting" chips between them. It starts at the glaze line: the press
+ * makes green tiles with no design, so its losses are the plant's (dashboard), not the lot's.
  *
- *   [Press 2,000 → 1,950]  50 waiting  [Glaze …]  60 waiting  [Kiln …]  64 in cooling  [Polish …]  84 waiting  [Packed …]
+ *   [Glaze 1,900 → 1,860]  60 on the line or in compensators  [Kiln …]  64 in cooling  [Polish …]  84 waiting  [Packed …]
  *
  * A negative "waiting" means more tiles were entered than came from the stage before - shown in amber.
  */
 export default function LotFunnel({ flow, compact = false, part = 'all' }: { flow: LotFlow; compact?: boolean; part?: FunnelPart }) {
   const { t } = useTranslation()
   const all = [
-    { key: 'press', label: t('menu.press'), in: flow.pressed, rejects: flow.pressRejects, out: flow.pressGood },
     { key: 'glaze', label: t('line.stage.GLAZE'), in: flow.glazeIn, rejects: flow.glazeRejects, out: flow.glazeOut },
     { key: 'kiln', label: t('line.stage.KILN'), in: flow.kilnIn, rejects: flow.kilnRejects, out: flow.kilnOut },
     { key: 'polish', label: t('line.stage.POLISH'), in: flow.polishIn, rejects: flow.polishRejects, out: flow.polishOut },
@@ -26,12 +26,11 @@ export default function LotFunnel({ flow, compact = false, part = 'all' }: { flo
   ]
   // waiting[i] sits between stage i and stage i + 1
   const allWaiting = [
-    { n: flow.waitingGlaze, label: 'line.waiting' },
-    { n: flow.waitingKiln, label: 'line.waiting' },
+    { n: flow.waitingKiln, label: 'line.waitingLine' },
     { n: flow.waitingPolish, label: 'finishing.inCooling' },
     { n: flow.waitingSort, label: 'line.waiting' },
   ]
-  const [from, to] = part === 'line' ? [0, 3] : part === 'finish' ? [2, 5] : [0, 5]
+  const [from, to] = part === 'line' ? [0, 2] : part === 'finish' ? [1, 4] : [0, 4]
   const stages = all.slice(from, to)
   const waiting = allWaiting.slice(from, to - 1)
   const over = waiting.some((w) => w.n < 0)

@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 
 /**
  * The trace between trucks and tiles. The links already exist one by one: a mill charge has its store issue, the issue
- * its lot draws, a spray run its mill charges, a press entry its spray runs. This walks them in either direction.
+ * its lot draws, a spray run its mill charges, a press entry its spray runs, and a design lot the press entries of
+ * its shifts. This walks them in either direction.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,9 @@ public class MaterialTraceService {
     private final BodyBatchRepository batchRepository;
     private final BodyBatchService batchService;
     private final LotService designLotService;
-    private final ProductionLotRepository designLotRepository;
+    private final LotPressMatch pressMatch;
+    private final PressEntryRepository pressRepository;
+    private final PressEntryPowderRepository powderRepository;
     private final MaterialLotService materialLots;
 
     /** The trucks behind one mill charge. */
@@ -38,11 +41,14 @@ public class MaterialTraceService {
         return trucks(List.of(batchService.find(batchId)));
     }
 
-    /** The trucks behind a design lot: its powder, the spray runs that made it, their mill charges. */
+    /**
+     * The trucks behind a design lot: the press entries of its shifts (see LotPressMatch), their powder, the spray
+     * runs that made it, their mill charges.
+     */
     @Transactional(readOnly = true)
     public List<MaterialTrace.Truck> forDesignLot(Long designLotId) {
-        designLotService.find(designLotId);
-        return trucks(batchRepository.findBehindDesignLot(designLotId, DocStatus.POSTED));
+        List<Long> entries = pressMatch.behind(designLotService.find(designLotId)).stream().map(PressEntry::getId).toList();
+        return entries.isEmpty() ? List.of() : trucks(batchRepository.findBehindPressEntries(entries, DocStatus.POSTED));
     }
 
     /** Where one truck went. Only mill charges lead to tiles; other issues show on the lot's own page. */
@@ -64,7 +70,7 @@ public class MaterialTraceService {
         return new MaterialTrace.Reach(
                 batches.stream().map(b -> new MaterialTrace.BatchUse(b.getId(), b.getBatchNo(), b.getProdDate(),
                         taken.get(b.getIssueDocument().getId()))).toList(),
-                designLotRepository.findPressedFrom(batchIds, DocStatus.POSTED).stream()
+                pressMatch.fedBy(pressRepository.findByIdIn(powderRepository.findEntriesFromBatches(batchIds, DocStatus.POSTED))).stream()
                         .map(l -> new MaterialTrace.DesignLotUse(l.getId(), l.getLotNo(), l.getDesign().getCode(),
                                 l.getDesign().getName(), l.getStatus())).toList());
     }

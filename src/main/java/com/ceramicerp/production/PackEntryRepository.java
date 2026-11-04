@@ -36,7 +36,7 @@ public interface PackEntryRepository extends JpaRepository<PackEntry, Long> {
                            @Param("search") String search,
                            Pageable pageable);
 
-    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.design.tileSize", "lot.press", "shift", "machine"})
+    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.design.tileSize", "lot.printer", "shift", "machine"})
     Optional<PackEntry> findWithDetailsById(Long id);
 
     /** Posted totals per lot, for many lots in one query. */

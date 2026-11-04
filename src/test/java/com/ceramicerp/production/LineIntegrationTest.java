@@ -31,7 +31,7 @@ class LineIntegrationTest extends IntegrationTestBase {
     private long shiftA;
     private long lotId;
 
-    /** A lot with one posted press entry: 2,000 pressed, 50 rejected -> 1,950 good. */
+    /** A lot on DP-1, and one posted press entry in the same shift: 2,000 pressed, 50 rejected -> 1,950 good. */
     @BeforeEach
     void setUp() throws Exception {
         admin = adminToken();
@@ -47,13 +47,13 @@ class LineIntegrationTest extends IntegrationTestBase {
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
 
-        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", today.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
         // The silo is empty on record, so the powder is "untraced" - fine for these tests.
         Map<String, Object> pressEntry = new HashMap<>();
         pressEntry.put("plantId", plantId);
-        pressEntry.put("lotId", lotId);
+        pressEntry.put("pressId", press);
         pressEntry.put("prodDate", today.toString());
         pressEntry.put("shiftId", shiftA);
         pressEntry.put("siloId", silo);
@@ -66,7 +66,7 @@ class LineIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    void theLotFunnelFollowsTheTilesFromPressToKiln() throws Exception {
+    void theLotFunnelFollowsTheTilesFromGlazeToKiln() throws Exception {
         JsonNode glaze = post(entry("GLAZE", glazeLine, 1900, 40));
         assertThat(glaze.get("entryNo").asText()).isEqualTo("LIN-1/GL/" + fy + "/0001");
         assertThat(glaze.get("tilesOut").asInt()).isEqualTo(1860);
@@ -80,13 +80,12 @@ class LineIntegrationTest extends IntegrationTestBase {
         assertDecimal(fired.get("gasPerSqm"), "2.362");     // 3,000 SCM / 1,270.08 sq m
 
         JsonNode flow = read(getAs(admin, "/api/production/lots/" + lotId)).get("flow");
-        assertThat(flow.get("pressGood").asLong()).isEqualTo(1950);
-        assertThat(flow.get("waitingGlaze").asLong()).isEqualTo(50);    // 1,950 good - 1,900 glazed
+        assertThat(flow.get("glazeIn").asLong()).isEqualTo(1900);
         assertThat(flow.get("glazeOut").asLong()).isEqualTo(1860);
         assertThat(flow.get("waitingKiln").asLong()).isEqualTo(60);     // 1,860 - 1,800 into the kiln
         assertThat(flow.get("kilnOut").asLong()).isEqualTo(1764);
         assertDecimal(flow.get("firedSqm"), "1270.08");
-        assertDecimal(flow.get("yieldPct"), "88.2");                    // 1,764 of 2,000 pressed
+        assertDecimal(flow.get("yieldPct"), "92.84");                   // 1,764 of 1,900 glazed
     }
 
     @Test
@@ -101,9 +100,8 @@ class LineIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Rejects can't be more than the tiles in"));
 
-        // A kiln reading sent with a glaze entry is dropped; the printer is kept.
+        // A kiln reading sent with a glaze entry is dropped; the printer is the lot's, never picked.
         Map<String, Object> glaze = entry("GLAZE", glazeLine, 100, 0);
-        glaze.put("printerId", printer);
         glaze.put("glazeGpt", 380);
         glaze.put("maxTemp", 1200);
         JsonNode saved = read(postAs(admin, ENTRIES, glaze).andExpect(status().isCreated()));
@@ -111,9 +109,8 @@ class LineIntegrationTest extends IntegrationTestBase {
         assertDecimal(saved.get("glazeGpt"), "380");
         assertThat(saved.hasNonNull("maxTemp")).isFalse();
 
-        // ...and a kiln entry never keeps a printer.
+        // ...and a kiln entry never has a printer.
         Map<String, Object> kilnBody = entry("KILN", kiln, 100, 0);
-        kilnBody.put("printerId", printer);
         assertThat(read(postAs(admin, ENTRIES, kilnBody).andExpect(status().isCreated())).hasNonNull("printerId")).isFalse();
     }
 
@@ -125,7 +122,6 @@ class LineIntegrationTest extends IntegrationTestBase {
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
         JsonNode flow = read(getAs(admin, "/api/production/lots/" + lotId)).get("flow");
         assertThat(flow.get("glazeIn").asLong()).isZero();
-        assertThat(flow.get("waitingGlaze").asLong()).isEqualTo(1950);
     }
 
     @Test
@@ -155,13 +151,34 @@ class LineIntegrationTest extends IntegrationTestBase {
         post(kilnBody);
 
         JsonNode overview = read(getAs(admin, "/api/production/line/overview?plantId=" + plantId));
+        assertThat(overview.get("printers").size()).isEqualTo(1);
+        assertThat(overview.at("/printers/0/printerCode").asText()).isEqualTo("DP-1");
+        assertThat(overview.at("/printers/0/lot/designName").asText()).isEqualTo("Carrara White");
         assertThat(overview.get("lots").size()).isEqualTo(1);
         assertThat(overview.at("/lots/0/lot/designName").asText()).isEqualTo("Carrara White");
         assertThat(overview.at("/lots/0/flow/waitingKiln").asLong()).isEqualTo(60);
         if (overview.get("prodDate").asText().equals(today.toString())) {
+            assertThat(overview.at("/today/pressGood").asLong()).isEqualTo(1950);   // 50 still on the line
+            assertThat(overview.at("/today/glazeIn").asLong()).isEqualTo(1900);
             assertDecimal(overview.at("/today/firedSqm"), "1270.08");
             assertDecimal(overview.at("/today/gasPerSqm"), "2.362");
         }
+    }
+
+    /** One printer feeding two kilns: both kilns' entries count in the lot's funnel. */
+    @Test
+    void onePrinterFeedsTwoKilns() throws Exception {
+        long kiln2 = createMachine("KILN-2", "KILN");
+        post(entry("GLAZE", glazeLine, 1900, 40));
+        post(entry("KILN", kiln, 900, 10));
+        post(entry("KILN", kiln2, 900, 8));
+
+        JsonNode flow = read(getAs(admin, "/api/production/lots/" + lotId)).get("flow");
+        assertThat(flow.get("kilnIn").asLong()).isEqualTo(1800);
+        assertThat(flow.get("kilnOut").asLong()).isEqualTo(1782);
+        assertThat(flow.get("waitingKiln").asLong()).isEqualTo(60);      // 1,860 - 1,800: on the line or in a compensator
+        JsonNode lot = read(getAs(admin, "/api/production/lots/" + lotId));
+        assertThat(lot.get("kilnEntries").size()).isEqualTo(2);
     }
 
     @Test

@@ -23,7 +23,6 @@ import com.ceramicerp.production.dto.LotFlow;
 import com.ceramicerp.production.dto.LotOpenRequest;
 import com.ceramicerp.production.dto.LotResponse;
 import com.ceramicerp.production.dto.LotSummary;
-import com.ceramicerp.production.dto.LotTotals;
 import com.ceramicerp.production.dto.PackEntrySummary;
 import com.ceramicerp.production.dto.PackTotals;
 import com.ceramicerp.production.dto.PackedBatch;
@@ -52,7 +51,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.ceramicerp.production.ProductionRules.pct;
@@ -63,8 +61,9 @@ import static com.ceramicerp.production.ProductionRules.sqm;
 import static com.ceramicerp.production.ProductionRules.sqmPerTile;
 
 /**
- * Design lots. A press line runs one design at a time, so a press has at most one OPEN lot;
- * starting a new design closes the previous one.
+ * Design lots. The design goes on at the digital printer, and a printer runs one design at a time, so a printer
+ * has at most one OPEN lot; starting a new design closes the previous one. The press entries behind a lot are
+ * found by shift (LotPressMatch): green tiles carry no design.
  */
 @Service
 @RequiredArgsConstructor
@@ -74,12 +73,12 @@ public class LotService {
     private static final Duration LATE_ENTRY_WINDOW = Duration.ofDays(3);
 
     private final ProductionLotRepository lotRepository;
-    private final PressEntryRepository entryRepository;
     private final LineEntryRepository lineRepository;
     private final PackEntryRepository packRepository;
     private final LotCheckRepository checkRepository;
     private final GradeRepository gradeRepository;
     private final PressEntryPowderRepository powderRepository;
+    private final LotPressMatch pressMatch;
     private final SprayRunRepository runRepository;
     private final DesignRepository designRepository;
     private final MachineRepository machineRepository;
@@ -98,7 +97,7 @@ public class LotService {
                 lots.getTotalElements(), lots.getTotalPages());
     }
 
-    /** Lots a press entry can be made for: running ones, and ones closed in the last few days. */
+    /** Lots a glaze, kiln, polish or pack entry can be made for: running ones, and ones closed in the last few days. */
     @Transactional(readOnly = true)
     public List<LotSummary> selectable(Long plantId) {
         PlantAccess.require(plantId);
@@ -110,7 +109,7 @@ public class LotService {
         return toResponse(find(id));
     }
 
-    /** Start a design on a press line. */
+    /** Start a design on a printer. */
     @Transactional
     public LotResponse open(LotOpenRequest req) {
         Plant plant = plantService.find(req.plantId());
@@ -118,17 +117,17 @@ public class LotService {
         requireNotFuture(req.openedDate());
         Shift shift = shiftService.find(req.shiftId());
         requireActiveIfChanged(shift.isActive(), null, shift, "Shift " + shift.getCode());
-        Machine press = requireMachine(machineRepository, req.pressId(), plant, MachineType.PRESS, null);
+        Machine printer = requireMachine(machineRepository, req.printerId(), plant, MachineType.DIGITAL_PRINTER, null);
         Design design = designRepository.findWithDetailsById(req.designId())
                 .orElseThrow(() -> new NotFoundException("Design", req.designId()));
         if (!design.isActive()) {
             throw new BusinessException("Design " + design.getCode() + " is inactive");
         }
 
-        // One design per line: changing the design closes the lot that was running.
-        lotRepository.findFirstByPressIdAndStatus(press.getId(), LotStatus.OPEN).ifPresent(current -> {
+        // One design per printer: changing the design closes the lot that was running.
+        lotRepository.findFirstByPrinterIdAndStatus(printer.getId(), LotStatus.OPEN).ifPresent(current -> {
             if (!req.closeCurrent()) {
-                throw new BusinessException(press.getCode() + " is running " + current.getLotNo() + " ("
+                throw new BusinessException(printer.getCode() + " is running " + current.getLotNo() + " ("
                         + current.getDesign().getName() + "). Close it first.");
             }
             closeLot(current);
@@ -138,7 +137,7 @@ public class LotService {
         lot.setPlant(plant);
         lot.setLotNo(numberService.next(plant, ProductionDocType.LOT, req.openedDate()));
         lot.setDesign(design);
-        lot.setPress(press);
+        lot.setPrinter(printer);
         lot.setOpenedDate(req.openedDate());
         lot.setOpenedShift(shift);
         lot.setRemarks(Text.trimToNull(req.remarks()));
@@ -164,8 +163,8 @@ public class LotService {
         if (lot.getStatus() == LotStatus.CANCELLED) {
             throw new BusinessException(lot.getLotNo() + " is already cancelled");
         }
-        if (entryRepository.existsByLotIdAndStatus(id, DocStatus.POSTED)) {
-            throw new BusinessException(lot.getLotNo() + " has posted press entries. Cancel them first.");
+        if (lineRepository.existsByLotIdAndStageAndStatus(id, LineStage.GLAZE, DocStatus.POSTED)) {
+            throw new BusinessException(lot.getLotNo() + " has posted glaze entries. Cancel them first.");
         }
         lot.setStatus(LotStatus.CANCELLED);
         lot.setCancelledAt(Instant.now());
@@ -186,37 +185,32 @@ public class LotService {
         lot.setClosedBy(CurrentUser.get().getUsername());
     }
 
-    /** Summaries with press totals: ONE grouped query for all the lots, not one per lot. */
+    /** Summaries with what each lot glazed: ONE grouped query for all the lots, not one per lot. */
     List<LotSummary> summaries(List<ProductionLot> lots) {
         if (lots.isEmpty()) {
             return List.of();
         }
-        Map<Long, LotTotals> totals = entryRepository.totalsForLots(lots.stream().map(ProductionLot::getId).toList())
-                .stream().collect(Collectors.toMap(LotTotals::lotId, Function.identity()));
-        return lots.stream().map(l -> toSummary(l, totals.getOrDefault(l.getId(), LotTotals.empty(l.getId())))).toList();
+        Map<Long, Long> glazed = lineRepository.totalsForLots(lots.stream().map(ProductionLot::getId).toList()).stream()
+                .filter(t -> t.stage() == LineStage.GLAZE)
+                .collect(Collectors.toMap(StageTotals::lotId, StageTotals::tilesIn));
+        return lots.stream().map(l -> toSummary(l, glazed.getOrDefault(l.getId(), 0L))).toList();
     }
 
-    private static LotSummary toSummary(ProductionLot l, LotTotals t) {
+    private static LotSummary toSummary(ProductionLot l, long glazed) {
         var design = l.getDesign();
         BigDecimal perTile = sqmPerTile(design.getTileSize());
         return new LotSummary(l.getId(), l.getLotNo(), design.getId(), design.getCode(), design.getName(),
                 design.getTileSize().getCode(), design.getFinish().getName(), perTile, design.getTileSize().getPcsPerBox(),
-                l.getPress().getId(), l.getPress().getCode(), l.getStatus(), l.getOpenedDate(), l.getOpenedShift().getCode(),
-                l.getOpenedAt(), l.getClosedAt(), t.pressed(), t.good(), sqm(t.good(), perTile));
+                l.getPrinter().getId(), l.getPrinter().getCode(), l.getStatus(), l.getOpenedDate(),
+                l.getOpenedShift().getCode(), l.getOpenedAt(), l.getClosedAt(), glazed, sqm(glazed, perTile));
     }
 
     private LotResponse toResponse(ProductionLot l) {
-        LotTotals t = entryRepository.totalsForLots(List.of(l.getId())).stream().findFirst().orElse(LotTotals.empty(l.getId()));
         var design = l.getDesign();
         BigDecimal perTile = sqmPerTile(design.getTileSize());
-        BigDecimal lossPct = t.pressed() == 0 ? null
-                : BigDecimal.valueOf((t.pressRejects() + t.dryerRejects()) * 100)
-                        .divide(BigDecimal.valueOf(t.pressed()), 2, RoundingMode.HALF_UP);
-        var totals = new LotResponse.Totals(t.entries(), t.pressed(), t.pressRejects(), t.dryerRejects(), t.good(),
-                sqm(t.good(), perTile), lossPct, t.powderTon(), t.untracedTon());
-        List<PressEntrySummary> entries = entryRepository.findByLotIdOrderByProdDateAscIdAsc(l.getId()).stream()
-                .map(PressEntrySummary::from).toList();
-        LotFlow flow = flows(List.of(l), Map.of(l.getId(), t)).get(l.getId());
+        List<PressEntry> behind = pressMatch.behind(l);
+        List<PressEntrySummary> entries = behind.stream().map(PressEntrySummary::from).toList();
+        LotFlow flow = flows(List.of(l)).get(l.getId());
         List<LotCheckResponse> checks = checkRepository.findByLotIdOrderByCheckDateAscIdAsc(l.getId()).stream()
                 .map(LotCheckResponse::from).toList();
         List<PackEntrySummary> packEntries = packRepository.findByLotIdOrderByProdDateAscIdAsc(l.getId()).stream()
@@ -224,12 +218,32 @@ public class LotService {
         List<PackedBatch> packed = packRepository.packedBatches(l.getId());
         return new LotResponse(l.getId(), l.getPlant().getId(), l.getPlant().getCode(), l.getLotNo(), design.getId(),
                 design.getCode(), design.getName(), design.getTileSize().getCode(), design.getFinish().getName(), perTile,
-                l.getPress().getId(), l.getPress().getCode(), l.getPress().getName(), l.getStatus(), l.getOpenedDate(),
+                l.getPrinter().getId(), l.getPrinter().getCode(), l.getPrinter().getName(), l.getStatus(), l.getOpenedDate(),
                 l.getOpenedShift().getCode(), l.getRemarks(), l.getOpenedAt(), l.getOpenedBy(), l.getClosedAt(),
-                l.getClosedBy(), l.getCancelledAt(), l.getCancelledBy(), l.getCancelReason(), l.getVersion(), totals,
+                l.getClosedBy(), l.getCancelledAt(), l.getCancelledBy(), l.getCancelReason(), l.getVersion(), pressWork(behind),
                 flow, entries, lineEntries(l.getId(), LineStage.GLAZE), lineEntries(l.getId(), LineStage.KILN), checks,
                 lineEntries(l.getId(), LineStage.POLISH), packEntries, packed, quality(checks, packed, flow),
-                trace(l.getId()));
+                trace(behind));
+    }
+
+    /** The press entries of the lot's shifts, added up. */
+    private static LotResponse.PressWork pressWork(List<PressEntry> entries) {
+        long pressed = 0;
+        long pressRejects = 0;
+        long dryerRejects = 0;
+        BigDecimal powder = BigDecimal.ZERO;
+        BigDecimal untraced = BigDecimal.ZERO;
+        for (PressEntry e : entries) {
+            pressed += e.getPressedCount();
+            pressRejects += e.getPressRejects();
+            dryerRejects += e.getDryerRejects();
+            powder = powder.add(e.getPowderTon());
+            untraced = untraced.add(e.getUntracedTon());
+        }
+        BigDecimal lossPct = pressed == 0 ? null
+                : BigDecimal.valueOf((pressRejects + dryerRejects) * 100).divide(BigDecimal.valueOf(pressed), 2, RoundingMode.HALF_UP);
+        return new LotResponse.PressWork(entries.size(), pressed, pressRejects, dryerRejects,
+                pressed - pressRejects - dryerRejects, lossPct, powder, untraced);
     }
 
     /** Expected top-grade share (latest check that gave one) against what sorting found so far. */
@@ -251,11 +265,8 @@ public class LotService {
                 .map(LineEntrySummary::from).toList();
     }
 
-    /**
-     * Funnels for many lots: one grouped query for the line-stage totals of all of them, one for packing.
-     * pressTotals: the lots' press totals, by lot id (missing = nothing pressed yet).
-     */
-    Map<Long, LotFlow> flows(List<ProductionLot> lots, Map<Long, LotTotals> pressTotals) {
+    /** Funnels for many lots: one grouped query for the line-stage totals of all of them, one for packing. */
+    Map<Long, LotFlow> flows(List<ProductionLot> lots) {
         List<Long> ids = lots.stream().map(ProductionLot::getId).toList();
         Map<Long, Map<LineStage, StageTotals>> byLot = new HashMap<>();
         Map<Long, PackTotals> packs = new HashMap<>();
@@ -267,28 +278,21 @@ public class LotService {
         }
         Map<Long, LotFlow> result = new HashMap<>();
         for (ProductionLot l : lots) {
-            LotTotals press = pressTotals.getOrDefault(l.getId(), LotTotals.empty(l.getId()));
-            result.put(l.getId(), LotFlows.of(press, byLot.getOrDefault(l.getId(), Map.of()),
+            result.put(l.getId(), LotFlows.of(l.getId(), byLot.getOrDefault(l.getId(), Map.of()),
                     packs.getOrDefault(l.getId(), PackTotals.empty(l.getId())), sqmPerTile(l.getDesign().getTileSize())));
         }
         return result;
     }
 
-    /** Press totals for many lots, by lot id. */
-    Map<Long, LotTotals> pressTotals(List<ProductionLot> lots) {
-        if (lots.isEmpty()) {
-            return Map.of();
+    /** Lot -> the press entries of its shifts -> powder used per spray run -> each run's body batches. */
+    private List<LotResponse.TraceRun> trace(List<PressEntry> behind) {
+        if (behind.isEmpty()) {
+            return List.of();
         }
-        return entryRepository.totalsForLots(lots.stream().map(ProductionLot::getId).toList())
-                .stream().collect(Collectors.toMap(LotTotals::lotId, Function.identity()));
-    }
-
-    /** Lot -> powder used per spray run -> each run's body batches. */
-    private List<LotResponse.TraceRun> trace(Long lotId) {
         // Several press entries may draw from the same run: add their tonnes up per run, keeping FIFO order.
         Map<Long, BigDecimal> tonnesByRun = new LinkedHashMap<>();
         Map<Long, SprayRun> runs = new LinkedHashMap<>();
-        for (PressEntryPowder p : powderRepository.findForLot(lotId, DocStatus.POSTED)) {
+        for (PressEntryPowder p : powderRepository.findForEntries(behind.stream().map(PressEntry::getId).toList())) {
             runs.putIfAbsent(p.getSprayRun().getId(), p.getSprayRun());
             tonnesByRun.merge(p.getSprayRun().getId(), p.getTonnes(), BigDecimal::add);
         }
@@ -312,7 +316,7 @@ public class LotService {
      */
     @EventListener
     public void onMachineReplacing(MachineReplacingEvent e) {
-        lotRepository.findFirstByPressIdAndStatus(e.oldMachineId(), LotStatus.OPEN).ifPresent(lot -> {
+        lotRepository.findFirstByPrinterIdAndStatus(e.oldMachineId(), LotStatus.OPEN).ifPresent(lot -> {
             throw new BusinessException(e.oldCode() + " is running design lot " + lot.getLotNo()
                     + ". Close the lot before replacing the machine.");
         });

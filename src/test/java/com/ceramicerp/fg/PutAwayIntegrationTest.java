@@ -35,14 +35,14 @@ class PutAwayIntegrationTest extends IntegrationTestBase {
     void setUp() throws Exception {
         admin = adminToken();
         plantId = createPlant(admin, createCompany(admin, "PACO"), "PA-1");
-        long press = machine("PRESS-1", "PRESS");
-        long press2 = machine("PRESS-2", "PRESS");
+        long printer = machine("DP-1", "DIGITAL_PRINTER");
+        long printer2 = machine("DP-2", "DIGITAL_PRINTER");
         sorter = machine("SORT-1", "SORTING_LINE");
         shiftA = idOf("shifts", "A");
         premium = idOf("grades", "PREMIUM");
-        lotId = lot(design("CAL-PA", "Calacatta PA"), press);
+        lotId = lot(design("CAL-PA", "Calacatta PA"), printer);
         otherDesign = design("ONYX-PA", "Onyx PA");
-        otherLotId = lot(otherDesign, press2);
+        otherLotId = lot(otherDesign, printer2);
 
         godown = read(postAs(admin, "/api/fg/godowns", Map.of("plantId", plantId, "code", "FG-1", "name", "FG"))
                 .andExpect(status().isCreated())).get("id").asLong();
@@ -203,8 +203,8 @@ class PutAwayIntegrationTest extends IntegrationTestBase {
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 2)).andExpect(status().isCreated())).get("id").asLong();
     }
 
-    private long lot(long design, long press) throws Exception {
-        return read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+    private long lot(long design, long printer) throws Exception {
+        return read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", today.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
     }

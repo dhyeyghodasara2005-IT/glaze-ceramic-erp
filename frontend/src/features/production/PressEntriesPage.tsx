@@ -70,12 +70,12 @@ export default function PressEntriesPage() {
       ),
     },
     {
-      title: t('press.lot'),
-      key: 'lot',
+      title: t('press.press'),
+      key: 'press',
       render: (_, e) => (
         <>
-          <div className="cell-title">{e.designName}</div>
-          <div className="cell-sub">{e.lotNo} · {e.pressCode} · {e.siloCode}</div>
+          <div className="cell-title">{e.pressCode}</div>
+          <div className="cell-sub">{t('press.silo')} {e.siloCode}</div>
         </>
       ),
     },

@@ -2274,14 +2274,17 @@ body {
   border-color: #d08a5b;
 }
 
-/* The whole journey (lot page): five stages. The funnel measures its own width, so it stacks
-   whenever five boxes would be too narrow - with or without the sidebar. */
+/* Glaze & kiln screen: two stages (glaze, kiln). */
+.funnel-row.s2 {
+  grid-template-columns: 1fr auto 1fr;
+}
+/* The whole journey (lot page): four stages, from the glaze line to the box. The funnel measures its own
+   width, so it stacks whenever four boxes would be too narrow - with or without the sidebar. */
 .funnel.wide {
   container-type: inline-size;
 }
-.funnel-row.s5 {
-  grid-template-columns:
-    minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+.funnel-row.s4 {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 6px;
 }
 .funnel.wide .funnel-wait {
@@ -2290,8 +2293,8 @@ body {
 .funnel.wide .funnel-stage {
   padding: 10px 12px;
 }
-@container (max-width: 860px) {
-  .funnel-row.s5 {
+@container (max-width: 700px) {
+  .funnel-row.s4 {
     grid-template-columns: 1fr;
   }
   .funnel.wide .funnel-wait {

@@ -337,6 +337,7 @@ class CostingIntegrationTest extends IntegrationTestBase {
     /** One lot run on the day: 790 boxes of 1.44 m² packed. */
     private void produce(LocalDate day) throws Exception {
         long press = machine("PRESS-1", "PRESS");
+        long printer = machine("DP-1", "DIGITAL_PRINTER");
         long silo = machine("SILO-1", "SILO");
         long glazeLine = machine("GL-1", "GLAZE_LINE");
         long polisher = machine("POL-1", "POLISHING_LINE");
@@ -344,10 +345,10 @@ class CostingIntegrationTest extends IntegrationTestBase {
         long design = read(postAs(admin, "/api/masters/designs", Map.of("code", "CS-D", "name", "Costing test",
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
-        long lot = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        long lot = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", day.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
-        Map<String, Object> pressEntry = new HashMap<>(Map.of("plantId", plantId, "lotId", lot, "prodDate", day.toString(),
+        Map<String, Object> pressEntry = new HashMap<>(Map.of("plantId", plantId, "pressId", press, "prodDate", day.toString(),
                 "shiftId", shiftA, "siloId", silo, "pressedCount", 2000, "pressRejects", 30, "dryerRejects", 20, "powderTon", 42));
         long id = read(postAs(admin, "/api/production/press-entries", pressEntry).andExpect(status().isCreated())).get("id").asLong();
         postAs(admin, "/api/production/press-entries/" + id + "/post", Map.of()).andExpect(status().isOk());

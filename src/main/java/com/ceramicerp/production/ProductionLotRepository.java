@@ -1,6 +1,5 @@
 package com.ceramicerp.production;
 
-import com.ceramicerp.store.DocStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -10,13 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface ProductionLotRepository extends JpaRepository<ProductionLot, Long> {
 
-    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "press", "openedShift"})
+    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "printer", "openedShift"})
     @Query("""
             select l from ProductionLot l
             where l.plant.id = :plantId
@@ -33,15 +31,15 @@ public interface ProductionLotRepository extends JpaRepository<ProductionLot, Lo
                                @Param("search") String search,
                                Pageable pageable);
 
-    @EntityGraph(attributePaths = {"plant", "design", "design.tileSize", "design.finish", "press", "openedShift"})
+    @EntityGraph(attributePaths = {"plant", "design", "design.tileSize", "design.finish", "printer", "openedShift"})
     Optional<ProductionLot> findWithDetailsById(Long id);
 
-    /** The lot a press line is running now (at most one). */
-    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "press", "openedShift"})
-    Optional<ProductionLot> findFirstByPressIdAndStatus(Long pressId, LotStatus status);
+    /** The lot a printer is running now (at most one). */
+    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "printer", "openedShift"})
+    Optional<ProductionLot> findFirstByPrinterIdAndStatus(Long printerId, LotStatus status);
 
     /** Lots an entry can be made for: running ones, and ones closed recently (the last shift's figures come late). */
-    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "press", "openedShift"})
+    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "printer", "openedShift"})
     @Query("""
             select l from ProductionLot l
             where l.plant.id = :plantId
@@ -51,17 +49,7 @@ public interface ProductionLotRepository extends JpaRepository<ProductionLot, Lo
             """)
     List<ProductionLot> findSelectable(@Param("plantId") Long plantId, @Param("closedSince") Instant closedSince);
 
-    /** Lots in one state in a plant (the press home screen asks for the OPEN ones). */
-    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "press", "openedShift"})
+    /** Lots in one state in a plant (the glaze & kiln screen asks for the OPEN ones). */
+    @EntityGraph(attributePaths = {"design", "design.tileSize", "design.finish", "printer", "openedShift"})
     List<ProductionLot> findByPlantIdAndStatus(Long plantId, LotStatus status);
-
-    /** The design lots pressed from these mill charges' powder. */
-    @Query("""
-            select l from ProductionLot l join fetch l.design
-            where l.id in (select p.entry.lot.id from PressEntryPowder p, SprayRunBatch rb
-                           where p.sprayRun = rb.run and rb.bodyBatch.id in :batchIds
-                             and p.entry.status = :status and rb.run.status = :status)
-            order by l.id desc
-            """)
-    List<ProductionLot> findPressedFrom(@Param("batchIds") Collection<Long> batchIds, @Param("status") DocStatus status);
 }

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
-/** One design lot in a list, with its press totals so far. */
+/** One design lot in a list, with what its printer has glazed so far. */
 public record LotSummary(
         Long id,
         String lotNo,
@@ -18,15 +18,16 @@ public record LotSummary(
         BigDecimal sqmPerTile,
         /** from the size master: 2 for 600 x 1200 */
         Integer pcsPerBox,
-        Long pressId,
-        String pressCode,
+        /** The printer the design runs on. */
+        Long printerId,
+        String printerCode,
         LotStatus status,
         LocalDate openedDate,
         String openedShiftCode,
         Instant openedAt,
         Instant closedAt,
-        long pressed,
-        long good,
-        BigDecimal goodSqm
+        /** Tiles in at the glaze line (posted entries). */
+        long glazed,
+        BigDecimal glazedSqm
 ) {
 }

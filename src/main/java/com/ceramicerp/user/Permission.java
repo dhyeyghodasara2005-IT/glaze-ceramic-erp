@@ -32,8 +32,8 @@ public enum Permission {
     // One ENTRY permission per production division: give it to that division's supervisor role.
     PRODUCTION_VIEW("Production", "View production entries, batches and runs"),
     BODY_PREP_ENTRY("Production", "Body preparation supervisor: ball mill charges, slip tests, spray dryer runs"),
-    PRESS_ENTRY("Production", "Press & dryer supervisor: design lots, press and dryer shift entries"),
-    GLAZE_ENTRY("Production", "Glaze & print supervisor: glaze line and digital printer shift entries"),
+    PRESS_ENTRY("Production", "Press & dryer supervisor: press and dryer shift entries"),
+    GLAZE_ENTRY("Production", "Glaze & print supervisor: design lots on the printers, glaze line and digital printer shift entries"),
     KILN_ENTRY("Production", "Kiln supervisor: kiln shift entries"),
     QUALITY_CHECK("Production", "Quality checker: bend, size and thickness checks in the cooling area"),
     POLISH_ENTRY("Production", "Polishing supervisor: polishing line shift entries"),

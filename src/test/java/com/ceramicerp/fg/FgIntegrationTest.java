@@ -36,7 +36,7 @@ class FgIntegrationTest extends IntegrationTestBase {
         admin = adminToken();
         companyId = createCompany(admin, "FGCO");
         plantId = createPlant(admin, companyId, "FG-T");
-        long press = createMachine(plantId, "PRESS-1", "PRESS");
+        long printer = createMachine(plantId, "DP-1", "DIGITAL_PRINTER");
         sorter = createMachine(plantId, "SORT-1", "SORTING_LINE");
         shiftA = idOf("shifts", "A");
         premium = idOf("grades", "PREMIUM");
@@ -44,7 +44,7 @@ class FgIntegrationTest extends IntegrationTestBase {
         long design = read(postAs(admin, "/api/masters/designs", Map.of("code", "CALACATTA-FG", "name", "Calacatta Gold",
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
-        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", today.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
 

@@ -266,6 +266,8 @@ class MaterialLotIntegrationTest extends IntegrationTestBase {
         long silo = machine("SILO-L", "SILO");
         long press = machine("PRESS-L", "PRESS");
         long dryer = machine("DRYER-L", "DRYER");
+        long glazeLine = machine("GL-L", "GLAZE_LINE");
+        long printer = machine("DP-L", "DIGITAL_PRINTER");
         long mill = machine("BM-L", "BALL_MILL");
         long shift = idOf("shifts", "A");
 
@@ -298,7 +300,7 @@ class MaterialLotIntegrationTest extends IntegrationTestBase {
         Map<String, Object> open = new HashMap<>();
         open.put("plantId", plantId);
         open.put("designId", design);
-        open.put("pressId", press);
+        open.put("printerId", printer);
         open.put("openedDate", today.toString());
         open.put("shiftId", shift);
         open.put("closeCurrent", false);
@@ -310,7 +312,7 @@ class MaterialLotIntegrationTest extends IntegrationTestBase {
 
         Map<String, Object> entry = new HashMap<>();
         entry.put("plantId", plantId);
-        entry.put("lotId", designLotId);
+        entry.put("pressId", press);
         entry.put("prodDate", today.toString());
         entry.put("shiftId", shift);
         entry.put("dryerId", dryer);
@@ -323,6 +325,13 @@ class MaterialLotIntegrationTest extends IntegrationTestBase {
         entry.put("cyclesPerMin", 5.5);
         long entryId = read(postAs(admin, "/api/production/press-entries", entry).andExpect(status().isCreated())).get("id").asLong();
         postAs(admin, "/api/production/press-entries/" + entryId + "/post", Map.of()).andExpect(status().isOk());
+
+        // green tiles have no design: the press entry reaches the lot once the lot is glazed in the same shift
+        assertThat(read(getAs(admin, "/api/production/trace/lots/" + designLotId))).isEmpty();
+        long glazeId = read(postAs(admin, "/api/production/line-entries", Map.of("plantId", plantId, "stage", "GLAZE",
+                "lotId", designLotId, "prodDate", today.toString(), "shiftId", shift, "machineId", glazeLine, "tilesIn", 100,
+                "rejects", 0)).andExpect(status().isCreated())).get("id").asLong();
+        postAs(admin, "/api/production/line-entries/" + glazeId + "/post", Map.of()).andExpect(status().isOk());
 
         JsonNode behindLot = read(getAs(admin, "/api/production/trace/lots/" + designLotId).andExpect(status().isOk()));
         assertThat(behindLot).hasSize(2);

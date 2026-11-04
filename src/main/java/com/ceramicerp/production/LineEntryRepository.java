@@ -34,7 +34,7 @@ public interface LineEntryRepository extends JpaRepository<LineEntry, Long> {
                            @Param("search") String search,
                            Pageable pageable);
 
-    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.design.tileSize", "lot.press", "shift", "machine", "printer"})
+    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.design.tileSize", "lot.printer", "shift", "machine", "printer"})
     Optional<LineEntry> findWithDetailsById(Long id);
 
     /**
@@ -57,4 +57,17 @@ public interface LineEntryRepository extends JpaRepository<LineEntry, Long> {
     /** Posted entries of a production date, with the size (for square metres). */
     @EntityGraph(attributePaths = {"lot", "lot.design", "lot.design.tileSize"})
     List<LineEntry> findByPlantIdAndProdDateAndStatus(Long plantId, LocalDate prodDate, DocStatus status);
+
+    /** Posted glaze entries of a plant between two dates, with their lot's printer and the shift (the shift match). */
+    @EntityGraph(attributePaths = {"lot", "lot.design", "lot.printer", "shift"})
+    @Query("""
+            select g from LineEntry g
+            where g.plant.id = :plantId and g.stage = com.ceramicerp.production.LineStage.GLAZE
+              and g.status = com.ceramicerp.store.DocStatus.POSTED and g.prodDate between :from and :to
+            """)
+    List<LineEntry> findPostedGlazeBetween(@Param("plantId") Long plantId, @Param("from") LocalDate from,
+                                           @Param("to") LocalDate to);
+
+    /** Has a lot any posted entry at this stage? (a lot with posted glaze entries can't be cancelled) */
+    boolean existsByLotIdAndStageAndStatus(Long lotId, LineStage stage, DocStatus status);
 }

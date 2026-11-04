@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public interface LotCheckRepository extends JpaRepository<LotCheck, Long> {
 
-    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.press", "shift"})
+    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.printer", "shift"})
     @Query("""
             select c from LotCheck c
             where c.plant.id = :plantId
@@ -32,11 +32,11 @@ public interface LotCheckRepository extends JpaRepository<LotCheck, Long> {
                           @Param("search") String search,
                           Pageable pageable);
 
-    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.press", "shift"})
+    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.printer", "shift"})
     Optional<LotCheck> findWithDetailsById(Long id);
 
     /** Every check of a lot, oldest first (the lot page lists them). */
-    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.press", "shift"})
+    @EntityGraph(attributePaths = {"plant", "lot", "lot.design", "lot.printer", "shift"})
     List<LotCheck> findByLotIdOrderByCheckDateAscIdAsc(Long lotId);
 
     /** Posted checks of many lots, newest first: the first one per lot is its latest. */

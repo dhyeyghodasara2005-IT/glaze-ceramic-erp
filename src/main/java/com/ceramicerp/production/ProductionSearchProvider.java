@@ -59,24 +59,24 @@ class ProductionSearchProvider implements SearchProvider {
                 r.getStatus() != DocStatus.CANCELLED)));
 
         List<ProductionLot> lots = SearchQueries.find(em, """
-                select l from ProductionLot l join fetch l.design join fetch l.press
+                select l from ProductionLot l join fetch l.design join fetch l.printer
                 where lower(l.lotNo) like :q or lower(l.design.code) like :q or lower(l.design.name) like :q
                 order by l.id desc""", ProductionLot.class, term, limit).stream()
                 .filter(l -> user.canAccessPlant(l.getPlant().getId()))
                 .toList();
         term.best(lots, limit, ProductionLot::getLotNo, l -> l.getDesign().getName()).forEach(l -> hits.add(new SearchHit(
                 "lot", l.getId(), l.getLotNo(), "Design lot · " + l.getDesign().getName(),
-                l.getPress().getCode() + " · " + l.getOpenedDate().format(DATE) + " · " + l.getStatus().name().toLowerCase(Locale.ROOT),
+                l.getPrinter().getCode() + " · " + l.getOpenedDate().format(DATE) + " · " + l.getStatus().name().toLowerCase(Locale.ROOT),
                 l.getStatus() != LotStatus.CANCELLED)));
 
         List<PressEntry> entries = SearchQueries.find(em, """
-                select e from PressEntry e join fetch e.lot l join fetch l.design
+                select e from PressEntry e join fetch e.press
                 where lower(e.entryNo) like :q
                 order by e.id desc""", PressEntry.class, term, limit).stream()
                 .filter(e -> user.canAccessPlant(e.getPlant().getId()))
                 .toList();
         term.best(entries, limit, PressEntry::getEntryNo, PressEntry::getEntryNo).forEach(e -> hits.add(new SearchHit(
-                "press-entry", e.getId(), e.getEntryNo(), "Press entry · " + e.getLot().getDesign().getName(),
+                "press-entry", e.getId(), e.getEntryNo(), "Press entry · " + e.getPress().getCode(),
                 e.getProdDate().format(DATE) + " · " + e.goodCount() + " good tiles",
                 e.getStatus() != DocStatus.CANCELLED)));
 

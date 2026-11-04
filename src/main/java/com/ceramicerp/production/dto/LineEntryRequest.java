@@ -36,9 +36,6 @@ public record LineEntryRequest(
         @NotNull(message = "Select the machine")
         Long machineId,
 
-        /** Digital printer (glaze stage). */
-        Long printerId,
-
         @NotNull(message = "Enter the tiles in") @Min(1) @Max(1_000_000)
         Integer tilesIn,
 

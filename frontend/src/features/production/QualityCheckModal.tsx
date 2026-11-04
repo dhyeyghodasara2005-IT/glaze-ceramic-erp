@@ -36,7 +36,7 @@ export default function QualityCheckModal({ open, plantId, lotId, onClose, onSav
   const lotOptions = useMemo(() => {
     const list = [...(finishing.data?.lots.map((l) => l.lot) ?? []), ...(running.data ?? [])]
     return list.filter((l, i) => list.findIndex((o) => o.id === l.id) === i)
-      .map((l) => ({ value: l.id, label: `${l.lotNo} · ${l.designName} · ${l.pressCode}` }))
+      .map((l) => ({ value: l.id, label: `${l.lotNo} · ${l.designName} · ${l.printerCode}` }))
   }, [finishing.data, running.data])
 
   useEffect(() => {

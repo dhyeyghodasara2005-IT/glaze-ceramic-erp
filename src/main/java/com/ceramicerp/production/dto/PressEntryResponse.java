@@ -14,17 +14,13 @@ public record PressEntryResponse(
         Long plantId,
         String plantCode,
         String entryNo,
-        Long lotId,
-        String lotNo,
-        String designCode,
-        String designName,
-        BigDecimal sqmPerTile,
         LocalDate prodDate,
         Long shiftId,
         String shiftCode,
         String shiftName,
         Long pressId,
         String pressCode,
+        String pressName,
         Long dryerId,
         String dryerCode,
         Long siloId,
@@ -35,7 +31,6 @@ public record PressEntryResponse(
         int pressRejects,
         int dryerRejects,
         int goodCount,
-        BigDecimal goodSqm,
         BigDecimal greenWeightKg,
         BigDecimal powderTon,
         BigDecimal untracedTon,
@@ -62,16 +57,14 @@ public record PressEntryResponse(
         }
     }
 
-    public static PressEntryResponse from(PressEntry e, BigDecimal sqmPerTile, BigDecimal goodSqm) {
-        var lot = e.getLot();
+    public static PressEntryResponse from(PressEntry e) {
         var dryer = e.getDryer();
         return new PressEntryResponse(e.getId(), e.getPlant().getId(), e.getPlant().getCode(), e.getEntryNo(),
-                lot.getId(), lot.getLotNo(), lot.getDesign().getCode(), lot.getDesign().getName(), sqmPerTile,
                 e.getProdDate(), e.getShift().getId(), e.getShift().getCode(), e.getShift().getName(),
-                e.getPress().getId(), e.getPress().getCode(),
+                e.getPress().getId(), e.getPress().getCode(), e.getPress().getName(),
                 dryer == null ? null : dryer.getId(), dryer == null ? null : dryer.getCode(),
                 e.getSilo().getId(), e.getSilo().getCode(), e.getSilo().getName(), e.getStatus(),
-                e.getPressedCount(), e.getPressRejects(), e.getDryerRejects(), e.goodCount(), goodSqm,
+                e.getPressedCount(), e.getPressRejects(), e.getDryerRejects(), e.goodCount(),
                 e.getGreenWeightKg(), e.getPowderTon(), e.getUntracedTon(), e.getPressure(), e.getCyclesPerMin(),
                 e.getThicknessMm(), e.getDryerTemp(), e.getDryerMoisture(), e.getRemarks(), e.getPostedAt(),
                 e.getPostedBy(), e.getCancelledAt(), e.getCancelledBy(), e.getCancelReason(), e.getCreatedAt(),

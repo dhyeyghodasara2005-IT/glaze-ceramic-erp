@@ -39,7 +39,8 @@ class FinishingIntegrationTest extends IntegrationTestBase {
 
     /**
      * A lot that has been through the kiln:
-     * 2,000 pressed -> 1,950 good -> 1,900 glazed, 1,860 out -> 1,800 fired, 1,764 out (in cooling).
+     * 2,000 pressed -> 1,950 good (plant-wide, no design yet) -> 1,900 glazed on DP-1, 1,860 out -> 1,800 fired,
+     * 1,764 out (in cooling).
      */
     @BeforeEach
     void setUp() throws Exception {
@@ -47,6 +48,7 @@ class FinishingIntegrationTest extends IntegrationTestBase {
         long companyId = createCompany(admin, "FINCO");
         plantId = createPlant(admin, companyId, "FIN-1");
         long press = createMachine("PRESS-1", "PRESS");
+        long printer = createMachine("DP-1", "DIGITAL_PRINTER");
         long glazeLine = createMachine("GL-1", "GLAZE_LINE");
         kiln = createMachine("KILN-1", "KILN");
         polisher = createMachine("POL-1", "POLISHING_LINE");
@@ -60,12 +62,12 @@ class FinishingIntegrationTest extends IntegrationTestBase {
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
 
-        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", today.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
         Map<String, Object> pressEntry = new HashMap<>();
         pressEntry.put("plantId", plantId);
-        pressEntry.put("lotId", lotId);
+        pressEntry.put("pressId", press);
         pressEntry.put("prodDate", today.toString());
         pressEntry.put("shiftId", shiftA);
         pressEntry.put("siloId", silo);
@@ -114,8 +116,8 @@ class FinishingIntegrationTest extends IntegrationTestBase {
         assertThat(flow.get("packed").asLong()).isEqualTo(1580);
         assertThat(flow.get("boxes").asLong()).isEqualTo(790);
         assertDecimal(flow.get("packedSqm"), "1137.60");
-        assertDecimal(flow.get("packedYieldPct"), "79.00");              // 1,580 of 2,000 pressed
-        assertDecimal(flow.get("yieldPct"), "88.20");                    // fired / pressed, as before
+        assertDecimal(flow.get("packedYieldPct"), "83.16");              // 1,580 of 1,900 glazed
+        assertDecimal(flow.get("yieldPct"), "92.84");                    // 1,764 fired of 1,900 glazed
 
         assertThat(lot.get("packed").size()).isEqualTo(3);
         assertThat(lot.at("/packed/0/gradeCode").asText()).isEqualTo("PREMIUM");

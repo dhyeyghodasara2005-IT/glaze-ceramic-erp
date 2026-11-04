@@ -22,9 +22,9 @@ public record LotResponse(
         String sizeCode,
         String finishName,
         BigDecimal sqmPerTile,
-        Long pressId,
-        String pressCode,
-        String pressName,
+        Long printerId,
+        String printerCode,
+        String printerName,
         LotStatus status,
         LocalDate openedDate,
         String openedShiftCode,
@@ -37,9 +37,11 @@ public record LotResponse(
         String cancelledBy,
         String cancelReason,
         Long version,
-        Totals totals,
-        /** pressed -> glazed -> fired -> polished -> packed, with tiles waiting between stages */
+        /** What the press did in this lot's shifts, on its line (the shift match, see LotPressMatch). */
+        PressWork pressWork,
+        /** glazed -> fired -> polished -> packed, with tiles waiting between stages */
         LotFlow flow,
+        /** The press entries of this lot's shifts. */
         List<PressEntrySummary> entries,
         List<LineEntrySummary> glazeEntries,
         List<LineEntrySummary> kilnEntries,
@@ -52,10 +54,13 @@ public record LotResponse(
         List<TraceRun> trace
 ) {
     /**
+     * Posted press entries of the lot's shifts, added up. When a design changes in the middle of a shift, the lot
+     * before and the lot after both show that shift's pressing.
+     *
      * @param lossPct (press rejects + dryer rejects) / pressed x 100
      */
-    public record Totals(long entries, long pressed, long pressRejects, long dryerRejects, long good,
-                         BigDecimal goodSqm, BigDecimal lossPct, BigDecimal powderTon, BigDecimal untracedTon) {
+    public record PressWork(long entries, long pressed, long pressRejects, long dryerRejects, long good,
+                            BigDecimal lossPct, BigDecimal powderTon, BigDecimal untracedTon) {
     }
 
     /**

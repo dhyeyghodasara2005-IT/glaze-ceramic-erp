@@ -60,20 +60,20 @@ public class LotController {
     /** Start a design on a press line. */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAuthority('PRESS_ENTRY')")
+    @PreAuthorize("hasAuthority('GLAZE_ENTRY')")
     public LotResponse open(@Valid @RequestBody LotOpenRequest req) {
         return lotService.open(req);
     }
 
     @PostMapping("/{id}/close")
-    @PreAuthorize("hasAuthority('PRESS_ENTRY')")
+    @PreAuthorize("hasAuthority('GLAZE_ENTRY')")
     public LotResponse close(@PathVariable Long id) {
         return lotService.close(id);
     }
 
     /** Only for a lot with nothing posted against it, so the press supervisor may do it. */
     @PostMapping("/{id}/cancel")
-    @PreAuthorize("hasAuthority('PRESS_ENTRY')")
+    @PreAuthorize("hasAuthority('GLAZE_ENTRY')")
     public LotResponse cancel(@PathVariable Long id, @Valid @RequestBody CancelRequest req) {
         return lotService.cancel(id, req.reason());
     }

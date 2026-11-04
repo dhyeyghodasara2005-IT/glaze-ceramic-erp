@@ -30,8 +30,8 @@ class DesignCostIntegrationTest extends IntegrationTestBase {
     private final LocalDate day = month.atDay(5);
 
     private String admin;
-    private long plantId, shiftA, store, silo, glazeLine, sorter, pillar;
-    private int presses;
+    private long plantId, shiftA, store, glazeLine, sorter, pillar;
+    private int printers;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -40,7 +40,6 @@ class DesignCostIntegrationTest extends IntegrationTestBase {
         shiftA = idOf("shifts", "A");
         store = read(postAs(admin, "/api/store/locations", Map.of("plantId", plantId, "code", "MAIN", "name", "Main store"))
                 .andExpect(status().isCreated())).get("id").asLong();
-        silo = machine("SILO-1", "SILO");
         glazeLine = machine("GL-1", "GLAZE_LINE");
         sorter = machine("SORT-1", "SORTING_LINE");
         long godown = read(postAs(admin, "/api/fg/godowns", Map.of("plantId", plantId, "code", "FG-1", "name", "FG"))
@@ -57,33 +56,35 @@ class DesignCostIntegrationTest extends IntegrationTestBase {
         issue("PACKING", "2000");
         issue("CHEMICAL", "400");
         monthly(4000);
-        //  design   powder t  tiles  grams per tile  ink L  boxes (1.44 m²)
-        run("DA",     "30",     1000,  100, 200,       "10",  300);
-        run("DB",     "10",     1000,  null, 100,      "30",  100);
-        run("DC",     "10",     0,     null, null,     null,  0);      // pressed, still on the line
+        //  design  tiles glazed (0.72 m²)  grams per tile  ink L  boxes (1.44 m²)
+        run("DA",    1250,                   100, 200,       "10",  300);
+        run("DB",    1000,                   null, 100,      "25",  100);
+        run("DC",    250,                    null, 100,      "5",   0);      // printed, still on the line
 
         JsonNode d = designs();
         JsonNode a = row(d, "DA");
-        assertDecimal(a.get("body"), "30000");       // 30 of 50 t of powder
-        assertDecimal(a.get("glaze"), "6000");       // 3,00,000 of 4,00,000 g
+        assertDecimal(a.get("body"), "25000");       // 900 of 1,800 m² glazed (green tiles have no design)
+        assertDecimal(a.get("glaze"), "6000");       // 3,75,000 of 5,00,000 g
         assertDecimal(a.get("ink"), "1000");         // 10 of 40 L
         assertDecimal(a.get("packing"), "1500");     // 300 of 400 boxes
         assertDecimal(a.get("otherMaterial"), "300");// 432 of 576 m²
         assertDecimal(a.get("monthly"), "3000");     // 432 of 576 m²
-        assertDecimal(a.get("total"), "41800");
+        assertDecimal(a.get("total"), "36800");
         assertDecimal(a.get("sqm"), "432");
-        assertDecimal(a.get("perSqm"), "96.76");
-        assertDecimal(a.get("perBox"), "139.33");
+        assertDecimal(a.get("perSqm"), "85.19");
+        assertDecimal(a.get("perBox"), "122.67");
 
         // less tile packed, more ink: dearer per m² than the plant's biggest seller
         JsonNode b = row(d, "DB");
-        assertDecimal(b.get("ink"), "3000");
-        assertDecimal(b.get("total"), "16600");
-        assertDecimal(b.get("perSqm"), "115.28");
+        assertDecimal(b.get("body"), "20000");
+        assertDecimal(b.get("ink"), "2500");
+        assertDecimal(b.get("total"), "25700");
+        assertDecimal(b.get("perSqm"), "178.47");
 
-        // pressed but not packed: it took its powder, and has no cost per m² yet
+        // printed but not packed: it took its share of body, glaze and ink, and has no cost per m² yet
         JsonNode c = row(d, "DC");
-        assertDecimal(c.get("body"), "10000");
+        assertDecimal(c.get("body"), "5000");
+        assertDecimal(c.get("total"), "5900");
         assertThat(c.has("perSqm")).isFalse();
 
         // the dearest first, what isn't packed last
@@ -105,8 +106,8 @@ class DesignCostIntegrationTest extends IntegrationTestBase {
     @Test
     void whatHasNoUsageRecordedIsSharedByAreaAndSaysSo() throws Exception {
         issue("INK", "3000");
-        run("DA", "10", 1000, 100, 100, null, 200);   // no ink typed
-        run("DB", "10", 1000, 100, 100, null, 100);
+        run("DA", 1000, 100, 100, null, 200);   // no ink typed
+        run("DB", 1000, 100, 100, null, 100);
 
         JsonNode d = designs();
         assertDecimal(row(d, "DA").get("ink"), "2000");
@@ -180,19 +181,16 @@ class DesignCostIntegrationTest extends IntegrationTestBase {
         postAs(admin, DOCS + "/" + id + "/post", Map.of()).andExpect(status().isOk());
     }
 
-    /** One design's run on its own press: pressed, and as far along the line as the figures say. */
-    private void run(String code, String powderTon, int tilesGlazed, Integer engobe, Integer glaze, String ink, int boxes) throws Exception {
-        long press = machine("PRESS-" + (++presses), "PRESS");
+    /** One design's run on its own printer, as far along the line as the figures say. */
+    private void run(String code, int tilesGlazed, Integer engobe, Integer glaze, String ink, int boxes) throws Exception {
+        long printer = machine("DP-" + (++printers), "DIGITAL_PRINTER");
         long design = read(postAs(admin, "/api/masters/designs", Map.of("code", code, "name", "Design " + code,
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
-        long lot = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        long lot = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", day.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
-        long id = read(postAs(admin, "/api/production/press-entries", Map.of("plantId", plantId, "lotId", lot, "prodDate", day.toString(),
-                "shiftId", shiftA, "siloId", silo, "pressedCount", 2000, "pressRejects", 10, "dryerRejects", 10,
-                "powderTon", new BigDecimal(powderTon))).andExpect(status().isCreated())).get("id").asLong();
-        postAs(admin, "/api/production/press-entries/" + id + "/post", Map.of()).andExpect(status().isOk());
+        long id;
         if (tilesGlazed > 0) {
             Map<String, Object> entry = new HashMap<>(Map.of("plantId", plantId, "stage", "GLAZE", "lotId", lot, "prodDate", day.toString(),
                     "shiftId", shiftA, "machineId", glazeLine, "tilesIn", tilesGlazed, "rejects", 0));

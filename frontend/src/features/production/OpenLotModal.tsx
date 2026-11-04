@@ -10,15 +10,15 @@ import { useDesignOptions, useOpenLot } from './pressApi'
 type Values = Omit<LotOpenRequest, 'plantId' | 'openedDate' | 'closeCurrent'> & { openedDate: Dayjs }
 
 /**
- * "Start a design" on a press line. If the press is running another lot, it says so and closes it
- * (closeCurrent = true) - changing the design is exactly that.
+ * "Start a design" on a digital printer: the printer decides what is printed on the green tiles. If the printer is
+ * running another lot, it says so and closes it (closeCurrent = true) - changing the design is exactly that.
  */
-export default function OpenLotModal({ open, plantId, pressId, running, onClose, onOpened }: {
+export default function OpenLotModal({ open, plantId, printerId, running, onClose, onOpened }: {
   open: boolean
   plantId: number
-  /** press chosen on the card it was opened from */
-  pressId?: number
-  /** the lots running now, by press id (to warn which one closes) */
+  /** printer chosen on the card it was opened from */
+  printerId?: number
+  /** the lots running now, by printer id (to warn which one closes) */
   running: Map<number, LotSummary>
   onClose: () => void
   onOpened?: (lotId: number) => void
@@ -31,19 +31,20 @@ export default function OpenLotModal({ open, plantId, pressId, running, onClose,
   const machines = useProdMachines(plantId)
   const shifts = useProdShifts()
   const current = useCurrentShift()
-  const chosenPress = Form.useWatch('pressId', form) as number | undefined
-  const willClose = chosenPress ? running.get(chosenPress) : undefined
-  const presses = (machines.data ?? []).filter((m) => m.type === 'PRESS')
+  const chosenPrinter = Form.useWatch('printerId', form) as number | undefined
+  const willClose = chosenPrinter ? running.get(chosenPrinter) : undefined
+  const printers = (machines.data ?? []).filter((m) => m.type === 'DIGITAL_PRINTER')
+  const onlyPrinter = printers.length === 1 ? printers[0].id : undefined
 
   useEffect(() => {
     if (!open) return
     form.resetFields()
     form.setFieldsValue({
-      pressId,
+      printerId: printerId ?? onlyPrinter,
       openedDate: current.data ? dayjs(current.data.prodDate) : dayjs(),
       shiftId: current.data?.shiftId,
     })
-  }, [open, pressId, current.data, form])
+  }, [open, printerId, onlyPrinter, current.data, form])
 
   const onFinish = async (v: Values) => {
     try {
@@ -80,13 +81,13 @@ export default function OpenLotModal({ open, plantId, pressId, running, onClose,
           <Select showSearch={{ optionFilterProp: 'label' }} loading={designs.isLoading}
             options={(designs.data ?? []).map((d) => ({ value: d.id, label: `${d.code} · ${d.name} · ${d.sizeCode} ${d.finishName}` }))} />
         </Form.Item>
-        <Form.Item name="pressId" label={t('press.press')} rules={[required]}>
+        <Form.Item name="printerId" label={t('line.printer')} rules={[required]}>
           <Select loading={machines.isLoading}
-            options={presses.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
+            options={printers.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))} />
         </Form.Item>
         {willClose && (
           <Alert type="warning" showIcon style={{ marginBottom: 16 }}
-            title={t('press.willClose', { press: willClose.pressCode, lot: willClose.lotNo, design: willClose.designName })} />
+            title={t('press.willClose', { printer: willClose.printerCode, lot: willClose.lotNo, design: willClose.designName })} />
         )}
         <Row gutter={12}>
           <Col xs={12}>

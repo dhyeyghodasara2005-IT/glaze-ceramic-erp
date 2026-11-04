@@ -927,24 +927,22 @@ export interface LotSummary {
   sqmPerTile?: number
   /** from the size master: 2 for 600 x 1200 */
   pcsPerBox?: number
-  pressId: number
-  pressCode: string
+  /** the digital printer the design runs on */
+  printerId: number
+  printerCode: string
   status: LotStatus
   openedDate: string
   openedShiftCode: string
   openedAt: string
   closedAt?: string
-  pressed: number
-  good: number
-  goodSqm?: number
+  /** tiles in at the glaze line so far */
+  glazed: number
+  glazedSqm?: number
 }
 
 export interface PressEntrySummary {
   id: number
   entryNo?: string
-  lotId: number
-  lotNo: string
-  designName: string
   prodDate: string
   shiftCode: string
   pressCode: string
@@ -968,9 +966,9 @@ export interface Lot {
   sizeCode: string
   finishName: string
   sqmPerTile?: number
-  pressId: number
-  pressCode: string
-  pressName: string
+  printerId: number
+  printerCode: string
+  printerName: string
   status: LotStatus
   openedDate: string
   openedShiftCode: string
@@ -983,19 +981,20 @@ export interface Lot {
   cancelledBy?: string
   cancelReason?: string
   version: number
-  totals: {
+  /** what the presses did in this lot's shifts, on its line (green tiles have no design: the shift is the link) */
+  pressWork: {
     entries: number
     pressed: number
     pressRejects: number
     dryerRejects: number
     good: number
-    goodSqm?: number
     lossPct?: number
     powderTon: number
     untracedTon: number
   }
-  /** pressed -> glazed -> fired -> polished -> packed, with tiles waiting between stages */
+  /** glazed -> fired -> polished -> packed, with tiles waiting between stages */
   flow: LotFlow
+  /** the press entries of this lot's shifts */
   entries: PressEntrySummary[]
   glazeEntries: LineEntrySummary[]
   kilnEntries: LineEntrySummary[]
@@ -1012,7 +1011,7 @@ export interface Lot {
 export interface LotOpenRequest {
   plantId: number
   designId: number
-  pressId: number
+  printerId: number
   openedDate: string
   shiftId: number
   remarks?: string
@@ -1024,17 +1023,13 @@ export interface PressEntry {
   plantId: number
   plantCode: string
   entryNo?: string
-  lotId: number
-  lotNo: string
-  designCode: string
-  designName: string
-  sqmPerTile?: number
   prodDate: string
   shiftId: number
   shiftCode: string
   shiftName: string
   pressId: number
   pressCode: string
+  pressName: string
   dryerId?: number
   dryerCode?: string
   siloId: number
@@ -1045,7 +1040,6 @@ export interface PressEntry {
   pressRejects: number
   dryerRejects: number
   goodCount: number
-  goodSqm?: number
   greenWeightKg?: number
   powderTon: number
   untracedTon: number
@@ -1068,7 +1062,7 @@ export interface PressEntry {
 
 export interface PressEntryRequest {
   plantId: number
-  lotId: number
+  pressId: number
   prodDate: string
   shiftId: number
   dryerId?: number
@@ -1102,8 +1096,9 @@ export interface PressOverview {
   shiftId?: number
   shiftCode?: string
   shiftName?: string
-  lines: { pressId: number; pressCode: string; pressName: string; lot?: LotSummary }[]
-  today: { entries: number; pressed: number; rejects: number; good: number; goodSqm: number }
+  /** each press and what it pressed today; no design here, it goes on at the printer */
+  lines: { pressId: number; pressCode: string; pressName: string; entries: number; pressed: number; good: number }[]
+  today: { entries: number; pressed: number; rejects: number; good: number }
   silos: SiloStatus[]
 }
 
@@ -1113,9 +1108,6 @@ export type LineStage = 'GLAZE' | 'KILN' | 'POLISH'
 
 /** A lot's tiles stage by stage. waiting* can go negative when more was entered than came from the stage before. */
 export interface LotFlow {
-  pressed: number
-  pressRejects: number
-  pressGood: number
   glazeIn: number
   glazeRejects: number
   glazeOut: number
@@ -1131,16 +1123,16 @@ export interface LotFlow {
   /** pieces in boxes */
   packed: number
   boxes: number
-  waitingGlaze: number
+  /** out of the glaze line, not yet in the kiln: on the line or in a compensator */
   waitingKiln: number
   /** fired, not yet polished: in the cooling area */
   waitingPolish: number
   waitingSort: number
   firedSqm?: number
   packedSqm?: number
-  /** fired / pressed */
+  /** fired / glazed */
   yieldPct?: number
-  /** packed / pressed */
+  /** packed / glazed */
   packedYieldPct?: number
 }
 
@@ -1171,7 +1163,8 @@ export interface LineEntry {
   lotId: number
   lotNo: string
   designName: string
-  pressCode: string
+  /** the printer the lot runs on */
+  printerOfLot: string
   sqmPerTile?: number
   prodDate: string
   shiftId: number
@@ -1214,7 +1207,6 @@ export interface LineEntryRequest {
   prodDate: string
   shiftId: number
   machineId: number
-  printerId?: number
   tilesIn: number
   rejects?: number
   engobeGpt?: number
@@ -1233,8 +1225,11 @@ export interface LineOverview {
   shiftId?: number
   shiftCode?: string
   shiftName?: string
+  /** each digital printer and the design it runs (no lot = idle) */
+  printers: { printerId: number; printerCode: string; printerName: string; lot?: LotSummary }[]
   lots: { lot: LotSummary; flow: LotFlow }[]
-  today: { glazeIn: number; glazeRejects: number; kilnIn: number; kilnRejects: number; firedSqm: number; gasScm: number; gasPerSqm?: number }
+  /** pressGood - glazeIn = tiles still on the line or in compensators */
+  today: { pressGood: number; glazeIn: number; glazeRejects: number; kilnIn: number; kilnRejects: number; firedSqm: number; gasScm: number; gasPerSqm?: number }
 }
 
 // ---- production: quality check, sorting & packing, finishing (step 4d) ----
@@ -1251,7 +1246,7 @@ export interface LotCheck {
   lotId: number
   lotNo: string
   designName: string
-  pressCode: string
+  printerCode: string
   checkDate: string
   shiftId: number
   shiftCode: string
@@ -1324,7 +1319,7 @@ export interface PackEntry {
   lotNo: string
   designName: string
   sizeCode: string
-  pressCode: string
+  printerCode: string
   pcsPerBox?: number
   sqmPerTile?: number
   prodDate: string

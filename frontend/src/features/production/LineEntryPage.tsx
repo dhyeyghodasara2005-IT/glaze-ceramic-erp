@@ -73,11 +73,11 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
 
   // useMemo: the same arrays between renders, so the effect below doesn't re-run on every keystroke.
   const stageMachines = useMemo(() => (machines.data ?? []).filter((m) => m.type === STAGE_MACHINE[stage]), [machines.data, stage])
-  const printers = useMemo(() => (machines.data ?? []).filter((m) => m.type === 'DIGITAL_PRINTER'), [machines.data])
 
-  // Tiles waiting for this stage in the chosen lot (good from the stage before, not yet entered here).
+  // Tiles waiting for this stage in the chosen lot (out of the stage before, not yet entered here). The glaze line
+  // is where a lot starts - green tiles have no design - so its tiles in are counted, not worked out.
   const flow = (isPolish ? finishing.data : overview.data)?.lots.find((l) => l.lot.id === lotId)?.flow
-  const waiting = flow ? { GLAZE: flow.waitingGlaze, KILN: flow.waitingKiln, POLISH: flow.waitingPolish }[stage] : undefined
+  const waiting = flow && !isGlaze ? (isPolish ? flow.waitingPolish : flow.waitingKiln) : undefined
 
   useEffect(() => {
     if (entry) form.setFieldsValue({ ...entry, prodDate: dayjs(entry.prodDate) })
@@ -107,33 +107,31 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
   const lotOptions = useMemo(() => {
     const opts = allLots.map((l) => ({
       value: l.id,
-      label: `${l.lotNo} · ${l.designName} · ${l.pressCode}${l.status === 'CLOSED' ? ` (${t('press.lotStatus.CLOSED')})` : ''}`,
+      label: `${l.lotNo} · ${l.designName} · ${l.printerCode}${l.status === 'CLOSED' ? ` (${t('press.lotStatus.CLOSED')})` : ''}`,
     }))
-    if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.pressCode}` })
+    if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.printerOfLot}` })
     return opts
   }, [allLots, entry, t])
-  // The machine the lot runs on; the layout says which glaze line, kiln or polishing line comes after it.
-  const lotMachineId = allLots.find((l) => l.id === lotId)?.pressId
+  // The printer the lot runs on. The layout says which glaze line it sits on (up the line) and which kiln or
+  // polishing line comes after it (down the line).
+  const chosenLot = allLots.find((l) => l.id === lotId)
+  const printerId = chosenLot?.printerId
+  const lotPrinter = chosenLot?.printerCode ?? entry?.printerOfLot
+  const dir = isGlaze ? 'up' : 'down'
   const near = useMemo(
-    () => reachable(links.data, machines.data, lotMachineId, STAGE_MACHINE[stage], 'down'),
-    [links.data, machines.data, lotMachineId, stage],
+    () => reachable(links.data, machines.data, printerId, STAGE_MACHINE[stage], dir),
+    [links.data, machines.data, printerId, stage, dir],
   )
 
-  // New entry: the machine that comes next in the layout (or the plant's only one), until the supervisor picks.
+  // New entry: that machine (or the plant's only one), until the supervisor picks another.
   useEffect(() => {
     if (!isNew || !machines.data) return
-    const machine = pickMachine(links.data, machines.data, lotMachineId, STAGE_MACHINE[stage], 'down')
+    const machine = pickMachine(links.data, machines.data, printerId, STAGE_MACHINE[stage], dir)
     if (machine && !form.isFieldTouched('machineId')) form.setFieldValue('machineId', machine)
-    if (isGlaze && !form.isFieldTouched('printerId')) {
-      const printer = pickMachine(links.data, machines.data, lotMachineId, 'DIGITAL_PRINTER', 'down')
-      if (printer) form.setFieldValue('printerId', printer)
-    }
-  }, [isNew, isGlaze, stage, links.data, machines.data, lotMachineId, form])
+  }, [isNew, stage, dir, links.data, machines.data, printerId, form])
 
   const machineOptions = nearestFirst(stageMachines, near).map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
   if (entry && !machineOptions.some((o) => o.value === entry.machineId)) machineOptions.push({ value: entry.machineId, label: `${entry.machineCode} · ${entry.machineName}` })
-  const printerOptions = printers.map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
-  if (entry?.printerId && !printerOptions.some((o) => o.value === entry.printerId)) printerOptions.push({ value: entry.printerId, label: entry.printerCode ?? '' })
 
   const sqmPerTile = allLots.find((l) => l.id === lotId)?.sqmPerTile ?? entry?.sqmPerTile
   const out = tilesIn ? tilesIn - (rejects ?? 0) : undefined
@@ -283,8 +281,8 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
             </Col>
             {isGlaze && (
               <Col xs={12} md={6}>
-                <Form.Item name="printerId" label={t('line.printer')}>
-                  <Select allowClear options={printerOptions} loading={machines.isLoading} />
+                <Form.Item label={t('line.printer')} extra={t('line.printerFromLot')}>
+                  <Input value={lotPrinter ?? ''} disabled />
                 </Form.Item>
               </Col>
             )}

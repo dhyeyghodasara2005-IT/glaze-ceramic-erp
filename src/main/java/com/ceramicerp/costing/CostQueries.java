@@ -1,5 +1,6 @@
 package com.ceramicerp.costing;
 
+import com.ceramicerp.master.TileSize;
 import com.ceramicerp.production.LineStage;
 import com.ceramicerp.store.DocStatus;
 import com.ceramicerp.store.StoreDocType;
@@ -9,7 +10,9 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** The totals a month's cost is made from, read from the store and packing. Posted documents only. */
 @Repository
@@ -55,22 +58,34 @@ class CostQueries {
                 .toList();
     }
 
-    record PressedDesign(Long designId, String code, String name, BigDecimal powderTon) {
+    record GlazedDesign(Long designId, String code, String name, BigDecimal sqm) {
     }
 
-    /** Tonnes of powder pressed per design. */
-    List<PressedDesign> pressedByDesign(Long plantId, LocalDate from, LocalDate to) {
-        return em.createQuery("""
-                        select d.id, d.code, d.name, sum(e.powderTon)
-                        from PressEntry e join e.lot lot join lot.design d
-                        where e.plant.id = :plantId and e.status = :posted and e.prodDate between :from and :to
-                        group by d.id, d.code, d.name
+    /**
+     * Square metres glazed per design: tiles in at the glaze line x the tile's m². Body cost is shared by this, not
+     * by the powder pressed: the press makes green tiles with no design, so its rejects can't be blamed on one.
+     */
+    List<GlazedDesign> glazedByDesign(Long plantId, LocalDate from, LocalDate to) {
+        Map<Long, GlazedDesign> out = new LinkedHashMap<>();
+        for (Object[] r : em.createQuery("""
+                        select d.id, d.code, d.name, s, sum(e.tilesIn)
+                        from LineEntry e join e.lot lot join lot.design d join d.tileSize s
+                        where e.plant.id = :plantId and e.status = :posted and e.stage = :glaze
+                          and e.prodDate between :from and :to
+                        group by d.id, d.code, d.name, s
                         """, Object[].class)
                 .setParameter("plantId", plantId).setParameter("posted", DocStatus.POSTED)
-                .setParameter("from", from).setParameter("to", to)
-                .getResultList().stream()
-                .map(r -> new PressedDesign((Long) r[0], (String) r[1], (String) r[2], (BigDecimal) r[3]))
-                .toList();
+                .setParameter("glaze", LineStage.GLAZE).setParameter("from", from).setParameter("to", to)
+                .getResultList()) {
+            BigDecimal perTile = ((TileSize) r[3]).sqmPerTile();
+            if (perTile == null || r[4] == null) {
+                continue;
+            }
+            BigDecimal sqm = perTile.multiply(BigDecimal.valueOf(((Number) r[4]).longValue()));
+            out.merge((Long) r[0], new GlazedDesign((Long) r[0], (String) r[1], (String) r[2], sqm),
+                    (a, b) -> new GlazedDesign(a.designId(), a.code(), a.name(), a.sqm().add(b.sqm())));
+        }
+        return List.copyOf(out.values());
     }
 
     record GlazeEntry(Long designId, String code, String name, int tilesIn, BigDecimal engobeGpt, BigDecimal glazeGpt,

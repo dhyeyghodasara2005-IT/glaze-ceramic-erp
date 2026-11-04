@@ -4,6 +4,7 @@ import com.ceramicerp.common.PageResponse;
 import com.ceramicerp.common.Text;
 import com.ceramicerp.common.exception.BusinessException;
 import com.ceramicerp.common.exception.NotFoundException;
+import com.ceramicerp.master.Machine;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MachineType;
 import com.ceramicerp.master.Shift;
@@ -18,7 +19,6 @@ import com.ceramicerp.production.dto.LineEntrySummary;
 import com.ceramicerp.production.dto.LineOverview;
 import com.ceramicerp.production.dto.LotFlow;
 import com.ceramicerp.production.dto.LotSummary;
-import com.ceramicerp.production.dto.LotTotals;
 import com.ceramicerp.security.CurrentUser;
 import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.DocStatus;
@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,6 +59,7 @@ public class LineEntryService {
 
     private final LineEntryRepository entryRepository;
     private final ProductionLotRepository lotRepository;
+    private final PressEntryRepository pressRepository;
     private final MachineRepository machineRepository;
     private final PlantService plantService;
     private final ShiftService shiftService;
@@ -138,21 +140,33 @@ public class LineEntryService {
         return toResponse(entry);
     }
 
-    /** Lots whose tiles may be in the line now, each with its funnel, plus today's glaze and kiln figures. */
+    /**
+     * Each printer with the design it runs, the lots whose tiles may be in the line now (each with its funnel), and
+     * today's figures.
+     */
     @Transactional(readOnly = true)
     public LineOverview overview(Long plantId) {
         PlantAccess.require(plantId);
         CurrentShiftResponse now = bodyPrepService.currentShift();
 
         List<ProductionLot> lots = lotRepository.findSelectable(plantId, Instant.now().minus(DRAIN_WINDOW));
-        Map<Long, LotTotals> press = lotService.pressTotals(lots);
-        Map<Long, LotFlow> flows = lotService.flows(lots, press);
+        Map<Long, LotFlow> flows = lotService.flows(lots);
         List<LotSummary> summaries = lotService.summaries(lots);
         List<LineOverview.LotLine> lines = summaries.stream()
                 .map(s -> new LineOverview.LotLine(s, flows.get(s.id())))
-                // a closed lot only matters while some of its tiles are still waiting in the line
-                .filter(l -> l.lot().status() == LotStatus.OPEN || l.flow().waitingGlaze() > 0 || l.flow().waitingKiln() > 0)
+                // a closed lot only matters while some of its tiles are still waiting before the kiln
+                .filter(l -> l.lot().status() == LotStatus.OPEN || l.flow().waitingKiln() > 0)
                 .toList();
+
+        Map<Long, LotSummary> running = new HashMap<>();
+        summaries.stream().filter(s -> s.status() == LotStatus.OPEN).forEach(s -> running.putIfAbsent(s.printerId(), s));
+        List<LineOverview.Printer> printers = machineRepository.findByPlantIdInProcessOrder(plantId).stream()
+                .filter(m -> m.getType() == MachineType.DIGITAL_PRINTER && m.isActive())
+                .map((Machine m) -> new LineOverview.Printer(m.getId(), m.getCode(), m.getName(), running.get(m.getId())))
+                .toList();
+
+        long pressGood = pressRepository.findByPlantIdAndProdDateAndStatus(plantId, now.prodDate(), DocStatus.POSTED)
+                .stream().mapToLong(PressEntry::goodCount).sum();
 
         long glazeIn = 0;
         long glazeRejects = 0;
@@ -172,8 +186,8 @@ public class LineEntryService {
                 gas = e.getGasScm() == null ? gas : gas.add(e.getGasScm());
             }
         }
-        return new LineOverview(now.prodDate(), now.shiftId(), now.code(), now.name(), lines,
-                new LineOverview.Day(glazeIn, glazeRejects, kilnIn, kilnRejects, firedSqm, gas, perSqm(gas, firedSqm)));
+        return new LineOverview(now.prodDate(), now.shiftId(), now.code(), now.name(), printers, lines,
+                new LineOverview.Day(pressGood, glazeIn, glazeRejects, kilnIn, kilnRejects, firedSqm, gas, perSqm(gas, firedSqm)));
     }
 
     /**
@@ -237,9 +251,8 @@ public class LineEntryService {
 
         LineStage stage = entry.getStage();
         entry.setMachine(requireMachine(machineRepository, req.machineId(), entry.getPlant(), stage.machineType(), entry.getMachine()));
-        entry.setPrinter(stage == LineStage.GLAZE && req.printerId() != null
-                ? requireMachine(machineRepository, req.printerId(), entry.getPlant(), MachineType.DIGITAL_PRINTER, entry.getPrinter())
-                : null);
+        // The design is the printer's: a glaze entry is always on its lot's printer.
+        entry.setPrinter(stage == LineStage.GLAZE ? lot.getPrinter() : null);
 
         int rejects = req.rejects() == null ? 0 : req.rejects();
         if (rejects > req.tilesIn()) {

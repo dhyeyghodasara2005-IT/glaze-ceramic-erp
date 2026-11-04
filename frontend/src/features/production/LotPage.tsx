@@ -54,8 +54,10 @@ export default function LotPage() {
   if (isLoading) return <div className="center-block"><Spin size="large" /></div>
   if (!lot) return <div className="panel"><EmptyState title={t('store.notFound')} action={<Link to={BASE}>{t('common.back')}</Link>} /></div>
 
-  const canEntry = can('PRESS_ENTRY')
-  const tot = lot.totals
+  // Designs are started, closed and cancelled at the printer: the glaze & print supervisor's job.
+  const canEntry = can('GLAZE_ENTRY')
+  const tot = lot.pressWork
+  const glazed = lot.glazeEntries.some((e) => e.status === 'POSTED')
 
   const onClose = async () => {
     try {
@@ -80,7 +82,6 @@ export default function LotPage() {
     { label: t('press.pressRejects'), value: tot.pressRejects.toLocaleString('en-IN') },
     { label: t('press.dryerRejects'), value: tot.dryerRejects.toLocaleString('en-IN') },
     { label: t('press.good'), value: tot.good.toLocaleString('en-IN') },
-    { label: t('press.goodSqm'), value: tot.goodSqm != null ? `${qty(tot.goodSqm, 0)} m²` : '–' },
     { label: t('press.loss'), value: tot.lossPct != null ? `${qty(tot.lossPct, 2)} %` : '–' },
     { label: t('press.powderUsed'), value: `${qty(tot.powderTon, 1)} T` },
     ...(tot.untracedTon > 0 ? [{ label: t('press.untraced'), value: `${qty(tot.untracedTon, 1)} T`, warn: true }] : []),
@@ -93,6 +94,7 @@ export default function LotPage() {
       render: (no?: string) => (no ? <span className="code-badge">{no}</span> : <span className="cell-sub">{t('store.status.DRAFT')}</span>),
     },
     { title: t('prod.prodDate'), dataIndex: 'prodDate', width: 140, render: (d: string, e) => `${shortDate(d)} · ${e.shiftCode}` },
+    { title: t('press.press'), dataIndex: 'pressCode', width: 100 },
     { title: t('press.silo'), dataIndex: 'siloCode', width: 100, responsive: ['md'] },
     { title: t('press.pressed'), dataIndex: 'pressedCount', width: 100, align: 'right', responsive: ['sm'], render: (n: number) => n.toLocaleString('en-IN') },
     { title: t('press.good'), dataIndex: 'goodCount', width: 100, align: 'right', render: (n: number) => <b>{n.toLocaleString('en-IN')}</b> },
@@ -177,7 +179,7 @@ export default function LotPage() {
           <Space size={10} wrap>
             <LotStatusTag status={lot.status} />
             <span><b>{lot.designName}</b> · {lot.sizeCode} {lot.finishName}</span>
-            <span>{lot.pressCode} · {shortDate(lot.openedDate)} {t('prod.shift')} {lot.openedShiftCode}</span>
+            <span>{lot.printerCode} · {shortDate(lot.openedDate)} {t('prod.shift')} {lot.openedShiftCode}</span>
           </Space>
         )}
         icon={<TagsOutlined />}
@@ -185,8 +187,8 @@ export default function LotPage() {
           <Space wrap>
             <Button icon={<ArrowLeftOutlined />} onClick={goBack}>{t('common.back')}</Button>
             {canEntry && lot.status !== 'CANCELLED' && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(`/production/press-entries/new?lot=${lot.id}`)}>
-                {t('press.shiftEntry')}
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(`${LINE_PATHS.GLAZE}/new?lot=${lot.id}`)}>
+                {t('line.shortEntry.GLAZE')}
               </Button>
             )}
             {canEntry && lot.status === 'OPEN' && (
@@ -195,7 +197,7 @@ export default function LotPage() {
                 <Button loading={close.isPending}>{t('press.closeLot')}</Button>
               </Popconfirm>
             )}
-            {canEntry && lot.status !== 'CANCELLED' && tot.entries === 0 && (
+            {canEntry && lot.status !== 'CANCELLED' && !glazed && (
               <Button danger icon={<StopOutlined />} onClick={() => setCancelling(true)}>{t('press.cancelLot')}</Button>
             )}
           </Space>
@@ -244,34 +246,6 @@ export default function LotPage() {
         </FadeIn>
       )}
 
-      <FadeIn delay={0.06} className="panel doc-panel">
-        <div className="form-section">{t('press.totals')}</div>
-        <div className="fact-grid">
-          {facts.map((f) => (
-            <div key={f.label}>
-              <span className="stat-label">{f.label}</span>
-              <b className={f.warn ? 'warn-text' : undefined}>{f.value}</b>
-            </div>
-          ))}
-        </div>
-      </FadeIn>
-
-      <FadeIn delay={0.1}>
-        <h2 className="section-title">{t('press.entries')}</h2>
-        <Card className="data-card" styles={{ body: { padding: 0 } }} style={{ marginBottom: 24 }}>
-          <Table<PressEntrySummary>
-            rowKey="id"
-            size="small"
-            columns={columns}
-            dataSource={lot.entries}
-            pagination={false}
-            rowClassName={(e) => `clickable-row${e.status === 'CANCELLED' ? ' row-cancelled' : ''}`}
-            onRow={(e) => ({ onClick: () => navigate(`/production/press-entries/${e.id}`) })}
-            locale={{ emptyText: <EmptyState title={t('press.emptyEntries')} /> }}
-          />
-        </Card>
-      </FadeIn>
-
       {stageTable('GLAZE')}
       {stageTable('KILN')}
 
@@ -311,6 +285,35 @@ export default function LotPage() {
           </Card>
         </FadeIn>
       )}
+
+      <FadeIn delay={0.06} className="panel doc-panel">
+        <div className="form-section">{t('press.totals')}</div>
+        <p className="panel-hint" style={{ margin: '-4px 0 12px' }}>{t('press.pressWorkHint')}</p>
+        <div className="fact-grid">
+          {facts.map((f) => (
+            <div key={f.label}>
+              <span className="stat-label">{f.label}</span>
+              <b className={f.warn ? 'warn-text' : undefined}>{f.value}</b>
+            </div>
+          ))}
+        </div>
+      </FadeIn>
+
+      <FadeIn delay={0.1}>
+        <h2 className="section-title">{t('press.entries')}</h2>
+        <Card className="data-card" styles={{ body: { padding: 0 } }} style={{ marginBottom: 24 }}>
+          <Table<PressEntrySummary>
+            rowKey="id"
+            size="small"
+            columns={columns}
+            dataSource={lot.entries}
+            pagination={false}
+            rowClassName={(e) => `clickable-row${e.status === 'CANCELLED' ? ' row-cancelled' : ''}`}
+            onRow={(e) => ({ onClick: () => navigate(`/production/press-entries/${e.id}`) })}
+            locale={{ emptyText: <EmptyState title={t('press.noShiftMatch')} /> }}
+          />
+        </Card>
+      </FadeIn>
 
       <FadeIn delay={0.14} className="panel doc-panel">
         <div className="form-section"><NodeIndexOutlined /> {t('press.trace')}</div>

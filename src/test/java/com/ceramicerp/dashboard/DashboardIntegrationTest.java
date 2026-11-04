@@ -33,6 +33,7 @@ class DashboardIntegrationTest extends IntegrationTestBase {
         admin = adminToken();
         plantId = createPlant(admin, createCompany(admin, "DSHCO"), "DSH-1");
         long press = createMachine("PRESS-1", "PRESS");
+        long printer = createMachine("DP-1", "DIGITAL_PRINTER");
         long glazeLine = createMachine("GL-1", "GLAZE_LINE");
         long kiln = createMachine("KILN-1", "KILN");
         long polisher = createMachine("POL-1", "POLISHING_LINE");
@@ -45,11 +46,11 @@ class DashboardIntegrationTest extends IntegrationTestBase {
         design = read(postAs(admin, "/api/masters/designs", Map.of("code", "STATUARIO-D", "name", "Statuario Gold",
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
-        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        lotId = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", today.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
 
-        Map<String, Object> pressEntry = new HashMap<>(Map.of("plantId", plantId, "lotId", lotId, "prodDate", today.toString(),
+        Map<String, Object> pressEntry = new HashMap<>(Map.of("plantId", plantId, "pressId", press, "prodDate", today.toString(),
                 "shiftId", shiftA, "siloId", silo, "pressedCount", 2000, "pressRejects", 30, "dryerRejects", 20, "powderTon", 42));
         long id = read(postAs(admin, "/api/production/press-entries", pressEntry).andExpect(status().isCreated())).get("id").asLong();
         postAs(admin, "/api/production/press-entries/" + id + "/post", Map.of()).andExpect(status().isOk());

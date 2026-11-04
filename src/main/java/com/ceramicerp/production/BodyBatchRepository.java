@@ -53,14 +53,14 @@ public interface BodyBatchRepository extends JpaRepository<BodyBatch, Long> {
     DayTotal totalForDay(@Param("plantId") Long plantId, @Param("date") LocalDate date,
                          @Param("statuses") Collection<BodyBatchStatus> statuses);
 
-    /** The mill charges behind a design lot: its press entries' powder, and the spray runs that made it. */
+    /** The mill charges behind these press entries: their powder, and the spray runs that made it. */
     @Query("""
             select b from BodyBatch b join fetch b.issueDocument
             where b.id in (select rb.bodyBatch.id from SprayRunBatch rb, PressEntryPowder p
-                           where p.sprayRun = rb.run and p.entry.lot.id = :lotId
+                           where p.sprayRun = rb.run and p.entry.id in :entryIds
                              and p.entry.status = :status and rb.run.status = :status)
             """)
-    List<BodyBatch> findBehindDesignLot(@Param("lotId") Long lotId, @Param("status") DocStatus status);
+    List<BodyBatch> findBehindPressEntries(@Param("entryIds") Collection<Long> entryIds, @Param("status") DocStatus status);
 
     /** The mill charges these store issues were made for. Spares and other manual issues have none. */
     @Query("""

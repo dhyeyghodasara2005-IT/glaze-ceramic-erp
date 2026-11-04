@@ -17,7 +17,8 @@ public record LineEntryResponse(
         Long lotId,
         String lotNo,
         String designName,
-        String pressCode,
+        /** The printer the lot runs on. */
+        String printerOfLot,
         BigDecimal sqmPerTile,
         LocalDate prodDate,
         Long shiftId,
@@ -57,7 +58,7 @@ public record LineEntryResponse(
         var lot = e.getLot();
         var printer = e.getPrinter();
         return new LineEntryResponse(e.getId(), e.getPlant().getId(), e.getPlant().getCode(), e.getStage(), e.getEntryNo(),
-                lot.getId(), lot.getLotNo(), lot.getDesign().getName(), lot.getPress().getCode(), sqmPerTile,
+                lot.getId(), lot.getLotNo(), lot.getDesign().getName(), lot.getPrinter().getCode(), sqmPerTile,
                 e.getProdDate(), e.getShift().getId(), e.getShift().getCode(), e.getShift().getName(),
                 e.getMachine().getId(), e.getMachine().getCode(), e.getMachine().getName(),
                 printer == null ? null : printer.getId(), printer == null ? null : printer.getCode(), e.getStatus(),

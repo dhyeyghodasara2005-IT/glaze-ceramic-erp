@@ -49,7 +49,7 @@ public class FinishingService {
         Optional<Grade> top = ProductionRules.topGrade(gradeRepository);
 
         List<ProductionLot> candidates = lotRepository.findSelectable(plantId, Instant.now().minus(FINISH_WINDOW));
-        Map<Long, LotFlow> flows = lotService.flows(candidates, lotService.pressTotals(candidates));
+        Map<Long, LotFlow> flows = lotService.flows(candidates);
         List<ProductionLot> lots = candidates.stream().filter(l -> finishing(l, flows.get(l.getId()))).toList();
         List<Long> ids = lots.stream().map(ProductionLot::getId).toList();
 

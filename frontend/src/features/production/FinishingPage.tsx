@@ -93,7 +93,7 @@ export default function FinishingPage() {
             <div key={lot.id} className="line-card">
               <div className="mill-card-head">
                 <span>
-                  <span className="code-badge">{lot.pressCode}</span>{' '}
+                  <span className="code-badge">{lot.printerCode}</span>{' '}
                   <Link to={`/production/lots/${lot.id}`} className="cell-title">{lot.designName}</Link>
                   <span className="cell-sub"> · {lot.lotNo}</span>
                 </span>

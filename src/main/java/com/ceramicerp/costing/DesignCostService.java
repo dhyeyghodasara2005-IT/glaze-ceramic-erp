@@ -22,7 +22,8 @@ import java.util.Map;
 /**
  * Shares a month's cost sheet out per design, each cost by what shows who used it:
  * <ul>
- *   <li>body material by the tonnes of powder pressed (rejects use powder too: that is the point)</li>
+ *   <li>body material by the m² glazed: the press makes green tiles with no design, so a design is charged for
+ *       the tiles printed with it, and press and dryer rejects are shared out with them</li>
  *   <li>glaze by the grams put on (engobe + glaze grams per tile x tiles), ink by the litres</li>
  *   <li>packing by the boxes</li>
  *   <li>everything else (energy, labour, monthly costs, other material) by the m² packed</li>
@@ -47,7 +48,7 @@ public class DesignCostService {
         Map<Long, Shares> designs = new LinkedHashMap<>();
         Map<Long, BigDecimal> sqm = new HashMap<>();
         Map<Long, BigDecimal> boxes = new HashMap<>();
-        Map<Long, BigDecimal> powder = new HashMap<>();
+        Map<Long, BigDecimal> glazed = new HashMap<>();
         Map<Long, BigDecimal> grams = new HashMap<>();
         Map<Long, BigDecimal> litres = new HashMap<>();
 
@@ -58,9 +59,9 @@ public class DesignCostService {
             sqm.put(p.designId(), p.sqm());
             boxes.put(p.designId(), BigDecimal.valueOf(p.boxes()));
         }
-        for (CostQueries.PressedDesign p : queries.pressedByDesign(plantId, from, to)) {
-            designs.computeIfAbsent(p.designId(), id -> new Shares(id, p.code(), p.name()));
-            powder.put(p.designId(), p.powderTon());
+        for (CostQueries.GlazedDesign g : queries.glazedByDesign(plantId, from, to)) {
+            designs.computeIfAbsent(g.designId(), id -> new Shares(id, g.code(), g.name()));
+            glazed.put(g.designId(), g.sqm());
         }
         int withoutUsage = 0;
         for (CostQueries.GlazeEntry e : queries.glazeEntries(plantId, from, to)) {
@@ -80,7 +81,7 @@ public class DesignCostService {
             Map<Long, BigDecimal> driver = sqm;
             if (line.section() == CostSheet.Section.MATERIAL) {
                 Map<Long, BigDecimal> own = switch (line.code().toUpperCase(Locale.ROOT)) {
-                    case "BODY" -> powder;
+                    case "BODY" -> glazed;
                     case "GLAZE" -> grams;
                     case "INK" -> litres;
                     case "PACKING" -> boxes;

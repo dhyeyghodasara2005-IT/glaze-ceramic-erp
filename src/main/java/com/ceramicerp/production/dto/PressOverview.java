@@ -14,10 +14,10 @@ public record PressOverview(
         Day today,
         List<SiloStatus> silos
 ) {
-    /** One press line and the lot it is running (null when idle). */
-    public record Line(Long pressId, String pressCode, String pressName, LotSummary lot) {
+    /** One press and what it pressed today (posted entries). Green tiles: no design here. */
+    public record Line(Long pressId, String pressCode, String pressName, long entries, long pressed, long good) {
     }
 
-    public record Day(long entries, long pressed, long rejects, long good, BigDecimal goodSqm) {
+    public record Day(long entries, long pressed, long rejects, long good) {
     }
 }

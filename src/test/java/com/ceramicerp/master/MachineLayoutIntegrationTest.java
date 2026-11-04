@@ -163,24 +163,27 @@ class MachineLayoutIntegrationTest extends IntegrationTestBase {
         long design = read(postAs(admin, "/api/masters/designs", Map.of("code", "LAY-D", "name", "Layout design",
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "GLOSSY"), "faces", 4)).andExpect(status().isCreated())).get("id").asLong();
-        long lot = read(postAs(admin, "/api/production/lots", lotBody(design, press1)).andExpect(status().isCreated()))
+        long lot = read(postAs(admin, "/api/production/lots", lotBody(design, printer)).andExpect(status().isCreated()))
                 .get("id").asLong();
         String lotNo = read(getAs(admin, "/api/production/lots/" + lot)).get("lotNo").asText();
 
-        postAs(admin, MACHINES + "/" + press1 + "/replace", Map.of("code", "PRESS-1", "name", "Press 1 (new)"))
+        postAs(admin, MACHINES + "/" + printer + "/replace", Map.of("code", "DP-1", "name", "Printer 1 (new)"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("PRESS-1 is running design lot " + lotNo
+                .andExpect(jsonPath("$.message").value("DP-1 is running design lot " + lotNo
                         + ". Close the lot before replacing the machine."));
-        // Refused means nothing happened: the old press is still PRESS-1 and in use.
-        JsonNode still = read(getAs(admin, MACHINES + "/" + press1));
-        assertThat(still.get("code").asText()).isEqualTo("PRESS-1");
+        // Refused means nothing happened: the old printer is still DP-1 and in use.
+        JsonNode still = read(getAs(admin, MACHINES + "/" + printer));
+        assertThat(still.get("code").asText()).isEqualTo("DP-1");
         assertThat(still.get("active").asBoolean()).isTrue();
-
-        // Once the lot is closed the press can go. The lot keeps the press it really ran on.
-        postAs(admin, "/api/production/lots/" + lot + "/close", Map.of()).andExpect(status().isOk());
+        // A press runs no design, so it can be replaced any time.
         postAs(admin, MACHINES + "/" + press1 + "/replace", Map.of("code", "PRESS-1", "name", "Press 1 (new)"))
                 .andExpect(status().isCreated());
-        assertThat(read(getAs(admin, "/api/production/lots/" + lot)).get("pressCode").asText()).isEqualTo("PRESS-1-OLD");
+
+        // Once the lot is closed the printer can go. The lot keeps the printer it really ran on.
+        postAs(admin, "/api/production/lots/" + lot + "/close", Map.of()).andExpect(status().isOk());
+        postAs(admin, MACHINES + "/" + printer + "/replace", Map.of("code", "DP-1", "name", "Printer 1 (new)"))
+                .andExpect(status().isCreated());
+        assertThat(read(getAs(admin, "/api/production/lots/" + lot)).get("printerCode").asText()).isEqualTo("DP-1-OLD");
     }
 
     // ------------------------------------------------------------------ helpers
@@ -209,11 +212,11 @@ class MachineLayoutIntegrationTest extends IntegrationTestBase {
         return out;
     }
 
-    private Map<String, Object> lotBody(long designId, long pressId) throws Exception {
+    private Map<String, Object> lotBody(long designId, long printerId) throws Exception {
         Map<String, Object> body = new HashMap<>();
         body.put("plantId", plantId);
         body.put("designId", designId);
-        body.put("pressId", pressId);
+        body.put("printerId", printerId);
         body.put("openedDate", today.toString());
         body.put("shiftId", idOf("shifts", "A"));
         body.put("closeCurrent", false);

@@ -17,7 +17,7 @@ public record LotCheckResponse(
         Long lotId,
         String lotNo,
         String designName,
-        String pressCode,
+        String printerCode,
         LocalDate checkDate,
         Long shiftId,
         String shiftCode,
@@ -39,11 +39,11 @@ public record LotCheckResponse(
         String createdBy,
         Long version
 ) {
-    /** Needs plant, lot, lot.design, lot.press and shift loaded. */
+    /** Needs plant, lot, lot.design, lot.printer and shift loaded. */
     public static LotCheckResponse from(LotCheck c) {
         var lot = c.getLot();
         return new LotCheckResponse(c.getId(), c.getPlant().getId(), c.getPlant().getCode(), c.getCheckNo(), lot.getId(),
-                lot.getLotNo(), lot.getDesign().getName(), lot.getPress().getCode(), c.getCheckDate(),
+                lot.getLotNo(), lot.getDesign().getName(), lot.getPrinter().getCode(), c.getCheckDate(),
                 c.getShift().getId(), c.getShift().getCode(), c.getStatus(), c.getSamples(), c.getCentreBendMm(),
                 c.getEdgeBendMm(), c.getWarpageMm(), c.getLengthMm(), c.getWidthMm(), c.getThicknessMm(),
                 c.getVerdict(), c.getExpectedTopPct(), c.getRemarks(), c.getCancelledAt(), c.getCancelledBy(),

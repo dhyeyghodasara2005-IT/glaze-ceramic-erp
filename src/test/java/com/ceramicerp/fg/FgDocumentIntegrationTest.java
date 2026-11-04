@@ -36,7 +36,7 @@ class FgDocumentIntegrationTest extends IntegrationTestBase {
         admin = adminToken();
         long companyId = createCompany(admin, "FGDCO");
         plantId = createPlant(admin, companyId, "FG-D");
-        long press = createMachine("PRESS-1", "PRESS");
+        long printer = createMachine("DP-1", "DIGITAL_PRINTER");
         long sorter = createMachine("SORT-1", "SORTING_LINE");
         long shiftA = idOf("shifts", "A");
         premium = idOf("grades", "PREMIUM");
@@ -44,7 +44,7 @@ class FgDocumentIntegrationTest extends IntegrationTestBase {
         design = read(postAs(admin, "/api/masters/designs", Map.of("code", "ARMANI-FG", "name", "Armani Grey",
                 "categoryId", idOf("categories", "GVT"), "sizeId", idOf("sizes", "600X1200"),
                 "finishId", idOf("finishes", "MATT"), "faces", 2)).andExpect(status().isCreated())).get("id").asLong();
-        long lot = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "pressId", press,
+        long lot = read(postAs(admin, "/api/production/lots", Map.of("plantId", plantId, "designId", design, "printerId", printer,
                 "openedDate", today.toString(), "shiftId", shiftA, "closeCurrent", false))
                 .andExpect(status().isCreated())).get("id").asLong();
         long godown = read(postAs(admin, "/api/fg/godowns", Map.of("plantId", plantId, "code", "FG-1", "name", "FG"))
