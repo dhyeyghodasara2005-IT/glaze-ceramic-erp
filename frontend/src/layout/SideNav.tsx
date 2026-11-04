@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '../auth/AuthContext'
 import Logo, { LogoMark } from '../components/Logo'
 import UserAvatar from '../components/UserAvatar'
-import { MENU, isActivePath, isGroup, type MenuEntry } from './menu'
+import { MENU, canSee, isActivePath, isGroup, type MenuEntry } from './menu'
 
 interface Props {
   collapsed?: boolean
@@ -25,7 +25,7 @@ export default function SideNav({ collapsed = false, onNavigate, onToggle }: Pro
   const { t } = useTranslation()
   const { can, user } = useAuth()
   const location = useLocation()
-  const visible = (e: MenuEntry) => !e.permission || can(e.permission)
+  const visible = (e: MenuEntry) => canSee(e, can)
 
   const renderItem = (e: MenuEntry) => {
     const active = isActivePath(location.pathname, e.path)

@@ -5,7 +5,7 @@ import {
   CheckCircleOutlined, ExclamationCircleOutlined, RocketOutlined, SafetyCertificateOutlined, ShopOutlined, TeamOutlined,
   WarningOutlined,
 } from '@ant-design/icons'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
 import dayjs from 'dayjs'
@@ -15,6 +15,7 @@ import CountUp from '../components/CountUp'
 import { EASE, FadeIn, Stagger, StaggerItem } from '../components/motion'
 import { useDashboard } from '../features/dashboard/dashboardApi'
 import { BarList, ChartCard, Meter, ShareBar, TrendChart, fmt, type Series } from '../features/dashboard/charts'
+import { homePath } from '../layout/menu'
 
 // Tiles floating in the greeting banner.
 const HERO_TILES = ['', 'warm', '', 'cream', 'cream', '', 'warm', '', '', 'warm', 'cream', '']
@@ -81,7 +82,10 @@ export default function DashboardPage() {
   const { user, can, currentPlant } = useAuth()
   const [period, setPeriod] = useState<Period>('week')
   const range = rangeOf(period)
-  const seesFigures = can('PRODUCTION_VIEW') || can('FG_VIEW') || can('SALES_VIEW') || can('STORE_VIEW') || can('MAINTENANCE_VIEW')
+  // The whole-plant dashboard is the owner's and Accounts' (DASHBOARD_VIEW). Everyone else starts on their own
+  // section's screen, which shows their figures and their entry buttons.
+  const seesFigures = can('DASHBOARD_VIEW')
+  const home = homePath(can)
   const dash = useDashboard(currentPlant && seesFigures ? { plantId: currentPlant.id, from: range.from, to: range.to } : null)
   const d = dash.data
 
@@ -89,6 +93,8 @@ export default function DashboardPage() {
   const greeting = t(hour < 12 ? 'dashboard.morning' : hour < 17 ? 'dashboard.afternoon' : 'dashboard.evening')
   const firstName = user?.fullName.split(' ')[0] ?? ''
   const setup = SETUP.filter((s) => can(s.permission))
+
+  if (!seesFigures && home && home !== '/') return <Navigate to={home} replace />
 
   return (
     <>

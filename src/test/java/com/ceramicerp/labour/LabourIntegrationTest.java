@@ -123,7 +123,7 @@ class LabourIntegrationTest extends IntegrationTestBase {
         assertThat(mark.get("source").asText()).isEqualTo("CARD");
 
         // another supervisor marks their own worker: Ramesh's mark stays as it was
-        long role = createRole(admin, "Press supervisor test", "ATTENDANCE_ENTRY");
+        long role = createRole(admin, "Labour clerk test", "ATTENDANCE_ENTRY");
         createUser(admin, "press.sup", "Press@1234", role, plantId);
         String supervisor = login("press.sup", "Press@1234");
         sheet = read(postAs(supervisor, ATTENDANCE, request(day, null, line(suresh, "HALF", null))).andExpect(status().isOk()));
@@ -193,7 +193,7 @@ class LabourIntegrationTest extends IntegrationTestBase {
     @Test
     void supervisorsMarkDaysButDontSeeRates() throws Exception {
         long ramesh = workerId(rated(worker(null, "Ramesh Parmar", "PRESS", contractor), "500", "70"));
-        long role = createRole(admin, "Kiln supervisor test", "ATTENDANCE_ENTRY");
+        long role = createRole(admin, "Labour clerk test 2", "ATTENDANCE_ENTRY");
         createUser(admin, "kiln.sup", "Kiln@1234", role, plantId);
         String supervisor = login("kiln.sup", "Kiln@1234");
         getAs(supervisor, ATTENDANCE + "?plantId=" + plantId).andExpect(status().isOk());

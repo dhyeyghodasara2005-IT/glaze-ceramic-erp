@@ -54,6 +54,7 @@ export interface LoginResponse {
 // ---- permissions (must match Permission.java) ----
 
 export type Permission =
+  | 'DASHBOARD_VIEW'
   | 'COMPANY_VIEW'
   | 'COMPANY_MANAGE'
   | 'PLANT_VIEW'

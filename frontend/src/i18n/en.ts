@@ -2004,9 +2004,10 @@ export const en = {
     notFound: 'Page not found',
     forbidden: 'No access',
     forbiddenHint: 'You do not have permission to open this page. Ask your administrator.',
-    goHome: 'Go to dashboard',
+    goHome: 'Go to my start page',
   },
   permissionGroups: {
+    Dashboard: 'Dashboard',
     Organization: 'Organization',
     'Users & Access': 'Users & Access',
     Masters: 'Masters',
@@ -2023,6 +2024,7 @@ export const en = {
   } as Record<string, string>,
   // One entry per Permission.java value. Missing ones fall back to the server's English text.
   permissions: {
+    DASHBOARD_VIEW: "The owner's dashboard: the whole plant on one page, money included",
     COMPANY_VIEW: 'View companies',
     COMPANY_MANAGE: 'Create and edit companies',
     PLANT_VIEW: 'View plants',
@@ -2064,7 +2066,7 @@ export const en = {
     LAB_ENTRY: 'Lab: test raw material when it arrives, and accept or reject it',
     LABOUR_VIEW: 'View workers, attendance and the month per contractor (with rates)',
     LABOUR_MANAGE: 'Add and change workers, their contractor and their rates',
-    ATTENDANCE_ENTRY: "Mark attendance: supervisors sign for their section's workers",
+    ATTENDANCE_ENTRY: 'Mark attendance from the signed cards (the labour office)',
     COST_VIEW: 'View what a m² costs: material, energy, labour and monthly costs',
     COST_MANAGE: 'Set the rates of gas, power and fuel, and enter monthly costs',
   } as Record<string, string>,

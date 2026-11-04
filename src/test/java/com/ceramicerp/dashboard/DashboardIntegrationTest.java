@@ -160,24 +160,31 @@ class DashboardIntegrationTest extends IntegrationTestBase {
         assertThat(attention(dashboard(admin, today, today), "PLAN_TOO_FEW").get("count").asInt()).isEqualTo(1);
     }
 
+    /** The whole plant, money included: only the owner and Accounts. Supervisors start on their own section. */
     @Test
-    void everyoneSeesOnlyTheirOwnModules() throws Exception {
-        long role = createRole(admin, "FG only", "FG_VIEW");
-        createUser(admin, "fg.only", "FgOnly@123", role, plantId);
-        String fgOnly = login("fg.only", "FgOnly@123");
-        JsonNode d = dashboard(fgOnly, today, today);
-        assertThat(d.hasNonNull("finishedGoods")).isTrue();
-        assertThat(d.hasNonNull("production")).isFalse();
-        assertThat(d.hasNonNull("dispatch")).isFalse();
-        assertThat(d.hasNonNull("store")).isFalse();
-        assertThat(d.at("/days/0").hasNonNull("packedSqm")).isFalse();
+    void onlyTheOwnerAndAccountsSeeTheDashboard() throws Exception {
+        long fg = createRole(admin, "FG only", "FG_VIEW", "PRODUCTION_VIEW", "STORE_VIEW");
+        createUser(admin, "fg.only", "FgOnly@123", fg, plantId);
+        getAs(login("fg.only", "FgOnly@123"), url(plantId, today, today)).andExpect(status().isForbidden());
 
-        long masters = createRole(admin, "Masters only", "MASTER_VIEW");
-        createUser(admin, "masters.only", "Masters@123", masters, plantId);
-        getAs(login("masters.only", "Masters@123"), url(plantId, today, today)).andExpect(status().isForbidden());
+        // DASHBOARD_VIEW alone shows every section, whatever else the role may see.
+        long dash = createRole(admin, "Dashboard only", "DASHBOARD_VIEW");
+        createUser(admin, "dash.only", "DashOnly@123", dash, plantId);
+        String owner = login("dash.only", "DashOnly@123");
+        JsonNode d = dashboard(owner, today, today);
+        assertThat(d.hasNonNull("production")).isTrue();
+        assertThat(d.hasNonNull("finishedGoods")).isTrue();
+        assertThat(d.hasNonNull("dispatch")).isTrue();
+        assertThat(d.hasNonNull("store")).isTrue();
+        assertThat(d.hasNonNull("maintenance")).isTrue();
+        assertThat(d.at("/days/0").hasNonNull("packedSqm")).isTrue();
+
+        // The starter Accounts role has it.
+        createUser(admin, "acc.dash", "Accounts@123", roleId("Accounts"), plantId);
+        getAs(login("acc.dash", "Accounts@123"), url(plantId, today, today)).andExpect(status().isOk());
 
         long other = createPlant(admin, createCompany(admin, "DSHCO2"), "DSH-2");
-        getAs(fgOnly, url(other, today, today)).andExpect(status().isForbidden());
+        getAs(owner, url(other, today, today)).andExpect(status().isForbidden());
 
         getAs(admin, url(plantId, today, today.minusDays(1)))
                 .andExpect(status().isConflict())
@@ -188,6 +195,13 @@ class DashboardIntegrationTest extends IntegrationTestBase {
     }
 
     // ------------------------------------------------------------------ helpers
+
+    private long roleId(String name) throws Exception {
+        for (JsonNode r : read(getAs(admin, "/api/roles"))) {
+            if (r.get("name").asText().equals(name)) return r.get("id").asLong();
+        }
+        throw new AssertionError("No role named " + name);
+    }
 
     private JsonNode dashboard(String token, LocalDate from, LocalDate to) throws Exception {
         return read(getAs(token, url(plantId, from, to)).andExpect(status().isOk()));

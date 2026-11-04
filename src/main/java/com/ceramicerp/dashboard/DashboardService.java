@@ -22,9 +22,7 @@ import com.ceramicerp.maintenance.dto.PmOverview;
 import com.ceramicerp.master.Grade;
 import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.production.LineStage;
-import com.ceramicerp.security.CurrentUser;
 import com.ceramicerp.security.PlantAccess;
-import com.ceramicerp.user.Permission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -76,52 +74,38 @@ public class DashboardService {
         if (days > MAX_DAYS) {
             throw new BusinessException("Choose a period of at most a year");
         }
-        Set<Permission> may = CurrentUser.get().getPermissions();
-        boolean production = may.contains(Permission.PRODUCTION_VIEW);
-        boolean fg = may.contains(Permission.FG_VIEW);
-        boolean sales = may.contains(Permission.SALES_VIEW);
-        boolean store = may.contains(Permission.STORE_VIEW);
-        boolean maintenance = may.contains(Permission.MAINTENANCE_VIEW);
-        boolean energy = may.contains(Permission.ENERGY_VIEW) || may.contains(Permission.METER_ENTRY);
-        boolean lab = may.contains(Permission.LAB_VIEW) || may.contains(Permission.LAB_ENTRY);
-        boolean labour = may.contains(Permission.LABOUR_VIEW) || may.contains(Permission.ATTENDANCE_ENTRY);
-
+        // The dashboard is the whole plant: whoever may open it (DASHBOARD_VIEW, checked by the controller: the owner
+        // and Accounts) sees every section. Supervisors don't come here; they start on their own section's screen.
         List<Attention> attention = new ArrayList<>();
         // a machine standing still is the most urgent thing of all: it goes first
-        DashboardResponse.Maintenance maint = maintenance ? maintenance(plantId, from, to, attention) : null;
-        DashboardResponse.Production prod = production ? production(plantId, from, to, days) : null;
-        DashboardResponse.FinishedGoods goods = fg ? finishedGoods(plantId, attention) : null;
-        List<DispatchRow> dispatched = sales ? queries.dispatchedByDay(plantId, from, to) : List.of();
-        DashboardResponse.Dispatch dispatch = sales ? dispatch(plantId, dispatched, attention) : null;
-        DashboardResponse.Store st = store ? store(plantId, attention) : null;
-        if (lab) {
-            // material standing at the gate (or in the yard, not in stock) until the lab has tested it
-            List<LabSample> waiting = labService.waiting(plantId);
-            if (!waiting.isEmpty()) {
-                attention.add(new Attention(Attention.Kind.LAB_WAITING, waiting.stream().map(LabSample::materialName)
-                        .distinct().collect(Collectors.joining(", ")), waiting.size(), null));
-            }
+        DashboardResponse.Maintenance maint = maintenance(plantId, from, to, attention);
+        DashboardResponse.Production prod = production(plantId, from, to, days);
+        DashboardResponse.FinishedGoods goods = finishedGoods(plantId, attention);
+        List<DispatchRow> dispatched = queries.dispatchedByDay(plantId, from, to);
+        DashboardResponse.Dispatch dispatch = dispatch(plantId, dispatched, attention);
+        DashboardResponse.Store st = store(plantId, attention);
+
+        // material standing at the gate (or in the yard, not in stock) until the lab has tested it
+        List<LabSample> waiting = labService.waiting(plantId);
+        if (!waiting.isEmpty()) {
+            attention.add(new Attention(Attention.Kind.LAB_WAITING, waiting.stream().map(LabSample::materialName)
+                    .distinct().collect(Collectors.joining(", ")), waiting.size(), null));
         }
-        if (energy) {
-            EnergyUse.LastRound round = energyService.lastRound(plantId);
-            List<String> missing = new ArrayList<>(round.missing());
-            missing.addAll(round.dayMissing());
-            if (!missing.isEmpty()) {
-                attention.add(new Attention(Attention.Kind.METER_MISSING, String.join(", ", missing), missing.size(), null));
-            }
+        EnergyUse.LastRound round = energyService.lastRound(plantId);
+        List<String> missing = new ArrayList<>(round.missing());
+        missing.addAll(round.dayMissing());
+        if (!missing.isEmpty()) {
+            attention.add(new Attention(Attention.Kind.METER_MISSING, String.join(", ", missing), missing.size(), null));
         }
-        if (labour) {
-            // yesterday should be fully marked by now: the cards were signed at the end of the shift
-            AttendanceService.Unmarked unmarked = attendanceService.unmarked(plantId, attendanceService.yesterday());
-            if (unmarked != null) {
-                attention.add(new Attention(Attention.Kind.ATTENDANCE_MISSING, unmarked.departments().stream()
-                        .map(Enum::name).collect(Collectors.joining(",")), unmarked.workers(), null));
-            }
+        // yesterday should be fully marked by now: the cards were signed at the end of the shift
+        AttendanceService.Unmarked unmarked = attendanceService.unmarked(plantId, attendanceService.yesterday());
+        if (unmarked != null) {
+            attention.add(new Attention(Attention.Kind.ATTENDANCE_MISSING, unmarked.departments().stream()
+                    .map(Enum::name).collect(Collectors.joining(",")), unmarked.workers(), null));
         }
 
         return new DashboardResponse(from, to, prod, goods, dispatch, st, maint,
-                days(from, to, production ? queries.packedByDay(plantId, from, to) : null, sales ? dispatched : null),
-                attention);
+                days(from, to, queries.packedByDay(plantId, from, to), dispatched), attention);
     }
 
     // ------------------------------------------------------------------ production

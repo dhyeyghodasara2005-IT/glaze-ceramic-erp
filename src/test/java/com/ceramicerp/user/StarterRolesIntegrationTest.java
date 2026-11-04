@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** V9, V10, V11, V14-V16 and V18-V21 seed one ready-made role per job. They must be ordinary, editable roles - and never touch the user's own. */
+/** V9, V10, V11, V14-V16, V18-V21 and V27 seed one ready-made role per job. They must be ordinary, editable roles - and never touch the user's own. */
 class StarterRolesIntegrationTest extends IntegrationTestBase {
 
     @Autowired
@@ -27,44 +27,45 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
     @Test
     void oneStarterRolePerJobIsReady() throws Exception {
         String admin = adminToken();
-        // V21: money stays with accounts
+        // V21: money stays with accounts; V27: and the whole-plant dashboard with them (and the owner)
         assertThat(permissionsOf(admin, "Accounts")).containsExactlyInAnyOrder("COST_VIEW", "COST_MANAGE", "STORE_VIEW",
-                "ENERGY_VIEW", "LABOUR_VIEW");
-        assertThat(permissionsOf(admin, "Production manager")).doesNotContain("COST_VIEW", "COST_MANAGE");
-        assertThat(permissionsOf(admin, "Viewer (read only)")).doesNotContain("COST_VIEW");
-        // V20: the labour office keeps the workers; whoever runs a section also signs for its workers' attendance
+                "ENERGY_VIEW", "LABOUR_VIEW", "DASHBOARD_VIEW");
+        assertThat(permissionsOf(admin, "Production manager")).doesNotContain("COST_VIEW", "COST_MANAGE", "DASHBOARD_VIEW");
+        // V27: the plant has no read-only viewer
+        assertThat(roleNames(admin)).doesNotContain("Viewer (read only)");
+        // V20 + V27: the labour office keeps the workers and is the only one that marks attendance
         assertThat(permissionsOf(admin, "Labour office")).containsExactlyInAnyOrder("LABOUR_VIEW", "LABOUR_MANAGE",
                 "ATTENDANCE_ENTRY", "PARTY_VIEW");
         // V19: the store keeper sees why a GRN waits for the lab
-        assertThat(permissionsOf(admin, "Store keeper")).containsExactlyInAnyOrder("STORE_VIEW", "STORE_ENTRY", "LAB_VIEW", "ATTENDANCE_ENTRY");
-        assertThat(permissionsOf(admin, "Lab chemist")).containsExactlyInAnyOrder("LAB_VIEW", "LAB_ENTRY", "ATTENDANCE_ENTRY");
+        assertThat(permissionsOf(admin, "Store keeper")).containsExactlyInAnyOrder("STORE_VIEW", "STORE_ENTRY", "LAB_VIEW");
+        assertThat(permissionsOf(admin, "Lab chemist")).containsExactlyInAnyOrder("LAB_VIEW", "LAB_ENTRY");
         // V16: every line supervisor also reports breakdowns of their machines; V18: and reads their meters
         assertThat(permissionsOf(admin, "Body prep supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "BODY_PREP_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Press supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "PRESS_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Glaze supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "GLAZE_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Kiln supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "KILN_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Polish supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "POLISH_ENTRY",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         // V11: the packing supervisor also sees finished-goods stock (they choose pillars by it)
         assertThat(permissionsOf(admin, "Packing supervisor")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "PACKING_ENTRY", "FG_VIEW",
-                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_VIEW", "BREAKDOWN_REPORT", "METER_ENTRY");
         assertThat(permissionsOf(admin, "Maintenance in-charge")).containsExactlyInAnyOrder("MAINTENANCE_VIEW", "BREAKDOWN_REPORT",
-                "MAINTENANCE_ENTRY", "METER_ENTRY", "ENERGY_VIEW", "ATTENDANCE_ENTRY");
-        assertThat(permissionsOf(admin, "FG warehouse keeper")).containsExactlyInAnyOrder("FG_VIEW", "FG_ENTRY", "ATTENDANCE_ENTRY");
+                "MAINTENANCE_ENTRY", "METER_ENTRY", "ENERGY_VIEW");
+        assertThat(permissionsOf(admin, "FG warehouse keeper")).containsExactlyInAnyOrder("FG_VIEW", "FG_ENTRY");
         assertThat(permissionsOf(admin, "Quality checker")).containsExactlyInAnyOrder("PRODUCTION_VIEW", "QUALITY_CHECK");
         // V14: the dispatch office enters slips and sees the stock and parties it checks them against
         // V15: the dispatch office may confirm loadings too; the loading supervisor ticks and confirms them
         assertThat(permissionsOf(admin, "Dispatch office")).containsExactlyInAnyOrder("SALES_VIEW", "SALES_ENTRY", "FG_VIEW",
                 "PARTY_VIEW", "LOADING_ENTRY");
-        assertThat(permissionsOf(admin, "Loading supervisor")).containsExactlyInAnyOrder("SALES_VIEW", "FG_VIEW", "LOADING_ENTRY", "ATTENDANCE_ENTRY");
+        assertThat(permissionsOf(admin, "Loading supervisor")).containsExactlyInAnyOrder("SALES_VIEW", "FG_VIEW", "LOADING_ENTRY");
         // V10 gave the starter manager the new divisions too
         assertThat(permissionsOf(admin, "Production manager")).contains("PRODUCTION_CANCEL", "KILN_ENTRY", "BODY_PREP_ENTRY",
-                "POLISH_ENTRY", "PACKING_ENTRY", "QUALITY_CHECK", "METER_ENTRY", "ENERGY_VIEW", "ATTENDANCE_ENTRY", "LABOUR_VIEW");
-        assertThat(permissionsOf(admin, "Viewer (read only)")).allMatch(p -> p.endsWith("_VIEW")).contains("SALES_VIEW", "ENERGY_VIEW", "LABOUR_VIEW");
+                "POLISH_ENTRY", "PACKING_ENTRY", "QUALITY_CHECK", "METER_ENTRY", "ENERGY_VIEW", "LABOUR_VIEW")
+                .doesNotContain("ATTENDANCE_ENTRY");
     }
 
     @Test
@@ -109,6 +110,12 @@ class StarterRolesIntegrationTest extends IntegrationTestBase {
             if (r.get("name").asText().equals(name)) return r;
         }
         throw new AssertionError("No role named " + name);
+    }
+
+    private List<String> roleNames(String token) throws Exception {
+        List<String> names = new ArrayList<>();
+        read(getAs(token, "/api/roles")).forEach(r -> names.add(r.get("name").asText()));
+        return names;
     }
 
     private List<String> permissionsOf(String token, String name) throws Exception {

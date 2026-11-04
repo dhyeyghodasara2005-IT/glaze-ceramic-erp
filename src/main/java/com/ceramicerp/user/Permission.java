@@ -9,6 +9,9 @@ package com.ceramicerp.user;
  */
 public enum Permission {
 
+    /** The whole plant on one page, money included. Only the owner (Super Admin) and Accounts have it. */
+    DASHBOARD_VIEW("Dashboard", "The owner's dashboard: the whole plant on one page, money included"),
+
     COMPANY_VIEW("Organization", "View companies"),
     COMPANY_MANAGE("Organization", "Create and edit companies"),
     PLANT_VIEW("Organization", "View plants"),
@@ -62,7 +65,7 @@ public enum Permission {
 
     LABOUR_VIEW("Labour", "View workers, attendance and the month per contractor (with rates)"),
     LABOUR_MANAGE("Labour", "Add and change workers, their contractor and their rates"),
-    ATTENDANCE_ENTRY("Labour", "Mark attendance: supervisors sign for their section's workers"),
+    ATTENDANCE_ENTRY("Labour", "Mark attendance from the signed cards (the labour office)"),
 
     COST_VIEW("Costing", "View what a m² costs: material, energy, labour and monthly costs"),
     COST_MANAGE("Costing", "Set the rates of gas, power and fuel, and enter monthly costs");

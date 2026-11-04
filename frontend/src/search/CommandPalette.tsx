@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { useDebounced } from '../components/useDebounced'
-import { ALL_PAGES, pageForType } from '../layout/menu'
+import { ALL_PAGES, canSee, pageForType } from '../layout/menu'
 import { loadRecent, pushRecent, type RecentItem } from './recent'
 
 /** Matches SearchHit.java */
@@ -85,7 +85,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
   // records come from the server.
   const rows = useMemo<Row[]>(() => {
     const lower = q.toLowerCase()
-    const pages = ALL_PAGES.filter((p) => !p.permission || can(p.permission))
+    const pages = ALL_PAGES.filter((p) => canSee(p, can))
     const out: Row[] = []
 
     if (!q) {
@@ -118,7 +118,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     if (q) {
       hits.forEach((h) => {
         const page = pageForType(h.type)
-        if (!page) return // a result type with no page yet
+        if (!page || !canSee(page, can)) return // no page yet, or another section's
         const url = `${page.path}?open=${h.id}`
         out.push({ key: `${h.type}:${h.id}`, group: t(page.labelKey), icon: page.icon, title: h.title,
           code: h.code, subtitle: h.subtitle, inactive: !h.active, url,

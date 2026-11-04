@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Button, Drawer, Dropdown, Grid, type MenuProps } from 'antd'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Button, Drawer, Dropdown, Grid, Result, type MenuProps } from 'antd'
 import { DownOutlined, KeyOutlined, LogoutOutlined, SearchOutlined } from '@ant-design/icons'
 import { motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +14,7 @@ import BottomNav from './BottomNav'
 import PlantSwitcher from './PlantSwitcher'
 import LanguageSwitch from './LanguageSwitch'
 import CommandPalette from '../search/CommandPalette'
+import { ALL_PAGES, canSee } from './menu'
 
 const SIDER_OPEN = 256
 const SIDER_COLLAPSED = 80
@@ -130,7 +131,9 @@ export default function AppLayout() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: EASE }}
           >
-            <Outlet />
+            <SectionGuard>
+              <Outlet />
+            </SectionGuard>
           </motion.div>
         </main>
       </div>
@@ -139,4 +142,23 @@ export default function AppLayout() {
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   )
+}
+
+/**
+ * The menu hides other sections' pages; this keeps them closed when someone types the address. Only the page itself
+ * (/production/polish-entries) is closed: a record opened from one's own pages (a lot's glaze entry, from the kiln
+ * supervisor's lot page) still opens. The server still checks every request with the role's permissions.
+ */
+function SectionGuard({ children }: { children: ReactNode }) {
+  const { can } = useAuth()
+  const { t } = useTranslation()
+  const location = useLocation()
+  const page = ALL_PAGES.find((p) => p.path !== '/' && p.path === location.pathname)
+  if (page && !canSee(page, can)) {
+    return (
+      <Result status="403" title={t('errors.forbidden')} subTitle={t('errors.forbiddenHint')}
+        extra={<Link to="/"><Button type="primary">{t('errors.goHome')}</Button></Link>} />
+    )
+  }
+  return <>{children}</>
 }
