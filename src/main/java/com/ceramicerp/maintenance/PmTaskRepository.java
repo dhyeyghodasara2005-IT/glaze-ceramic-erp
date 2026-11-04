@@ -31,4 +31,6 @@ public interface PmTaskRepository extends JpaRepository<PmTask, Long> {
 
     @EntityGraph(attributePaths = {"plant", "machine"})
     Optional<PmTask> findWithDetailsById(Long id);
+
+    List<PmTask> findByMachineIdAndActiveTrue(Long machineId);
 }

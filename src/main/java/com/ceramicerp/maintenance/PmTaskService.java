@@ -12,6 +12,7 @@ import com.ceramicerp.maintenance.dto.PmTaskResponse;
 import com.ceramicerp.maintenance.dto.PmTaskSummary;
 import com.ceramicerp.maintenance.dto.SpareUsed;
 import com.ceramicerp.master.Machine;
+import com.ceramicerp.master.MachineReplacedEvent;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.numbering.DocumentNumberService;
 import com.ceramicerp.organization.Plant;
@@ -20,6 +21,7 @@ import com.ceramicerp.security.CurrentUser;
 import com.ceramicerp.security.PlantAccess;
 import com.ceramicerp.store.StoreDocument;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -260,5 +262,27 @@ public class PmTaskService {
 
     private static LocalDate today() {
         return LocalDate.now(BreakdownService.PLANT_ZONE);
+    }
+
+    /**
+     * The new machine needs the same routine jobs, on the same dates. Each active task is copied to it and the old
+     * one is switched off, so the jobs already done stay listed under the machine they were done on.
+     */
+    @EventListener
+    public void onMachineReplaced(MachineReplacedEvent e) {
+        Machine fresh = machineRepository.getReferenceById(e.newMachineId());
+        for (PmTask old : taskRepository.findByMachineIdAndActiveTrue(e.oldMachineId())) {
+            PmTask copy = new PmTask();
+            copy.setPlant(old.getPlant());
+            copy.setMachine(fresh);
+            copy.setTitle(old.getTitle());
+            copy.setKind(old.getKind());
+            copy.setEveryDays(old.getEveryDays());
+            copy.setInstructions(old.getInstructions());
+            copy.setNeedsStop(old.isNeedsStop());
+            copy.setNextDue(old.getNextDue());
+            taskRepository.save(copy);
+            old.setActive(false);
+        }
     }
 }

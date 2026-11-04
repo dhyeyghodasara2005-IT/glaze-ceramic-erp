@@ -9,6 +9,7 @@ import com.ceramicerp.master.DesignRepository;
 import com.ceramicerp.master.Grade;
 import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.master.Machine;
+import com.ceramicerp.master.MachineReplacingEvent;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.master.MachineType;
 import com.ceramicerp.master.Shift;
@@ -35,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -302,5 +304,17 @@ public class LotService {
                 .map(r -> new LotResponse.TraceRun(r.getId(), r.getRunNo(), r.getSilo().getCode(), r.getProdDate(),
                         tonnesByRun.get(r.getId()), batchesByRun.getOrDefault(r.getId(), List.of())))
                 .toList();
+    }
+
+    /**
+     * A machine with a design running on it can't be swapped out under the lot: the supervisor closes the lot
+     * first (or starts the next design on the new machine). Throwing here stops the replacement before it starts.
+     */
+    @EventListener
+    public void onMachineReplacing(MachineReplacingEvent e) {
+        lotRepository.findFirstByPressIdAndStatus(e.oldMachineId(), LotStatus.OPEN).ifPresent(lot -> {
+            throw new BusinessException(e.oldCode() + " is running design lot " + lot.getLotNo()
+                    + ". Close the lot before replacing the machine.");
+        });
     }
 }

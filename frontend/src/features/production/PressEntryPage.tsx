@@ -13,7 +13,8 @@ import type { PressEntry, PressEntryRequest } from '../../api/types'
 import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
-import { useCurrentShift, useProdMachines, useProdShifts } from './api'
+import { useCurrentShift, useProdMachineLinks, useProdMachines, useProdShifts } from './api'
+import { pickMachine } from '../masters/machines/layout'
 import { useCancelEntry, useDeleteEntry, usePostEntry, usePressEntry, useSaveEntry, useSelectableLots, useSilos } from './pressApi'
 import ReasonModal from './ReasonModal'
 
@@ -56,6 +57,7 @@ function EntryEditor({ entryId }: { entryId?: number }) {
   const current = useCurrentShift()
   const shifts = useProdShifts()
   const machines = useProdMachines(plantId)
+  const links = useProdMachineLinks(editable ? plantId : undefined)
   const lots = useSelectableLots(editable ? plantId : undefined)
   const silos = useSilos(plantId)
 
@@ -98,6 +100,14 @@ function EntryEditor({ entryId }: { entryId?: number }) {
   }, [lots.data, entry, t])
   const chosenLot = lots.data?.find((l) => l.id === lotId)
   const sqmPerTile = chosenLot?.sqmPerTile ?? entry?.sqmPerTile
+
+  // New entry: the dryer after this press in the layout (or the plant's only dryer), until the supervisor picks.
+  const pressId = chosenLot?.pressId
+  useEffect(() => {
+    if (!isNew || !machines.data || form.isFieldTouched('dryerId')) return
+    const dryer = pickMachine(links.data, machines.data, pressId, 'DRYER', 'down')
+    if (dryer) form.setFieldValue('dryerId', dryer)
+  }, [isNew, links.data, machines.data, pressId, form])
 
   const siloTonnes = new Map((silos.data ?? []).map((s) => [s.siloId, s.tonnes]))
   const ofType = (type: string, keep?: { id?: number; code?: string }) => {

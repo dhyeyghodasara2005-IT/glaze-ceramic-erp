@@ -17,6 +17,11 @@ public enum MachineType {
     DRYER,
     GLAZE_LINE,
     DIGITAL_PRINTER,
+    /**
+     * Compensator / box storage: parks tiles and sends them back on the line to fill gaps. It can sit anywhere
+     * (after the dryer, before the kiln ...), so its place comes from the layout links. It has no entries.
+     */
+    COMPENSATOR,
     KILN,
     POLISHING_LINE,
     SORTING_LINE,

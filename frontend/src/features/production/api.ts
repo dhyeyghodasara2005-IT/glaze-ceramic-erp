@@ -12,6 +12,7 @@ import type {
   CurrentShift,
   DischargeRequest,
   DocStatus,
+  MachineLink,
   MachineOption,
   MaterialReach,
   PageResponse,
@@ -56,6 +57,16 @@ export function useProdMachines(plantId?: number) {
   return useQuery({
     queryKey: ['prod-lookup', 'machines', plantId],
     queryFn: async () => (await api.get<MachineOption[]>('/production/lookups/machines', { params: { plantId } })).data,
+    staleTime: LOOKUP_STALE,
+    enabled: plantId !== undefined,
+  })
+}
+
+/** The plant's layout ("feeds into" arrows), to fill in the obvious machine on an entry. */
+export function useProdMachineLinks(plantId?: number) {
+  return useQuery({
+    queryKey: ['prod-lookup', 'machine-links', plantId],
+    queryFn: async () => (await api.get<MachineLink[]>('/production/lookups/machine-links', { params: { plantId } })).data,
     staleTime: LOOKUP_STALE,
     enabled: plantId !== undefined,
   })

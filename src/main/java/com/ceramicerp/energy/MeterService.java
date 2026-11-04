@@ -6,11 +6,13 @@ import com.ceramicerp.common.exception.NotFoundException;
 import com.ceramicerp.energy.dto.MeterRequest;
 import com.ceramicerp.energy.dto.MeterResponse;
 import com.ceramicerp.master.Machine;
+import com.ceramicerp.master.MachineReplacedEvent;
 import com.ceramicerp.master.MachineRepository;
 import com.ceramicerp.organization.Plant;
 import com.ceramicerp.organization.PlantService;
 import com.ceramicerp.security.PlantAccess;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,5 +96,15 @@ public class MeterService {
             throw new BusinessException("Machine " + machine.getCode() + " is not in plant " + plant.getCode());
         }
         return machine;
+    }
+
+    /**
+     * A meter measures a place in the plant (the kiln's gas line), not one particular machine: when the kiln is
+     * replaced, its meters carry on with the new one. Readings stay with the meter, so the history is unbroken.
+     */
+    @EventListener
+    public void onMachineReplaced(MachineReplacedEvent e) {
+        Machine fresh = machineRepository.getReferenceById(e.newMachineId());
+        meterRepository.findByMachineId(e.oldMachineId()).forEach(m -> m.setMachine(fresh));
     }
 }

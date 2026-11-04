@@ -26,6 +26,8 @@ public interface MeterRepository extends JpaRepository<Meter, Long> {
     @Query("select m from Meter m where m.id = :id")
     Optional<Meter> findLockedById(@Param("id") Long id);
 
+    List<Meter> findByMachineId(Long machineId);
+
     boolean existsByPlantIdAndCodeIgnoreCase(Long plantId, String code);
 
     boolean existsByPlantIdAndCodeIgnoreCaseAndIdNot(Long plantId, String code, Long id);

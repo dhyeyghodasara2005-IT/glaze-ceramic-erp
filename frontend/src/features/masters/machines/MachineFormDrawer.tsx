@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
-import { App, AutoComplete, Button, Col, DatePicker, Drawer, Form, Input, InputNumber, Row, Select, Space, Switch } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { Alert, App, AutoComplete, Button, Col, DatePicker, Divider, Drawer, Form, Input, InputNumber, Row, Select, Space, Switch } from 'antd'
+import { SwapOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import dayjs, { type Dayjs } from 'dayjs'
 import { applyFieldErrors, errorMessage } from '../../../api/errors'
@@ -7,7 +8,8 @@ import { MACHINE_TYPES, type Machine, type MachineRequest, type MachineType } fr
 import { patterns, toUpper } from '../../../api/validation'
 import { useDrawerSize } from '../../../components/useDrawerSize'
 import { useAuth } from '../../../auth/AuthContext'
-import { useSaveMaster } from '../masterApi'
+import { useMachineLinks, useMasterList, useSaveMaster, useSetFeeds } from '../masterApi'
+import MachineReplaceModal from './MachineReplaceModal'
 
 /** Common capacity units in a tile plant - suggestions only, any text is allowed. */
 const CAPACITY_UNITS = ['sq m/day', 'boxes/day', 'tons/batch', 'tons/hour', 'strokes/min', 'kg/hour', 'litres']
@@ -23,6 +25,8 @@ interface FormValues {
   model?: string
   installedOn?: Dayjs
   active: boolean
+  /** What this machine feeds into (an existing machine only). */
+  feeds?: number[]
 }
 
 export default function MachineFormDrawer({ open, machine, onClose }: { open: boolean; machine?: Machine; onClose: () => void }) {
@@ -32,6 +36,21 @@ export default function MachineFormDrawer({ open, machine, onClose }: { open: bo
   const drawerSize = useDrawerSize(600)
   const [form] = Form.useForm<FormValues>()
   const save = useSaveMaster<Machine, MachineRequest>('machines')
+  const setFeeds = useSetFeeds()
+  const [replacing, setReplacing] = useState(false)
+
+  // The layout around this machine: the plant's other machines and its arrows.
+  const all = useMasterList<Machine>('machines', open && !!machine)
+  const links = useMachineLinks(open ? machine?.plantId : undefined)
+  const feedsNow = useMemo(
+    () => (links.data ?? []).filter((l) => l.fromMachineId === machine?.id).map((l) => l.toMachineId),
+    [links.data, machine],
+  )
+  const codeOf = useMemo(() => new Map((all.data ?? []).map((m) => [m.id, m.code])), [all.data])
+  const fedBy = (links.data ?? []).filter((l) => l.toMachineId === machine?.id).map((l) => codeOf.get(l.fromMachineId) ?? '?')
+  const feedOptions = (all.data ?? [])
+    .filter((m) => m.plantId === machine?.plantId && m.id !== machine?.id && (m.active || feedsNow.includes(m.id)))
+    .map((m) => ({ value: m.id, label: `${m.code} · ${t(`machineType.${m.type}`)}` }))
 
   useEffect(() => {
     if (!open) return
@@ -42,6 +61,11 @@ export default function MachineFormDrawer({ open, machine, onClose }: { open: bo
         : { active: true, plantId: currentPlant?.id }, // new machine: start in the plant chosen in the header
     )
   }, [open, machine, currentPlant, form])
+
+  // The arrows arrive after the form opens; fill them in unless the user already changed them.
+  useEffect(() => {
+    if (open && machine && links.data && !form.isFieldTouched('feeds')) form.setFieldValue('feeds', feedsNow)
+  }, [open, machine, links.data, feedsNow, form])
 
   const onFinish = async (v: FormValues) => {
     try {
@@ -60,6 +84,10 @@ export default function MachineFormDrawer({ open, machine, onClose }: { open: bo
           active: v.active,
         },
       })
+      // The arrows are saved apart, and only when they changed (a machine moved to another plant keeps none).
+      const feeds = v.feeds ?? []
+      const changed = feeds.length !== feedsNow.length || feeds.some((id) => !feedsNow.includes(id))
+      if (machine && changed) await setFeeds.mutateAsync({ id: machine.id, toMachineIds: feeds })
       message.success(t('common.saved'))
       onClose()
     } catch (err) {
@@ -78,13 +106,21 @@ export default function MachineFormDrawer({ open, machine, onClose }: { open: bo
       destroyOnHidden
       extra={
         <Space>
+          {machine?.active && (
+            <Button icon={<SwapOutlined />} onClick={() => setReplacing(true)}>
+              {t('machine.replace')}
+            </Button>
+          )}
           <Button onClick={onClose}>{t('common.cancel')}</Button>
-          <Button type="primary" loading={save.isPending} onClick={() => form.submit()}>
+          <Button type="primary" loading={save.isPending || setFeeds.isPending} onClick={() => form.submit()}>
             {t('common.save')}
           </Button>
         </Space>
       }
     >
+      {machine?.replacedByCode && (
+        <Alert className="doc-alert" type="info" showIcon title={t('machine.replacedBy', { code: machine.replacedByCode })} />
+      )}
       <Form form={form} layout="vertical" onFinish={onFinish}>
         <Row gutter={16}>
           <Col xs={24} sm={12}>
@@ -140,7 +176,27 @@ export default function MachineFormDrawer({ open, machine, onClose }: { open: bo
         <Form.Item name="active" label={t('common.status')} valuePropName="checked">
           <Switch checkedChildren={t('common.active')} unCheckedChildren={t('common.inactive')} />
         </Form.Item>
+
+        <Divider titlePlacement="start">{t('machine.layout')}</Divider>
+        {machine ? (
+          <>
+            <Form.Item name="feeds" label={t('machine.feedsInto')} extra={t('machine.feedsHint')}>
+              <Select
+                mode="multiple"
+                allowClear
+                showSearch={{ optionFilterProp: 'label' }}
+                options={feedOptions}
+                loading={all.isLoading || links.isLoading}
+                placeholder="DRY-1, GL-1 …"
+              />
+            </Form.Item>
+            <div className="cell-sub">{t('machine.fedBy')}: {fedBy.length ? fedBy.join(', ') : '-'}</div>
+          </>
+        ) : (
+          <div className="cell-sub">{t('machine.saveFirst')}</div>
+        )}
       </Form>
+      {machine && <MachineReplaceModal open={replacing} machine={machine} onClose={() => setReplacing(false)} onDone={onClose} />}
     </Drawer>
   )
 }

@@ -9,9 +9,11 @@ import com.ceramicerp.master.BodyRecipeService;
 import com.ceramicerp.master.DesignRepository;
 import com.ceramicerp.master.GradeRepository;
 import com.ceramicerp.master.MachineRepository;
+import com.ceramicerp.master.MachineService;
 import com.ceramicerp.master.MaterialRepository;
 import com.ceramicerp.master.ShiftService;
 import com.ceramicerp.master.dto.BodyRecipeResponse;
+import com.ceramicerp.master.dto.MachineLinkResponse;
 import com.ceramicerp.master.dto.ShiftResponse;
 import com.ceramicerp.production.dto.AvailableStock;
 import com.ceramicerp.production.dto.BodyPrepOverview;
@@ -51,6 +53,7 @@ public class ProductionLookupController {
     private final BodyRecipeService recipeService;
     private final BodyPrepService bodyPrepService;
     private final MachineRepository machineRepository;
+    private final MachineService machineService;
     private final MaterialRepository materialRepository;
     private final StoreLocationRepository locationRepository;
     private final StockBalanceRepository balanceRepository;
@@ -93,6 +96,13 @@ public class ProductionLookupController {
                 .filter(m -> m.isActive())
                 .map(m -> new MachineOption(m.getId(), m.getCode(), m.getName(), m.getType()))
                 .toList();
+    }
+
+    /** The plant's layout, so entry screens can fill in the obvious machine (the kiln after this printer). */
+    @GetMapping("/lookups/machine-links")
+    @PreAuthorize("hasAuthority('PRODUCTION_VIEW')")
+    public List<MachineLinkResponse> machineLinks(@RequestParam Long plantId) {
+        return machineService.links(plantId);
     }
 
     @GetMapping("/lookups/materials")

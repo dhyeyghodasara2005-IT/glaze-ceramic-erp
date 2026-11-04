@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
-import { Button, Card, Select, Table, Tag, type TableColumnsType } from 'antd'
-import { EditOutlined, PlusOutlined, ToolOutlined } from '@ant-design/icons'
+import { Button, Card, Segmented, Select, Table, Tag, type TableColumnsType } from 'antd'
+import { ApartmentOutlined, EditOutlined, PlusOutlined, ToolOutlined, UnorderedListOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import PageHeader from '../../../components/PageHeader'
 import StatusTag from '../../../components/StatusTag'
@@ -9,26 +9,10 @@ import { FadeIn } from '../../../components/motion'
 import { useOpenFromUrl } from '../../../components/useOpenFromUrl'
 import { useAuth } from '../../../auth/AuthContext'
 import { MACHINE_TYPES, type Machine, type MachineType } from '../../../api/types'
-import { useMasterList } from '../masterApi'
+import { useMachineLinks, useMasterList } from '../masterApi'
 import MachineFormDrawer from './MachineFormDrawer'
-
-/** Tag colour by process stage, so a line-up reads like the factory floor. */
-const STAGE_COLOR: Record<MachineType, string> = {
-  BALL_MILL: 'gold',
-  SLIP_TANK: 'gold',
-  SPRAY_DRYER: 'gold',
-  SILO: 'gold',
-  PRESS: 'blue',
-  DRYER: 'blue',
-  GLAZE_LINE: 'purple',
-  DIGITAL_PRINTER: 'purple',
-  KILN: 'volcano',
-  POLISHING_LINE: 'green',
-  SORTING_LINE: 'green',
-  PACKING_LINE: 'green',
-  UTILITY: 'default',
-  OTHER: 'default',
-}
+import MachineLayout from './MachineLayout'
+import { STAGE_COLOR } from './stageColor'
 
 const ALL = 0 // "all plants" option value
 
@@ -41,6 +25,12 @@ export default function MachinesPage() {
   // Start with the plant chosen in the header; the user can switch to another or to all.
   const [plantFilter, setPlantFilter] = useState<number>(currentPlant?.id ?? ALL)
   const [typeFilter, setTypeFilter] = useState<MachineType>()
+  // List = every machine as a table; Layout = one plant drawn as its line, from the "feeds into" arrows.
+  const [view, setView] = useState<'list' | 'layout'>('list')
+  const isLayout = view === 'layout'
+  // The layout is always one plant's: "all plants" falls back to the plant chosen in the header.
+  const layoutPlant = plantFilter === ALL ? (currentPlant?.id ?? user?.plants[0]?.id) : plantFilter
+  const links = useMachineLinks(isLayout ? layoutPlant : undefined)
   const rows = (data ?? []).filter(
     (m) => (plantFilter === ALL || m.plantId === plantFilter) && (!typeFilter || m.type === typeFilter),
   )
@@ -82,7 +72,18 @@ export default function MachinesPage() {
       responsive: ['md'],
       render: (_, m) => (m.capacity == null ? '-' : `${Number(m.capacity).toLocaleString('en-IN')} ${m.capacityUnit ?? ''}`),
     },
-    { title: t('common.status'), dataIndex: 'active', width: 110, responsive: ['sm'], render: (a: boolean) => <StatusTag active={a} /> },
+    {
+      title: t('common.status'),
+      dataIndex: 'active',
+      width: 130,
+      responsive: ['sm'],
+      render: (a: boolean, m) => (
+        <>
+          <StatusTag active={a} />
+          {m.replacedByCode && <div className="cell-sub">{t('machine.replacedBy', { code: m.replacedByCode })}</div>}
+        </>
+      ),
+    },
   ]
   if (canManage) {
     columns.push({
@@ -99,30 +100,53 @@ export default function MachinesPage() {
       <PageHeader title={t('machine.title')} subtitle={t('machine.subtitle')} icon={<ToolOutlined />} extra={newButton} />
 
       <FadeIn delay={0.05} className="toolbar">
+        <Segmented
+          value={view}
+          onChange={(v) => setView(v as 'list' | 'layout')}
+          options={[
+            { value: 'list', label: t('machine.list'), icon: <UnorderedListOutlined /> },
+            { value: 'layout', label: t('machine.layout'), icon: <ApartmentOutlined /> },
+          ]}
+        />
         {(user?.plants.length ?? 0) > 1 && (
           <Select
-            value={plantFilter}
+            value={isLayout ? layoutPlant : plantFilter}
             onChange={setPlantFilter}
             aria-label={t('common.plant')}
             style={{ minWidth: 180 }}
             options={[
-              { value: ALL, label: t('common.allPlants') },
+              ...(isLayout ? [] : [{ value: ALL, label: t('common.allPlants') }]),
               ...(user?.plants ?? []).map((p) => ({ value: p.id, label: p.name })),
             ]}
           />
         )}
-        <Select
-          allowClear
-          placeholder={t('machine.allTypes')}
-          aria-label={t('machine.allTypes')}
-          value={typeFilter}
-          onChange={setTypeFilter}
-          style={{ minWidth: 180 }}
-          options={MACHINE_TYPES.map((type) => ({ value: type, label: t(`machineType.${type}`) }))}
-        />
+        {!isLayout && (
+          <Select
+            allowClear
+            placeholder={t('machine.allTypes')}
+            aria-label={t('machine.allTypes')}
+            value={typeFilter}
+            onChange={setTypeFilter}
+            style={{ minWidth: 180 }}
+            options={MACHINE_TYPES.map((type) => ({ value: type, label: t(`machineType.${type}`) }))}
+          />
+        )}
       </FadeIn>
 
-      <FadeIn delay={0.1}>
+      {isLayout && (
+        <FadeIn delay={0.1}>
+          <Card className="data-card" loading={isLoading || links.isLoading}>
+            <p className="layout-hint">{t('machine.layoutHint')}</p>
+            <MachineLayout
+              machines={(data ?? []).filter((m) => m.plantId === layoutPlant)}
+              links={links.data ?? []}
+              onOpen={canManage ? (machine) => setEditing({ machine }) : undefined}
+            />
+          </Card>
+        </FadeIn>
+      )}
+
+      {!isLayout && <FadeIn delay={0.1}>
         <Card className="data-card" styles={{ body: { padding: 0 } }}>
           <Table<Machine>
             rowKey="id"
@@ -134,7 +158,7 @@ export default function MachinesPage() {
             onRow={(machine) => (canManage ? { onDoubleClick: () => setEditing({ machine }) } : {})}
           />
         </Card>
-      </FadeIn>
+      </FadeIn>}
 
       <MachineFormDrawer open={editing !== null} machine={editing?.machine} onClose={() => setEditing(null)} />
     </>

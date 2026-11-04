@@ -59,4 +59,9 @@ public class Machine extends BaseEntity {
 
     @Column(nullable = false)
     private boolean active = true;
+
+    /** Set when this machine was taken out and a new one put in its place (see MachineService.replace). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "replaced_by_id")
+    private Machine replacedBy;
 }

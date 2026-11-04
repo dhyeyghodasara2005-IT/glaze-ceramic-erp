@@ -348,6 +348,7 @@ export const MACHINE_TYPES = [
   'DRYER',
   'GLAZE_LINE',
   'DIGITAL_PRINTER',
+  'COMPENSATOR',
   'KILN',
   'POLISHING_LINE',
   'SORTING_LINE',
@@ -372,7 +373,28 @@ export interface Machine {
   /** "2026-10-22" */
   installedOn?: string
   active: boolean
+  /** The machine that took this one's place, when it was replaced. */
+  replacedById?: number
+  replacedByCode?: string
   version: number
+}
+
+/** One arrow of a plant's layout: fromMachineId feeds into toMachineId. Must match MachineLinkResponse.java. */
+export interface MachineLink {
+  id: number
+  fromMachineId: number
+  toMachineId: number
+}
+
+/** The new machine that takes an old one's place (same plant and type). Must match MachineReplaceRequest.java. */
+export interface MachineReplaceRequest {
+  code: string
+  name: string
+  capacity?: number
+  capacityUnit?: string
+  make?: string
+  model?: string
+  installedOn?: string
 }
 
 export interface MachineRequest {

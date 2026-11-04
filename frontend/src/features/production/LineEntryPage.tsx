@@ -13,7 +13,8 @@ import type { LineEntry, LineEntryRequest, LineStage, MachineType } from '../../
 import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
-import { useCurrentShift, useProdMachines, useProdShifts } from './api'
+import { useCurrentShift, useProdMachineLinks, useProdMachines, useProdShifts } from './api'
+import { nearestFirst, pickMachine, reachable } from '../masters/machines/layout'
 import { LINE_PATHS, LINE_PERMISSION, useCancelLineEntry, useDeleteLineEntry, useLineEntry, useLineOverview, usePostLineEntry, useSaveLineEntry } from './lineApi'
 import { useFinishingOverview } from './finishApi'
 import { useSelectableLots } from './pressApi'
@@ -52,6 +53,7 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
   const current = useCurrentShift()
   const shifts = useProdShifts()
   const machines = useProdMachines(plantId)
+  const links = useProdMachineLinks(editable ? plantId : undefined)
   const lots = useSelectableLots(editable ? plantId : undefined)
   // Polishing: fired tiles can wait in the cooling area for days, so its lots come from the finishing screen.
   const overview = useLineOverview(editable && !isPolish ? plantId : undefined)
@@ -90,9 +92,7 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
       if (!form.isFieldTouched('prodDate')) form.setFieldValue('prodDate', dayjs(current.data.prodDate))
       if (!form.isFieldTouched('shiftId') && current.data.shiftId) form.setFieldValue('shiftId', current.data.shiftId)
     }
-    if (stageMachines.length === 1 && !form.getFieldValue('machineId')) form.setFieldValue('machineId', stageMachines[0].id)
-    if (isGlaze && printers.length === 1 && !form.getFieldValue('printerId')) form.setFieldValue('printerId', printers[0].id)
-  }, [isNew, isGlaze, params, current.data, stageMachines, printers, form])
+  }, [isNew, params, current.data, form])
 
   // ...and "tiles in" starts at what is waiting, until the supervisor types their own count.
   useEffect(() => {
@@ -112,7 +112,25 @@ function EntryEditor({ stage, entryId }: { stage: LineStage; entryId?: number })
     if (entry && !opts.some((o) => o.value === entry.lotId)) opts.push({ value: entry.lotId, label: `${entry.lotNo} · ${entry.designName} · ${entry.pressCode}` })
     return opts
   }, [allLots, entry, t])
-  const machineOptions = stageMachines.map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
+  // The machine the lot runs on; the layout says which glaze line, kiln or polishing line comes after it.
+  const lotMachineId = allLots.find((l) => l.id === lotId)?.pressId
+  const near = useMemo(
+    () => reachable(links.data, machines.data, lotMachineId, STAGE_MACHINE[stage], 'down'),
+    [links.data, machines.data, lotMachineId, stage],
+  )
+
+  // New entry: the machine that comes next in the layout (or the plant's only one), until the supervisor picks.
+  useEffect(() => {
+    if (!isNew || !machines.data) return
+    const machine = pickMachine(links.data, machines.data, lotMachineId, STAGE_MACHINE[stage], 'down')
+    if (machine && !form.isFieldTouched('machineId')) form.setFieldValue('machineId', machine)
+    if (isGlaze && !form.isFieldTouched('printerId')) {
+      const printer = pickMachine(links.data, machines.data, lotMachineId, 'DIGITAL_PRINTER', 'down')
+      if (printer) form.setFieldValue('printerId', printer)
+    }
+  }, [isNew, isGlaze, stage, links.data, machines.data, lotMachineId, form])
+
+  const machineOptions = nearestFirst(stageMachines, near).map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
   if (entry && !machineOptions.some((o) => o.value === entry.machineId)) machineOptions.push({ value: entry.machineId, label: `${entry.machineCode} · ${entry.machineName}` })
   const printerOptions = printers.map((m) => ({ value: m.id, label: `${m.code} · ${m.name}` }))
   if (entry?.printerId && !printerOptions.some((o) => o.value === entry.printerId)) printerOptions.push({ value: entry.printerId, label: entry.printerCode ?? '' })

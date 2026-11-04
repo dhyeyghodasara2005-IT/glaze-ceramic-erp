@@ -4077,3 +4077,129 @@ body {
     justify-self: start;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Machines - Layout view: the plant drawn left to right, one column per
+   step down the line. The board scrolls sideways inside its card on a
+   narrow screen; on a phone the steps stack under each other.
+   --------------------------------------------------------------------- */
+.layout-hint {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+}
+
+.layout-board {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.layout-col {
+  flex: 0 0 168px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.layout-col-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.layout-col-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.layout-wrap-nodes {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.layout-wrap-nodes .layout-node {
+  width: 168px;
+}
+
+.layout-node {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.layout-node:hover:not(:disabled) {
+  border-color: var(--brand-200);
+  box-shadow: var(--shadow-card);
+}
+
+.layout-node:disabled {
+  cursor: default;
+}
+
+.layout-node.inactive {
+  opacity: 0.55;
+}
+
+.layout-node-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.layout-node-type {
+  margin-inline-end: 0;
+}
+
+.layout-node-name {
+  font-size: 13px;
+}
+
+.layout-node-feeds {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.layout-unlinked {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 575px) {
+  .layout-board {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+
+  .layout-col {
+    flex: none;
+  }
+
+  .layout-col-nodes {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .layout-col-nodes .layout-node,
+  .layout-wrap-nodes .layout-node {
+    width: calc(50% - 4px);
+  }
+}

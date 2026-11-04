@@ -12,10 +12,10 @@ public interface MachineRepository extends JpaRepository<Machine, Long> {
     /** Process order: the order of MachineType (mill first, packing last), then code. */
     Comparator<Machine> PROCESS_ORDER = Comparator.comparing(Machine::getType).thenComparing(Machine::getCode);
 
-    @EntityGraph(attributePaths = "plant")
+    @EntityGraph(attributePaths = {"plant", "replacedBy"})
     List<Machine> findByPlantId(Long plantId);
 
-    @EntityGraph(attributePaths = "plant")
+    @EntityGraph(attributePaths = {"plant", "replacedBy"})
     List<Machine> findAllByOrderByPlantNameAsc();
 
     /**
@@ -33,7 +33,7 @@ public interface MachineRepository extends JpaRepository<Machine, Long> {
                 .toList();
     }
 
-    @EntityGraph(attributePaths = "plant")
+    @EntityGraph(attributePaths = {"plant", "replacedBy"})
     Optional<Machine> findWithPlantById(Long id);
 
     /** Codes are unique within a plant: two plants may both have "PRESS-1". */

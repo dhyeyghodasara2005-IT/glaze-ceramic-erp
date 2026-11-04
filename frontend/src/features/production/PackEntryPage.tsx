@@ -14,7 +14,8 @@ import { useDebounced } from '../../components/useDebounced'
 import NoPlant from '../store/NoPlant'
 import DocStatusTag from '../store/DocStatusTag'
 import { dateTime, qty, shortDate } from '../store/format'
-import { useCurrentShift, useProdMachines, useProdShifts } from './api'
+import { useCurrentShift, useProdMachineLinks, useProdMachines, useProdShifts } from './api'
+import { pickMachine } from '../masters/machines/layout'
 import {
   PACK_PATH, useCancelPackEntry, useDeletePackEntry, useFinishingOverview, useGradeOptions, usePackCodes, usePackEntry,
   usePillarOptions, usePostPackEntry, usePutAway, useSavePackEntry,
@@ -130,6 +131,7 @@ function PackEditor({ entryId }: { entryId?: number }) {
   const current = useCurrentShift()
   const shifts = useProdShifts()
   const machines = useProdMachines(plantId)
+  const links = useProdMachineLinks(editable ? plantId : undefined)
   const grades = useGradeOptions()
   const selectable = useSelectableLots(editable ? plantId : undefined)
   const finishing = useFinishingOverview(editable ? plantId : undefined)
@@ -180,9 +182,16 @@ function PackEditor({ entryId }: { entryId?: number }) {
       if (!form.isFieldTouched('prodDate')) form.setFieldValue('prodDate', dayjs(current.data.prodDate))
       if (!form.isFieldTouched('shiftId') && current.data.shiftId) form.setFieldValue('shiftId', current.data.shiftId)
     }
-    if (sorters.length === 1 && !form.getFieldValue('machineId')) form.setFieldValue('machineId', sorters[0].id)
     if (topGrade && !form.getFieldValue('lines')?.length) form.setFieldValue('lines', [{ gradeId: topGrade.id }])
-  }, [isNew, params, current.data, sorters, topGrade, form])
+  }, [isNew, params, current.data, topGrade, form])
+
+  // New entry: the sorting line after the lot's line in the layout (or the plant's only one), until picked.
+  const lotMachineId = lot?.pressId
+  useEffect(() => {
+    if (!isNew || !machines.data || form.isFieldTouched('machineId')) return
+    const sorter = pickMachine(links.data, machines.data, lotMachineId, 'SORTING_LINE', 'down')
+    if (sorter) form.setFieldValue('machineId', sorter)
+  }, [isNew, links.data, machines.data, lotMachineId, form])
 
   const lotOptions = useMemo(() => {
     const opts = allLots.map((l) => ({

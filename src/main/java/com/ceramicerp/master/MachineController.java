@@ -1,5 +1,8 @@
 package com.ceramicerp.master;
 
+import com.ceramicerp.master.dto.MachineFeedsRequest;
+import com.ceramicerp.master.dto.MachineLinkResponse;
+import com.ceramicerp.master.dto.MachineReplaceRequest;
 import com.ceramicerp.master.dto.MachineRequest;
 import com.ceramicerp.master.dto.MachineResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +37,13 @@ public class MachineController {
         return machineService.list(plantId);
     }
 
+    /** The plant's layout: every "feeds into" arrow, as machine ids. */
+    @GetMapping("/links")
+    @PreAuthorize("hasAuthority('MASTER_VIEW')")
+    public List<MachineLinkResponse> links(@RequestParam Long plantId) {
+        return machineService.links(plantId);
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('MASTER_VIEW')")
     public MachineResponse get(@PathVariable Long id) {
@@ -51,5 +61,20 @@ public class MachineController {
     @PreAuthorize("hasAuthority('MASTER_MANAGE')")
     public MachineResponse update(@PathVariable Long id, @Valid @RequestBody MachineRequest req) {
         return machineService.update(id, req);
+    }
+
+    /** Sets everything this machine feeds into (the whole list); returns the plant's layout. */
+    @PutMapping("/{id}/feeds")
+    @PreAuthorize("hasAuthority('MASTER_MANAGE')")
+    public List<MachineLinkResponse> setFeeds(@PathVariable Long id, @Valid @RequestBody MachineFeedsRequest req) {
+        return machineService.setFeeds(id, req.toMachineIds());
+    }
+
+    /** Takes this machine out and puts a new one in its place; returns the new machine. */
+    @PostMapping("/{id}/replace")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('MASTER_MANAGE')")
+    public MachineResponse replace(@PathVariable Long id, @Valid @RequestBody MachineReplaceRequest req) {
+        return machineService.replace(id, req);
     }
 }

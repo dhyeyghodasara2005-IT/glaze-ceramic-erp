@@ -20,12 +20,16 @@ public record MachineResponse(
         String model,
         LocalDate installedOn,
         boolean active,
+        /** The machine that took this one's place, when it was replaced. */
+        Long replacedById,
+        String replacedByCode,
         Long version
 ) {
     public static MachineResponse from(Machine m) {
         var p = m.getPlant();
+        Machine by = m.getReplacedBy();
         return new MachineResponse(m.getId(), p.getId(), p.getCode(), p.getName(), m.getCode(), m.getName(),
                 m.getType(), m.getCapacity(), m.getCapacityUnit(), m.getMake(), m.getModel(), m.getInstalledOn(),
-                m.isActive(), m.getVersion());
+                m.isActive(), by == null ? null : by.getId(), by == null ? null : by.getCode(), m.getVersion());
     }
 }
