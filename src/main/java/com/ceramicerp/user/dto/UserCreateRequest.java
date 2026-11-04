@@ -25,6 +25,7 @@ public record UserCreateRequest(
         /** Temporary password. The user must change it at first login. */
         @NotBlank @Size(min = UserRules.PASSWORD_MIN, max = UserRules.PASSWORD_MAX,
                 message = "Password must be 8-72 characters")
+        @Pattern(regexp = UserRules.PASSWORD_ENDS, message = UserRules.PASSWORD_ENDS_MESSAGE)
         String password,
 
         @NotEmpty(message = "Select at least one role")

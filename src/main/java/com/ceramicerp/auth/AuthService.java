@@ -19,6 +19,7 @@ import com.ceramicerp.user.UserRepository;
 import com.ceramicerp.user.dto.PlantRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,13 +47,29 @@ public class AuthService {
      */
     @Transactional
     public LoginResponse login(LoginRequest req) {
-        Authentication auth = authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken.unauthenticated(req.username().trim(), req.password()));
+        String username = req.username().trim();
+        Authentication auth;
+        try {
+            auth = authenticate(username, req.password());
+        } catch (BadCredentialsException e) {
+            // A password copied out of a PDF or a chat often brings an invisible space or line break with it. No
+            // password may start or end with one (UserRules.PASSWORD_ENDS), so try once more without them. The exact
+            // text is tried first, so an older password that does end in a space still works.
+            String stripped = req.password().strip();
+            if (stripped.isEmpty() || stripped.equals(req.password())) {
+                throw e;
+            }
+            auth = authenticate(username, stripped);
+        }
         AppUserDetails principal = (AppUserDetails) auth.getPrincipal();
 
         userRepository.updateLastLoginAt(principal.getUserId(), Instant.now());
         JwtService.IssuedToken token = jwtService.issue(principal);
         return new LoginResponse(token.token(), token.expiresAt(), currentUser(findUser(principal.getUserId())));
+    }
+
+    private Authentication authenticate(String username, String password) {
+        return authenticationManager.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(username, password));
     }
 
     @Transactional(readOnly = true)
@@ -70,10 +87,12 @@ public class AuthService {
     @Transactional
     public void changePassword(ChangePasswordRequest req) {
         User user = findUser(CurrentUser.get().getUserId());
-        if (!passwordEncoder.matches(req.currentPassword(), user.getPasswordHash())) {
+        // Same forgiveness as login: the current password may come with a space or line break at an end.
+        if (!passwordEncoder.matches(req.currentPassword(), user.getPasswordHash())
+                && !passwordEncoder.matches(req.currentPassword().strip(), user.getPasswordHash())) {
             throw new BusinessException("Current password is incorrect");
         }
-        if (req.currentPassword().equals(req.newPassword())) {
+        if (req.currentPassword().strip().equals(req.newPassword())) {
             throw new BusinessException("New password must be different from the current one");
         }
         user.setPasswordHash(passwordEncoder.encode(req.newPassword()));

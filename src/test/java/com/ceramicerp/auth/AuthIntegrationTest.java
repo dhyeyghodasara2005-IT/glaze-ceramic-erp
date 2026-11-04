@@ -104,4 +104,44 @@ class AuthIntegrationTest extends IntegrationTestBase {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Current password is incorrect"));
     }
+
+    /** A password copied out of a PDF or a chat often brings an invisible space or line break: it still logs in. */
+    @Test
+    void aPasswordCopiedWithASpaceOrLineBreakStillLogsIn() throws Exception {
+        String admin = adminToken();
+        createUser(admin, "copied", "Test-Abc12345", createRole(admin, "Viewer C", "PLANT_VIEW"));
+
+        for (String typed : new String[]{"Test-Abc12345 ", " Test-Abc12345", "Test-Abc12345\n", "\tTest-Abc12345\r\n"}) {
+            mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                            .content(json(Map.of("username", "copied", "password", typed))))
+                    .andExpect(status().isOk());
+        }
+        // ...but only spaces at the ends are forgiven: a wrong character is still wrong.
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(json(Map.of("username", "copied", "password", "Test-Abc1234 "))))
+                .andExpect(status().isUnauthorized());
+        // Changing it works with a copied current password too.
+        postAs(login("copied", "Test-Abc12345"), "/api/auth/change-password",
+                Map.of("currentPassword", "Test-Abc12345 ", "newPassword", "Test-New12345"))
+                .andExpect(status().isNoContent());
+    }
+
+    /** Since login ignores spaces at the ends, no password may be set with one. */
+    @Test
+    void aNewPasswordCantStartOrEndWithASpace() throws Exception {
+        String admin = adminToken();
+        long role = createRole(admin, "Viewer S", "PLANT_VIEW");
+        postAs(admin, "/api/users", Map.of("username", "spacey", "fullName", "Spacey Test", "password", "Test-Abc12345 ",
+                "roleIds", new Long[]{role}, "plantIds", new Long[]{}, "allPlantsAccess", false))
+                .andExpect(status().isBadRequest());
+        long id = createUser(admin, "spacey", "Test-Abc12345", role);
+        postAs(admin, "/api/users/" + id + "/reset-password", Map.of("newPassword", " Test-Abc99999"))
+                .andExpect(status().isBadRequest());
+        postAs(login("spacey", "Test-Abc12345"), "/api/auth/change-password",
+                Map.of("currentPassword", "Test-Abc12345", "newPassword", "Test-New12345 "))
+                .andExpect(status().isBadRequest());
+        // A space in the middle is fine.
+        postAs(admin, "/api/users/" + id + "/reset-password", Map.of("newPassword", "Test Abc 99999"))
+                .andExpect(status().isOk());
+    }
 }
