@@ -68,8 +68,8 @@ const SETUP: { to: string; icon: ReactNode; titleKey: string; hintKey: string; p
 const COMING = [
   { step: '6d', key: 'dashboard.coming1' },
   { step: '6e', key: 'dashboard.coming2' },
-  { step: '8', key: 'dashboard.coming3' },
-  { step: '10', key: 'dashboard.coming4' },
+  { step: '10', key: 'dashboard.coming3' },
+  { step: '11', key: 'dashboard.coming4' },
 ]
 
 /**

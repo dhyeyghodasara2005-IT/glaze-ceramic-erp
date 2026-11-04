@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { Dayjs } from 'dayjs'
 import PageHeader from '../../components/PageHeader'
 import EmptyState from '../../components/EmptyState'
+import SubLine from '../../components/SubLine'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import type { DocStatus, PackEntrySummary } from '../../api/types'
@@ -86,9 +87,10 @@ export default function PackEntriesPage() {
       render: (boxes: number, e) => (
         <>
           <div className="cell-title">{boxes.toLocaleString('en-IN')}</div>
-          <div className="cell-sub">
-            {e.packedSqm != null && `${qty(e.packedSqm, 0)} m² · `}−{e.broken.toLocaleString('en-IN')} {t('finishing.broken').toLowerCase()}
-          </div>
+          <SubLine parts={[
+            e.packedSqm != null && `${qty(e.packedSqm, 0)} m²`,
+            `−${e.broken.toLocaleString('en-IN')} ${t('finishing.broken').toLowerCase()}`,
+          ]} />
         </>
       ),
     },

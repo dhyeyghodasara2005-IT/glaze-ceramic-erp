@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { Dayjs } from 'dayjs'
 import PageHeader from '../../components/PageHeader'
 import EmptyState from '../../components/EmptyState'
+import SubLine from '../../components/SubLine'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import type { DocStatus, PressEntrySummary } from '../../api/types'
@@ -86,7 +87,7 @@ export default function PressEntriesPage() {
       render: (good: number, e) => (
         <>
           <div className="cell-title">{good.toLocaleString('en-IN')}</div>
-          <div className="cell-sub">{e.pressedCount.toLocaleString('en-IN')} {t('press.pressed').toLowerCase()} · {qty(e.powderTon, 1)} T</div>
+          <SubLine parts={[`${e.pressedCount.toLocaleString('en-IN')} ${t('press.pressed').toLowerCase()}`, `${qty(e.powderTon, 1)} T`]} />
         </>
       ),
     },

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import type { Dayjs } from 'dayjs'
 import PageHeader from '../../components/PageHeader'
 import EmptyState from '../../components/EmptyState'
+import SubLine from '../../components/SubLine'
 import { FadeIn } from '../../components/motion'
 import { useAuth } from '../../auth/AuthContext'
 import type { DocStatus, LineEntrySummary, LineStage } from '../../api/types'
@@ -89,11 +90,12 @@ export default function LineEntriesPage({ stage }: { stage: LineStage }) {
       render: (out: number, e) => (
         <>
           <div className="cell-title">{out.toLocaleString('en-IN')}</div>
-          <div className="cell-sub">
-            {e.tilesIn.toLocaleString('en-IN')} {t('line.tilesIn').toLowerCase()} · −{e.rejects.toLocaleString('en-IN')}
-            {e.gasScm != null && ` · ${qty(e.gasScm, 0)} SCM`}
-            {e.powerKwh != null && ` · ${qty(e.powerKwh, 0)} kWh`}
-          </div>
+          <SubLine parts={[
+            `${e.tilesIn.toLocaleString('en-IN')} ${t('line.tilesIn').toLowerCase()}`,
+            `−${e.rejects.toLocaleString('en-IN')}`,
+            e.gasScm != null && `${qty(e.gasScm, 0)} SCM`,
+            e.powerKwh != null && `${qty(e.powerKwh, 0)} kWh`,
+          ]} />
         </>
       ),
     },
